@@ -1030,13 +1030,14 @@ namespace WitcherScriptMerger.Forms
         private void menuFile_DropDownOpening(object sender, EventArgs e)
         {
             menuRepackBundle.Enabled = Directory.Exists(Paths.MergedBundleContent);
-
             menuExitAndPlay.Enabled = File.Exists(Paths.GameExe);
         }
 
         private void menuOpen_DropDownOpening(object sender, EventArgs e)
         {
-            menuOpenLoadOrderFile.Enabled = File.Exists(Program.LoadOrder.FilePath);
+            menuOpenLoadOrderFile.Enabled = (Program.LoadOrder?.FilePath != null)
+              ? File.Exists(Program.LoadOrder.FilePath)
+              : false;
 
             var mergedModDir = Paths.RetrieveMergedModDir();
             menuOpenMergedModDir.Enabled = (mergedModDir != null && Directory.Exists(mergedModDir));
