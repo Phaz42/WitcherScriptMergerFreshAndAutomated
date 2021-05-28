@@ -793,13 +793,18 @@ namespace WitcherScriptMerger.Forms
         bool DeleteMerges(List<Merge> merges)
         {
             var bundleMerges = new List<Merge>();
+            string[] segments = Paths.ScriptsDirectory
+              .Split(Path.DirectorySeparatorChar)
+              .Where((whatever) => !whatever.EqualsIgnoreCase("content0"))
+              .ToArray();
+            string stopPath = Path.Combine(segments);
             foreach (var merge in merges)
             {
                 var mergePath = merge.GetMergedFile();
                 if (File.Exists(mergePath))
                 {
                     File.Delete(mergePath);
-                    DeleteEmptyDirs(Path.GetDirectoryName(mergePath), Paths.ScriptsDirectory);
+                    DeleteEmptyDirs(Path.GetDirectoryName(mergePath), stopPath);
                 }
                 if (merge.IsBundleContent)
                 {
@@ -817,7 +822,7 @@ namespace WitcherScriptMerger.Forms
                         if (File.Exists(metadataPath))
                             File.Delete(metadataPath);
                         
-                        DeleteEmptyDirs(Path.GetDirectoryName(bundlePath), Paths.ScriptsDirectory);
+                        DeleteEmptyDirs(Path.GetDirectoryName(bundlePath), stopPath);
                     }
                     else if (merge.IsBundleContent)
                         bundleMerges.Add(merge);

@@ -35,9 +35,11 @@ namespace WitcherScriptMerger.FileIndex
             RunWorkerCompletedEventHandler completedHandler)
         {
             var ignoredModNames = GetIgnoredModNames();
-            var modDirPaths = Directory.GetDirectories(Paths.ModsDirectory, "mod*", SearchOption.TopDirectoryOnly)
+            var modDirPaths = (Directory.Exists(Paths.ModsDirectory))
+              ? Directory.GetDirectories(Paths.ModsDirectory, "mod*", SearchOption.TopDirectoryOnly)
                 .Where(path => !ignoredModNames.Any(name => name.EqualsIgnoreCase(new DirectoryInfo(path).Name)))
-                .ToList();
+                .ToList()
+              : new List<string>();
             ModCount = modDirPaths.Count;
             if (ModCount == 0)
             {
