@@ -50,7 +50,6 @@ namespace WitcherScriptMerger.Controls
         // From http://stackoverflow.com/a/10364283/1641069
         // Pinvoke:
         private const int TVM_SETEXTENDEDSTYLE = 0x1100 + 44;
-        private const int TVM_GETEXTENDEDSTYLE = 0x1100 + 45;
         private const int TVS_EX_DOUBLEBUFFER = 0x0004;
         [DllImport("user32.dll")]
         private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wp, IntPtr lp);

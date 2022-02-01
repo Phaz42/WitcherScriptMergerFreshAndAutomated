@@ -1,0 +1,22 @@
+#!/bin/sh
+# wine wrapper for native kdiff3
+# see https://wiki.winehq.org/FAQ#How_do_I_launch_native_applications_from_a_Windows_application.3F
+# ScriptMerger can't wait for this, make sure to enable reports
+
+# convert to a path kdiff3 understands
+winpath2unix(){
+    echo $1 | sed "s/^[A-Z]://" | tr '\\' /
+}
+
+arg1=$(winpath2unix "$1")
+shift
+arg2=$(winpath2unix "$1")
+shift
+arg3=$(winpath2unix "$1")
+shift
+arg4=$(winpath2unix "$1")
+shift
+arg5=$(winpath2unix "$1")
+shift
+
+kdiff3 "${arg1}" "${arg2}" "${arg3}" "${arg4}" "${arg5}" $@

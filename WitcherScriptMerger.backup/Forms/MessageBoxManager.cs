@@ -5,6 +5,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Security.Permissions;
 
+[assembly: SecurityPermission(SecurityAction.RequestMinimum, UnmanagedCode = true)]
 namespace System.Windows.Forms
 {
     class MessageBoxManager
@@ -13,7 +14,11 @@ namespace System.Windows.Forms
         private delegate bool EnumChildProc(IntPtr hWnd, IntPtr lParam);
 
         private const int WH_CALLWNDPROCRET = 12;
+        private const int WM_DESTROY = 0x0002;
         private const int WM_INITDIALOG = 0x0110;
+        private const int WM_TIMER = 0x0113;
+        private const int WM_USER = 0x400;
+        private const int DM_GETDEFID = WM_USER + 0;
 
         private const int MBOK = 1;
         private const int MBCancel = 2;
