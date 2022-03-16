@@ -118,17 +118,17 @@ namespace WitcherScriptMerger.Forms
 
         void lnkKDiff3_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            Process.Start("http://kdiff3.sourceforge.net/");
+            Process.Start("cmd", "/c start http://kdiff3.sourceforge.net/");
         }
 
         void lnkBms_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            Process.Start("http://aluigi.altervista.org/quickbms.htm");
+            Process.Start("cmd", "/c start http://aluigi.altervista.org/quickbms.htm");
         }
 
         void lnkWccLite_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            Process.Start("http://www.nexusmods.com/witcher3/news/12625/?");
+            Process.Start("cmd", "/c start http://www.nexusmods.com/witcher3/news/12625/?");
         }
 
         #endregion

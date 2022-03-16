@@ -50,7 +50,6 @@ namespace WitcherScriptMerger.Controls
         // From http://stackoverflow.com/a/10364283/1641069
         // Pinvoke:
         private const int TVM_SETEXTENDEDSTYLE = 0x1100 + 44;
-        private const int TVM_GETEXTENDEDSTYLE = 0x1100 + 45;
         private const int TVS_EX_DOUBLEBUFFER = 0x0004;
         [DllImport("user32.dll")]
         private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wp, IntPtr lp);
@@ -256,7 +255,7 @@ namespace WitcherScriptMerger.Controls
         {
             _contextMenu = new ContextMenuStrip();
 
-            ContextOpenRegion = new ToolStripRegion(_contextMenu as ToolStrip, new ToolStripItem[]
+            ContextOpenRegion = new ToolStripRegion(_contextMenu, new ToolStripItem[]
             {
                 _contextCopyPath,
                 _contextOpenModFile,
@@ -266,9 +265,9 @@ namespace WitcherScriptMerger.Controls
                 _contextOpenVanillaFileDir
             });
 
-            ContextNodeRegion = new ToolStripRegion(_contextMenu as ToolStrip, new ToolStripItem[0]);
+            ContextNodeRegion = new ToolStripRegion(_contextMenu, new ToolStripItem[0]);
 
-            ContextAllRegion = new ToolStripRegion(_contextMenu as ToolStrip, new ToolStripItem[]
+            ContextAllRegion = new ToolStripRegion(_contextMenu, new ToolStripItem[]
             {
                 _contextAllSeparator,
                 ContextSelectAll,
@@ -356,9 +355,25 @@ namespace WitcherScriptMerger.Controls
         protected void BuildContextMenu()
         {
             _contextMenu.Items.Clear();
-            _contextMenu.Items.AddRange(ContextOpenRegion.Items);
-            _contextMenu.Items.AddRange(ContextNodeRegion.Items);
-            _contextMenu.Items.AddRange(ContextAllRegion.Items);
+
+            // Context Open Region
+            _contextMenu.Items.AddRange(new[] {
+                _contextCopyPath,
+                _contextOpenModFile,
+                _contextOpenModFileDir,
+                _contextOpenModBundleDir,
+                _contextOpenVanillaFile,
+                _contextOpenVanillaFileDir
+            });
+
+            // Context All Region
+            _contextMenu.Items.Add(_contextAllSeparator);
+            _contextMenu.Items.AddRange(new[] {
+                ContextSelectAll,
+                ContextDeselectAll,
+                _contextExpandAll,
+                _contextCollapseAll
+            });
         }
 
         void ResetContextItemAvailability()

@@ -768,7 +768,8 @@ namespace WitcherScriptMerger.Forms
                     try
                     {
                         File.Delete(filePath);
-                    } catch (Exception exc)
+                    }
+                    catch
                     {
                         ShowError(errorMsg);
                         return;
@@ -781,7 +782,7 @@ namespace WitcherScriptMerger.Forms
                     {
                         Directory.Delete(dirPath);
                     }
-                    catch (Exception exc)
+                    catch
                     {
                         ShowError(errorMsg);
                         return;
