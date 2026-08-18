@@ -197,3 +197,11 @@ FakesAssemblies/
 
 # Visual Studio 6 workspace options file
 *.opt
+
+
+# SM-FAE Local Development Exclusions
+WitcherScriptMerger/BuildEvents/
+.vscode/
+WitcherScriptMerger/.vscode/
+.editorconfig
+

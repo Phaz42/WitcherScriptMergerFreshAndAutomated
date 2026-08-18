@@ -1,43 +1,30 @@
-﻿namespace WitcherScriptMerger.FileIndex
+﻿namespace WitcherScriptMerger.FileIndex;
+
+public class ModFileCategory(int orderIndex, string displayName, string toolTipText, bool isSupported, bool isBundled)
 {
-    public class ModFileCategory
-    {
-        public ModFileCategory(int orderIndex, string displayName, string toolTipText, bool isSupported, bool isBundled)
-        {
-            OrderIndex = orderIndex;
-            DisplayName = displayName;
-            ToolTipText = toolTipText;
-            IsSupported = isSupported;
-            IsBundled = isBundled;
-        }
+	internal int OrderIndex { get; private set; } = orderIndex;
+	internal string DisplayName { get; private set; } = displayName;
+	internal string ToolTipText { get; private set; } = toolTipText;
+	internal bool IsSupported { get; private set; } = isSupported;
+	internal bool IsBundled { get; private set; } = isBundled;
 
-        public int OrderIndex { get; private set; }
-        public string DisplayName { get; private set; }
-        public string ToolTipText { get; private set; }
-        public bool IsSupported { get; private set; }
-        public bool IsBundled { get; private set; }
+	public override string ToString() => DisplayName;
+}
 
-        public override string ToString()
-        {
-            return DisplayName;
-        }
-    }
+internal static class Categories
+{
+	internal static ModFileCategory Script = new(
+		1, "Scripts", "These plaintext .ws files can be merged", true, false);
 
-    static class Categories
-    {
-        public static ModFileCategory Script = new ModFileCategory(
-            1, "Scripts", "These plaintext .ws files can be merged", true, false);
+	internal static ModFileCategory Xml = new(
+		2, "Non-Bundled XML", "These .xml text files can be merged", true, false);
 
-        public static ModFileCategory Xml = new ModFileCategory(
-            2, "Non-Bundled XML", "These .xml text files can be merged", true, false);
+	internal static ModFileCategory BundleText = new(
+		3, "Bundled Text", "These bundled text files can be merged", true, true);
 
-        public static ModFileCategory BundleText = new ModFileCategory(
-            3, "Bundled Text", "These bundled text files can be merged", true, true);
+	internal static ModFileCategory BundleNotMergeable = new(
+		4, "Bundled Non-text - Not Mergeable", "Right-click mods to define your load order instead of merging", false, true);
 
-        public static ModFileCategory BundleNotMergeable = new ModFileCategory(
-            4, "Bundled Non-text - Not Mergeable", "Right-click mods to define your load order instead of merging", false, true);
-
-        public static ModFileCategory FlatNotMergeable = new ModFileCategory(
-            5, "Not Mergeable", "Script Merger doesn't know what these files are", false, false);
-    }
+	internal static ModFileCategory FlatNotMergeable = new(
+		5, "Not Mergeable", "Script Merger doesn't know what these files are", false, false);
 }

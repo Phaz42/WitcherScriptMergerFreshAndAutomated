@@ -1,117 +1,98 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Xml.Serialization;
+
 using WitcherScriptMerger.Inventory;
 
-namespace WitcherScriptMerger.FileIndex
+namespace WitcherScriptMerger.FileIndex;
+
+public class ModFile
 {
-    public class ModFile
-    {
-        #region Members
+	#region Members
 
-        [XmlElement]
-        public string RelativePath { get; set; }
+	[XmlElement]
+	public string RelativePath { get; set; }
 
-        [XmlElement("IncludedMod")]
-        public List<FileHash> Mods { get; private set; }
+	[XmlElement("IncludedMod")]
+	public Collection<FileHash> Mods { get; private set; }
 
-        [XmlElement]
-        public string BundleName { get; set; }
+	[XmlElement]
+	public string BundleName { get; set; }
 
-        [XmlIgnore]
-        public ModFileCategory Category
-        {
-            get
-            {
-                if (BundleName != null)
-                {
-                    if (IsTextFile(RelativePath))
-                        return Categories.BundleText;
-                    else
-                        return Categories.BundleNotMergeable;
-                }
-                else if (IsScript(RelativePath))
-                    return Categories.Script;
-                else if (IsXml(RelativePath))
-                    return Categories.Xml;
-                else
-                    return Categories.FlatNotMergeable;
-            }
-        }
+	[XmlIgnore]
+	public ModFileCategory Category
+	{
+		get
+		{
+			return BundleName != null
+				? IsTextFile(RelativePath) ? Categories.BundleText : Categories.BundleNotMergeable
+				: IsScript(RelativePath) ? Categories.Script : IsXml(RelativePath) ? Categories.Xml : Categories.FlatNotMergeable;
+		}
+	}
 
-        [XmlIgnore]
-        public bool IsBundleContent => (BundleName != null);
+	[XmlIgnore]
+	public bool IsBundleContent => BundleName != null;
 
-        [XmlIgnore]
-        public bool HasConflict => (Mods.Count > 1);
+	[XmlIgnore]
+	public bool HasConflict => Mods.Count > 1;
 
-        #endregion
+	#endregion
 
-        public ModFile(string relPath, string bundlePath = null)
-        {
-            RelativePath = relPath;
-            Mods = new List<FileHash>();
-            if (bundlePath != null)
-                BundleName = Path.GetFileName(bundlePath);
-        }
+	internal ModFile(string relPath, string bundlePath = null)
+	{
+		RelativePath = relPath;
+		Mods = [];
+		if (bundlePath != null)
+			BundleName = Path.GetFileName(bundlePath);
+	}
 
-        public ModFile()
-        {
-            Mods = new List<FileHash>();
-        }
+	internal ModFile() => Mods = [];
 
-        public bool ContainsMod(string modName)
-        {
-            return Mods.Any(mod => mod.Name.EqualsIgnoreCase(modName));
-        }
+	internal bool ContainsMod(string modName) => Mods.Any(mod => mod.Name.EqualsIgnoreCase(modName));
 
-        public string GetVanillaFile()
-        {
-            if (Category == Categories.Script)
-                return Path.Combine(Paths.ScriptsDirectory, RelativePath);
-            else if (Category == Categories.Xml)
-                return Path.Combine(Paths.GameDirectory, RelativePath);
-            else
-                throw new Exception($"Can't get vanilla file for category '{Category.DisplayName}'.");
-        }
+	internal string GetVanillaFile()
+	{
+		return Category == Categories.Script
+			? Path.Combine(Paths.ScriptsDirectory, RelativePath)
+			: Category == Categories.Xml
+			? Path.Combine(Paths.GameDirectory, RelativePath)
+			: throw new InvalidOperationException($"Can't get vanilla file for category '{Category.DisplayName}'.");
+	}
 
-        public string GetModFile(string modName)
-        {
-            if (Category == Categories.Script)
-                return Path.Combine(Paths.ModsDirectory, modName, Paths.ModScriptBase, RelativePath);
-            else if (Category == Categories.Xml)
-                return Path.Combine(Paths.ModsDirectory, modName, RelativePath);
-            else if (Category.IsBundled)
-                return Path.Combine(Paths.ModsDirectory, modName, Paths.BundleBase, BundleName);
-            else
-                throw new NotImplementedException();
-        }
+	internal string GetModFile(string modName)
+	{
+		return Category == Categories.Script
+			? Path.Combine(Paths.ModsDirectory, modName, Paths.ModScriptBase, RelativePath)
+			: Category == Categories.Xml
+			? Path.Combine(Paths.ModsDirectory, modName, RelativePath)
+			: Category.IsBundled
+			? Path.Combine(Paths.ModsDirectory, modName, Paths.BundleBase, BundleName)
+			: throw new NotImplementedException();
+	}
 
-        public static string GetModNameFromPath(string modFilePath)
-        {
-            if (!modFilePath.StartsWithIgnoreCase(Paths.ModsDirectory))  // Merged bundle content has internal path, not derived from mod folder
-                return Paths.MergedBundleContent;
+	internal static string GetModNameFromPath(string modFilePath)
+	{
+		if (modFilePath == null)
+			throw new ArgumentNullException(nameof(modFilePath));
+		if (!modFilePath.StartsWithIgnoreCase(Paths.ModsDirectory))  // Merged bundle content has internal path, not derived from mod folder
+			return Paths.MergedBundleContent;
 
-            var nameStart = Paths.ModsDirectory.Length + 1;
-            var name = modFilePath.Substring(nameStart);
-            return name.Substring(0, name.IndexOf('\\'));
-        }
+		int nameStart = Paths.ModsDirectory.Length + 1;
+		string name = modFilePath[nameStart..];
+		return name[..name.IndexOf('\\', StringComparison.OrdinalIgnoreCase)];
+	}
 
-        public static bool IsScript(string path) => path.EndsWithIgnoreCase(".ws");
+	internal static bool IsScript(string path) => path == null ? throw new ArgumentNullException(nameof(path)) : path.EndsWithIgnoreCase(".ws");
 
-        public static bool IsXml(string path) => path.EndsWithIgnoreCase(".xml");
+	internal static bool IsXml(string path) => path == null ? throw new ArgumentNullException(nameof(path)) : path.EndsWithIgnoreCase(".xml");
 
-        public static bool IsFlatFile(string path) => (IsScript(path) || IsXml(path));
+	internal static bool IsFlatFile(string path) => IsScript(path) || IsXml(path);
 
-        public static bool IsBundle(string path) => path.EndsWithIgnoreCase(".bundle");
+	internal static bool IsBundle(string path) => path == null ? throw new ArgumentNullException(nameof(path)) : path.EndsWithIgnoreCase(".bundle");
 
-        public static bool IsTextFile(string path) => (path.EndsWithIgnoreCase(".ws") || path.EndsWithIgnoreCase(".xml") || path.EndsWithIgnoreCase(".txt") || path.EndsWithIgnoreCase(".csv"));
+	internal static bool IsTextFile(string path) => path == null ? throw new ArgumentNullException(nameof(path)) : path.EndsWithIgnoreCase(".ws") || path.EndsWithIgnoreCase(".xml") || path.EndsWithIgnoreCase(".txt") || path.EndsWithIgnoreCase(".csv");
 
-        public override string ToString()
-        {
-            return $"({Mods.Count} mod{Mods.Count.GetPluralS()}) {RelativePath}";
-        }
-    }
+	public override string ToString() => $"({Mods.Count} mod{Mods.Count.GetPluralS()}) {RelativePath}";
 }

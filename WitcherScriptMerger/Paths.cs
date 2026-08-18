@@ -1,150 +1,177 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
+
+using WitcherScriptMerger.Forms;
 using WitcherScriptMerger.Tools;
 
-namespace WitcherScriptMerger
+using static WitcherScriptMerger.Program;
+
+namespace WitcherScriptMerger;
+
+/// <summary>
+/// Provides methods and constants for managing file and directory paths.
+/// </summary>
+internal static class Paths
 {
-    static class Paths
-    {
-        public const string TempBundleContent = "tempbundlecontent";
-        public static string MergedBundleContent = "Merged Bundle Content";
-        public static string MergedBundleContentAbsolute = Path.Combine(Environment.CurrentDirectory, MergedBundleContent);
-        public const string Inventory = "MergeInventory.xml";
-        public static string ModScriptBase = Path.Combine("content", "scripts");
-        public static string VanillaScriptBase = Path.Combine("content", "content0", "scripts");
-        public static string BundleBase = "content";
+	internal const string TempBundleContent = "tempbundlecontent";
+	internal static string MergedBundleContent = "Merged Bundle Content";
+	internal static string MergedBundleContentAbsolute = Path.Combine(Environment.CurrentDirectory, MergedBundleContent);
+	internal const string Inventory = "MergeInventory.xml";
+	internal static string ModScriptBase = Path.Combine("content", "scripts");
+	internal static string VanillaScriptBase = Path.Combine("content", "content0", "scripts");
+	internal static string BundleBase = "content";
+	internal static string GameDirectory => OptionsFrm.GameDirectory;
+	internal static string GameExeDX11 => Path.Combine(GameDirectory, "bin", "x64", "witcher3.exe");
+	internal static string GameExeDX12 => Path.Combine(GameDirectory, "bin", "x64_dx12", "witcher3.exe");
+	internal static string BundlesDirectory => Path.Combine(GameDirectory, BundleBase);
+	internal static string DlcDirectory => Path.Combine(GameDirectory, "DLC");
+	internal static string ScriptsDirectory => Path.Combine(GameDirectory, VanillaScriptBase);
+	internal static string ModsDirectory => Path.Combine(GameDirectory, "Mods");
 
-        public static string GameDirectory => Program.MainForm.GameDirectorySetting;
+	/// <summary>
+	/// Gets the relative path of a file or directory within a base path.
+	/// </summary>
+	internal static string GetRelativePath(string fullPath, string basePath)
+	{
+		int startIndex = fullPath.IndexOfIgnoreCase(basePath) + basePath.Length + 1;
+		return fullPath[startIndex..];
+	}
 
-        public static string GameExe => Path.Combine(GameDirectory, "bin", "x64", "witcher3.exe");
+	/// <summary>
+	/// Validates the paths of required dependencies.
+	/// </summary>
+	/// <returns><see langword="true"/> if all dependency paths are valid, <see langword="false"/> otherwise.</returns>
+	internal static bool ValidateDependencyPaths()
+	{
+		string[] dependencyPaths = [KDiff3.ExePath, QuickBms.ExePath, QuickBms.PluginPath, WccLite.ExePath];
 
-        public static string BundlesDirectory => Path.Combine(GameDirectory, BundleBase);
+		if (dependencyPaths.All(File.Exists))
+			return true;
 
-        public static string DlcDirectory => Path.Combine(GameDirectory, "DLC");
+		using DependencyForm dependencyForm = new();
+		return dependencyForm.ShowDialog() == DialogResult.OK;
+	}
 
-        static string _scriptsDirSetting = Program.Settings.Get("VanillaScriptsDirectory");
-        public static string ScriptsDirectory
-        {
-            get
-            {
-                return (!string.IsNullOrWhiteSpace(_scriptsDirSetting)
-                        ? _scriptsDirSetting
-                        : Path.Combine(GameDirectory, VanillaScriptBase));
-            }
-        }
+	/// <summary>
+	/// Validates all required directories.
+	/// </summary>
+	/// <returns><see langword="true"/> if all directories are valid, <see langword="false"/> otherwise.</returns>
+	internal static bool ValidateAllDirectories() =>
+		ValidateModsDirectory() && ValidateScriptsDirectory() && ValidateBundlesDirectory();
 
-        static string _modsDirSetting = Program.Settings.Get("ModsDirectory");
-        public static string ModsDirectory
-        {
-            get
-            {
-                return (!string.IsNullOrWhiteSpace(_modsDirSetting)
-                        ? _modsDirSetting
-                        : Path.Combine(GameDirectory, "Mods"));
-            }
-        }
+	/// <summary>
+	/// Validates the Mods directory.
+	/// </summary>
+	/// <returns><see langword="true"/> if the directory is valid, <see langword="false"/> otherwise.</returns>
+	internal static bool ValidateModsDirectory()
+	{
+		if (!Directory.Exists(ModsDirectory))
+		{
+			_ = Directory.CreateDirectory(ModsDirectory);
+			return ValidateModsDirectory();
+		}
 
-        public static bool IsScriptsDirectoryDerived => string.IsNullOrWhiteSpace(_scriptsDirSetting);
+		return true;
+	}
 
-        public static bool IsModsDirectoryDerived => string.IsNullOrWhiteSpace(_modsDirSetting);
+	/// <summary>
+	/// Validates the Scripts directory.
+	/// </summary>
+	/// <returns><see langword="true"/> if the directory is valid, <see langword="false"/> otherwise.</returns>
+	internal static bool ValidateScriptsDirectory()
+	{
+		if (!Directory.Exists(ScriptsDirectory))
+		{
+			_ = MainFrm.uiThreadManager.ShowMessage(
+				$"Can't find the Scripts directory at the expected location: {ScriptsDirectory}\n\n" +
+				"This indicates that either the wrong game directory is selected or the game isn't installed correctly. " +
+				"Select the correct game directory via the Options menu, verify game files through Steam/GOG, " +
+				"or reinstall the game.");
+			return false;
+		}
 
-        public static string GetRelativePath(string fullPath, string basePath)
-        {
-            var startIndex = fullPath.IndexOfIgnoreCase(basePath) + basePath.Length + 1;
-            return fullPath.Substring(startIndex);
-        }
+		return true;
+	}
 
-        public static bool ValidateDependencyPaths()
-        {
-            return (File.Exists(KDiff3.ExePath) &&
-                    File.Exists(QuickBms.ExePath) &&
-                    File.Exists(QuickBms.PluginPath) &&
-                    File.Exists(WccLite.ExePath));
-        }
+	/// <summary>
+	/// Validates the Bundles directory.
+	/// </summary>
+	/// <returns><see langword="true"/> if the directory is valid, <see langword="false"/> otherwise.</returns>
+	internal static bool ValidateBundlesDirectory()
+	{
+		if (!Directory.Exists(BundlesDirectory))
+		{
+			_ = MainFrm.uiThreadManager.ShowMessage(
+				$"Can't find the \"content\" directory at the expected location: {BundlesDirectory}\n\n" +
+				"This indicates that either the wrong game directory is selected or the game isn't installed correctly. " +
+				"Select the correct game directory via the Options menu, verify game files through Steam/GOG, " +
+				"or reinstall the game.");
+			return false;
+		}
 
-        public static bool ValidateModsDirectory()
-        {
-            if (!Directory.Exists(ModsDirectory))
-            {
-                Program.MainForm.ShowMessage(
-                    (!IsModsDirectoryDerived
-                     ? "Can't find the Mods directory specified in the config file."
-                     : "Can't find Mods directory in the specified game directory."));
-                return false;
-            }
-            return true;
-        }
+		return true;
+	}
 
-        public static bool ValidateScriptsDirectory()
-        {
-            if (!Directory.Exists(ScriptsDirectory))
-            {
-                Program.MainForm.ShowMessage(
-                    (!IsScriptsDirectoryDerived
-                     ? "Can't find the Scripts directory specified in the config file."
-                     : "Can't find \\content\\content0\\scripts directory in the specified game directory.") +
-                    "\n\nIt was added in patch 1.08.1 and should contain the game's vanilla scripts.");
-                return false;
-            }
-            return true;
-        }
+	/// <summary>
+	/// Retrieves the path to the merged bundle file.
+	/// </summary>
+	/// <returns>The path to the merged bundle file, or <see langword="null"/> if not found.</returns>
+	internal static string RetrieveMergedBundlePath()
+	{
+		string mergedModName = RetrieveMergedModName();
+		return mergedModName != null ? Path.Combine(ModsDirectory, mergedModName, BundleBase, "blob0.bundle") : null;
+	}
 
-        public static bool ValidateBundlesDirectory()
-        {
-            if (!Directory.Exists(BundlesDirectory))
-            {
-                Program.MainForm.ShowMessage("Can't find 'content' directory in the specified game directory.");
-                return false;
-            }
-            return true;
-        }
+	/// <summary>
+	/// Retrieves the name of the merged mod.
+	/// </summary>
+	/// <returns>The name of the merged mod, or <see langword="null"/> if not found or invalid.</returns>
+	internal static string RetrieveMergedModName()
+	{
+		string mergedModName = Settings.Get("MergedModName");
+		if (string.IsNullOrWhiteSpace(mergedModName))
+		{
+			_ = MainFrm.uiThreadManager.ShowMessage("The MergedModName setting isn't configured in the .config file.");
+			return null;
+		}
 
-        public static string RetrieveMergedBundlePath()
-        {
-            var mergedModName = RetrieveMergedModName();
-            if (mergedModName != null)
-                return Path.Combine(ModsDirectory, mergedModName, BundleBase, "blob0.bundle");
-            else
-                return null;
-        }
+		if (mergedModName.Length > 64)
+			mergedModName = mergedModName[..64];
 
-        public static string RetrieveMergedModName()
-        {
-            var mergedModName = Program.Settings.Get("MergedModName");
-            if (string.IsNullOrWhiteSpace(mergedModName))
-            {
-                Program.MainForm.ShowMessage("The MergedModName setting isn't configured in the .config file.");
-                return null;
-            }
-            if (mergedModName.Length > 64)
-                mergedModName = mergedModName.Substring(0, 64);
-            if (!mergedModName.IsAlphaNumeric() || !mergedModName.StartsWith("mod"))
-            {
-                if (!ConfirmInvalidModName(mergedModName))
-                    return null;
-            }
-            return mergedModName;
-        }
+		if (!mergedModName.IsAlphaNumeric() || !mergedModName.StartsWith("mod", StringComparison.OrdinalIgnoreCase))
+		{
+			if (!ConfirmInvalidModName(mergedModName))
+				return null;
+		}
 
-        public static string RetrieveMergedModDir()
-        {
-            var modName = RetrieveMergedModName();
-            return 
-                modName != null
-                ? Path.Combine(ModsDirectory, modName)
-                : null;
-        }
+		return mergedModName;
+	}
 
-        static bool ConfirmInvalidModName(string mergedModName)
-        {
-            return (DialogResult.Yes == Program.MainForm.ShowMessage(
-                "The Witcher 3 won't load the merged file if the mod name isn't \"mod\" followed by numbers, letters, or underscores."
-                + "\n\nUse this name anyway?\n" + mergedModName
-                + "\n\nTo change the name: Click No, then edit \"MergedModName\" in the .config file.",
-                "Warning",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Exclamation));
-        }
-    }
+	/// <summary>
+	/// Retrieves the directory of the merged mod.
+	/// </summary>
+	/// <returns>The directory of the merged mod, or <see langword="null"/> if not found.</returns>
+	internal static string RetrieveMergedModDir()
+	{
+		string modName = RetrieveMergedModName();
+		return modName != null ? Path.Combine(ModsDirectory, modName) : null;
+	}
+
+	/// <summary>
+	/// Confirms with the user if they want to use an invalid mod name.
+	/// </summary>
+	/// <param name="mergedModName">The invalid mod name.</param>
+	/// <returns><see langword="true"/> if the user confirms, <see langword="false"/> otherwise.</returns>
+	private static bool ConfirmInvalidModName(string mergedModName)
+	{
+		return DialogResult.Yes == MainFrm.uiThreadManager.ShowMessage(
+			"The Witcher 3 won't load the merged file if the mod name isn't \"mod\" followed by numbers, letters, or underscores."
+			+ "\n\nUse this name anyway?\n" + mergedModName
+			+ "\n\nTo change the name: Click No, then edit \"MergedModName\" in the .config file.",
+			"Warning",
+			MessageBoxButtons.YesNo,
+			MessageBoxIcon.Exclamation);
+	}
 }

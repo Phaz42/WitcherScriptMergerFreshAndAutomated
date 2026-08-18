@@ -29,406 +29,475 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DependencyForm));
-            this.grpKDiff3 = new System.Windows.Forms.GroupBox();
-            this.lblKDiff3Msg = new System.Windows.Forms.Label();
-            this.lblKDiff3Path = new System.Windows.Forms.Label();
-            this.btnKDiff3Path = new System.Windows.Forms.Button();
-            this.txtKDiff3Path = new System.Windows.Forms.TextBox();
-            this.lnkKDiff3 = new System.Windows.Forms.LinkLabel();
-            this.lblPrompt = new System.Windows.Forms.Label();
-            this.grpBms = new System.Windows.Forms.GroupBox();
-            this.lblBmsMsg = new System.Windows.Forms.Label();
-            this.lblBmsPath = new System.Windows.Forms.Label();
-            this.btnBmsPath = new System.Windows.Forms.Button();
-            this.txtBmsPath = new System.Windows.Forms.TextBox();
-            this.lnkBmsPlugin = new System.Windows.Forms.LinkLabel();
-            this.grpBmsPlugin = new System.Windows.Forms.GroupBox();
-            this.lblBmsPluginMsg = new System.Windows.Forms.Label();
-            this.lblBmsPluginPath = new System.Windows.Forms.Label();
-            this.btnBmsPluginPath = new System.Windows.Forms.Button();
-            this.txtBmsPluginPath = new System.Windows.Forms.TextBox();
-            this.lnkWccLite = new System.Windows.Forms.LinkLabel();
-            this.grpWccLite = new System.Windows.Forms.GroupBox();
-            this.lblWccLiteMsg = new System.Windows.Forms.Label();
-            this.lblWccLitePath = new System.Windows.Forms.Label();
-            this.btnWccLitePath = new System.Windows.Forms.Button();
-            this.txtWccLitePath = new System.Windows.Forms.TextBox();
-            this.btnOK = new System.Windows.Forms.Button();
-            this.btnCancel = new System.Windows.Forms.Button();
-            this.lnkBms = new System.Windows.Forms.LinkLabel();
-            this.grpKDiff3.SuspendLayout();
-            this.grpBms.SuspendLayout();
-            this.grpBmsPlugin.SuspendLayout();
-            this.grpWccLite.SuspendLayout();
-            this.SuspendLayout();
+            grpKDiff3 = new System.Windows.Forms.GroupBox();
+            lblKDiff3Msg = new System.Windows.Forms.Label();
+            lblKDiff3Path = new System.Windows.Forms.Label();
+            btnKDiff3Path = new System.Windows.Forms.Button();
+            txtKDiff3Path = new System.Windows.Forms.TextBox();
+            lnkKDiff3 = new System.Windows.Forms.LinkLabel();
+            lblPrompt = new System.Windows.Forms.Label();
+            grpBms = new System.Windows.Forms.GroupBox();
+            lblBmsMsg = new System.Windows.Forms.Label();
+            lblBmsPath = new System.Windows.Forms.Label();
+            btnBmsPath = new System.Windows.Forms.Button();
+            txtBmsPath = new System.Windows.Forms.TextBox();
+            lnkBmsPlugin = new System.Windows.Forms.LinkLabel();
+            grpBmsPlugin = new System.Windows.Forms.GroupBox();
+            lblBmsPluginMsg = new System.Windows.Forms.Label();
+            lblBmsPluginPath = new System.Windows.Forms.Label();
+            btnBmsPluginPath = new System.Windows.Forms.Button();
+            txtBmsPluginPath = new System.Windows.Forms.TextBox();
+            lnkWccLite = new System.Windows.Forms.LinkLabel();
+            grpWccLite = new System.Windows.Forms.GroupBox();
+            lblWccLiteMsg = new System.Windows.Forms.Label();
+            lblWccLitePath = new System.Windows.Forms.Label();
+            btnWccLitePath = new System.Windows.Forms.Button();
+            txtWccLitePath = new System.Windows.Forms.TextBox();
+            btnOK = new System.Windows.Forms.Button();
+            btnCancel = new System.Windows.Forms.Button();
+            lnkBms = new System.Windows.Forms.LinkLabel();
+            grpKDiff3.SuspendLayout();
+            grpBms.SuspendLayout();
+            grpBmsPlugin.SuspendLayout();
+            grpWccLite.SuspendLayout();
+            SuspendLayout();
             // 
             // grpKDiff3
             // 
-            this.grpKDiff3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.grpKDiff3.Controls.Add(this.lblKDiff3Msg);
-            this.grpKDiff3.Controls.Add(this.lblKDiff3Path);
-            this.grpKDiff3.Controls.Add(this.btnKDiff3Path);
-            this.grpKDiff3.Controls.Add(this.txtKDiff3Path);
-            this.grpKDiff3.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.grpKDiff3.Location = new System.Drawing.Point(9, 60);
-            this.grpKDiff3.Name = "grpKDiff3";
-            this.grpKDiff3.Size = new System.Drawing.Size(445, 80);
-            this.grpKDiff3.TabIndex = 1;
-            this.grpKDiff3.TabStop = false;
-            this.grpKDiff3.Text = "KDiff3.exe";
+            grpKDiff3.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            grpKDiff3.Controls.Add(lblKDiff3Msg);
+            grpKDiff3.Controls.Add(lblKDiff3Path);
+            grpKDiff3.Controls.Add(btnKDiff3Path);
+            grpKDiff3.Controls.Add(txtKDiff3Path);
+            grpKDiff3.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            grpKDiff3.Location = new System.Drawing.Point(12, 92);
+            grpKDiff3.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            grpKDiff3.Name = "grpKDiff3";
+            grpKDiff3.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            grpKDiff3.Size = new System.Drawing.Size(593, 123);
+            grpKDiff3.TabIndex = 1;
+            grpKDiff3.TabStop = false;
+            grpKDiff3.Text = "KDiff3.exe";
             // 
             // lblKDiff3Msg
             // 
-            this.lblKDiff3Msg.AutoSize = true;
-            this.lblKDiff3Msg.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblKDiff3Msg.Location = new System.Drawing.Point(7, 52);
-            this.lblKDiff3Msg.Name = "lblKDiff3Msg";
-            this.lblKDiff3Msg.Size = new System.Drawing.Size(399, 13);
-            this.lblKDiff3Msg.TabIndex = 4;
-            this.lblKDiff3Msg.Text = "Script Merger uses this open-source tool by Joachim Eibl to create merged text fi" +
-    "les.";
+            lblKDiff3Msg.AutoSize = true;
+            lblKDiff3Msg.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            lblKDiff3Msg.Location = new System.Drawing.Point(9, 80);
+            lblKDiff3Msg.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            lblKDiff3Msg.Name = "lblKDiff3Msg";
+            lblKDiff3Msg.Size = new System.Drawing.Size(521, 19);
+            lblKDiff3Msg.TabIndex = 4;
+            lblKDiff3Msg.Text = "Script Merger uses this open-source tool by Joachim Eibl to create merged text files.";
             // 
             // lblKDiff3Path
             // 
-            this.lblKDiff3Path.AutoSize = true;
-            this.lblKDiff3Path.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblKDiff3Path.Location = new System.Drawing.Point(7, 27);
-            this.lblKDiff3Path.Name = "lblKDiff3Path";
-            this.lblKDiff3Path.Size = new System.Drawing.Size(32, 13);
-            this.lblKDiff3Path.TabIndex = 3;
-            this.lblKDiff3Path.Text = "Path:";
+            lblKDiff3Path.AutoSize = true;
+            lblKDiff3Path.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            lblKDiff3Path.Location = new System.Drawing.Point(7, 40);
+            lblKDiff3Path.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            lblKDiff3Path.Name = "lblKDiff3Path";
+            lblKDiff3Path.Size = new System.Drawing.Size(48, 23);
+            lblKDiff3Path.TabIndex = 3;
+            lblKDiff3Path.Text = "Path:";
             // 
             // btnKDiff3Path
             // 
-            this.btnKDiff3Path.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnKDiff3Path.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnKDiff3Path.Location = new System.Drawing.Point(413, 22);
-            this.btnKDiff3Path.Name = "btnKDiff3Path";
-            this.btnKDiff3Path.Size = new System.Drawing.Size(26, 23);
-            this.btnKDiff3Path.TabIndex = 1;
-            this.btnKDiff3Path.Text = "...";
-            this.btnKDiff3Path.UseVisualStyleBackColor = true;
-            this.btnKDiff3Path.Click += new System.EventHandler(this.btnKDiff3Path_Click);
+            btnKDiff3Path.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            btnKDiff3Path.BackColor = System.Drawing.Color.LightSteelBlue;
+            btnKDiff3Path.FlatAppearance.BorderColor = System.Drawing.SystemColors.ButtonShadow;
+            btnKDiff3Path.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            btnKDiff3Path.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            btnKDiff3Path.ForeColor = System.Drawing.SystemColors.ControlText;
+            btnKDiff3Path.Location = new System.Drawing.Point(551, 34);
+            btnKDiff3Path.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            btnKDiff3Path.Name = "btnKDiff3Path";
+            btnKDiff3Path.Size = new System.Drawing.Size(35, 35);
+            btnKDiff3Path.TabIndex = 1;
+            btnKDiff3Path.Text = "...";
+            btnKDiff3Path.UseVisualStyleBackColor = false;
+            btnKDiff3Path.Click += BtnKDiff3Path_Click;
             // 
             // txtKDiff3Path
             // 
-            this.txtKDiff3Path.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtKDiff3Path.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtKDiff3Path.Location = new System.Drawing.Point(45, 24);
-            this.txtKDiff3Path.Name = "txtKDiff3Path";
-            this.txtKDiff3Path.Size = new System.Drawing.Size(362, 20);
-            this.txtKDiff3Path.TabIndex = 0;
-            this.txtKDiff3Path.TextChanged += new System.EventHandler(this.exe_TextChanged);
+            txtKDiff3Path.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            txtKDiff3Path.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            txtKDiff3Path.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            txtKDiff3Path.ForeColor = System.Drawing.SystemColors.ControlText;
+            txtKDiff3Path.Location = new System.Drawing.Point(60, 37);
+            txtKDiff3Path.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            txtKDiff3Path.Name = "txtKDiff3Path";
+            txtKDiff3Path.Size = new System.Drawing.Size(481, 27);
+            txtKDiff3Path.TabIndex = 0;
+            txtKDiff3Path.TextChanged += Exe_TextChanged;
             // 
             // lnkKDiff3
             // 
-            this.lnkKDiff3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.lnkKDiff3.AutoSize = true;
-            this.lnkKDiff3.LinkArea = new System.Windows.Forms.LinkArea(14, 53);
-            this.lnkKDiff3.Location = new System.Drawing.Point(311, 60);
-            this.lnkKDiff3.Name = "lnkKDiff3";
-            this.lnkKDiff3.Size = new System.Drawing.Size(137, 17);
-            this.lnkKDiff3.TabIndex = 0;
-            this.lnkKDiff3.TabStop = true;
-            this.lnkKDiff3.Text = "Download from KDiff3 Site";
-            this.lnkKDiff3.UseCompatibleTextRendering = true;
-            this.lnkKDiff3.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.lnkKDiff3_LinkClicked);
+            lnkKDiff3.ActiveLinkColor = System.Drawing.Color.DodgerBlue;
+            lnkKDiff3.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            lnkKDiff3.AutoSize = true;
+            lnkKDiff3.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            lnkKDiff3.LinkArea = new System.Windows.Forms.LinkArea(14, 53);
+            lnkKDiff3.LinkColor = System.Drawing.Color.DodgerBlue;
+            lnkKDiff3.Location = new System.Drawing.Point(390, 92);
+            lnkKDiff3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            lnkKDiff3.Name = "lnkKDiff3";
+            lnkKDiff3.Size = new System.Drawing.Size(212, 28);
+            lnkKDiff3.TabIndex = 0;
+            lnkKDiff3.TabStop = true;
+            lnkKDiff3.Text = "Download from KDiff3 Site";
+            lnkKDiff3.UseCompatibleTextRendering = true;
+            lnkKDiff3.VisitedLinkColor = System.Drawing.Color.DodgerBlue;
+            lnkKDiff3.LinkClicked += LnkKDiff3_LinkClicked;
             // 
             // lblPrompt
             // 
-            this.lblPrompt.AutoSize = true;
-            this.lblPrompt.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblPrompt.Location = new System.Drawing.Point(12, 9);
-            this.lblPrompt.Name = "lblPrompt";
-            this.lblPrompt.Size = new System.Drawing.Size(317, 34);
-            this.lblPrompt.TabIndex = 5;
-            this.lblPrompt.Text = "Please locate all the required components below.\r\n(Download any that you don\'t ha" +
-    "ve yet.)";
+            lblPrompt.AutoSize = true;
+            lblPrompt.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            lblPrompt.Location = new System.Drawing.Point(16, 14);
+            lblPrompt.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            lblPrompt.Name = "lblPrompt";
+            lblPrompt.Size = new System.Drawing.Size(384, 46);
+            lblPrompt.TabIndex = 5;
+            lblPrompt.Text = "Please locate all the required components below.\r\n(Download any that you don't have yet.)";
             // 
             // grpBms
             // 
-            this.grpBms.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.grpBms.Controls.Add(this.lblBmsMsg);
-            this.grpBms.Controls.Add(this.lblBmsPath);
-            this.grpBms.Controls.Add(this.btnBmsPath);
-            this.grpBms.Controls.Add(this.txtBmsPath);
-            this.grpBms.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.grpBms.Location = new System.Drawing.Point(9, 156);
-            this.grpBms.Name = "grpBms";
-            this.grpBms.Size = new System.Drawing.Size(445, 80);
-            this.grpBms.TabIndex = 4;
-            this.grpBms.TabStop = false;
-            this.grpBms.Text = "QuickBMS.exe";
+            grpBms.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            grpBms.Controls.Add(lblBmsMsg);
+            grpBms.Controls.Add(lblBmsPath);
+            grpBms.Controls.Add(btnBmsPath);
+            grpBms.Controls.Add(txtBmsPath);
+            grpBms.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            grpBms.Location = new System.Drawing.Point(12, 240);
+            grpBms.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            grpBms.Name = "grpBms";
+            grpBms.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            grpBms.Size = new System.Drawing.Size(593, 123);
+            grpBms.TabIndex = 4;
+            grpBms.TabStop = false;
+            grpBms.Text = "QuickBMS.exe";
             // 
             // lblBmsMsg
             // 
-            this.lblBmsMsg.AutoSize = true;
-            this.lblBmsMsg.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblBmsMsg.Location = new System.Drawing.Point(7, 52);
-            this.lblBmsMsg.Name = "lblBmsMsg";
-            this.lblBmsMsg.Size = new System.Drawing.Size(432, 13);
-            this.lblBmsMsg.TabIndex = 4;
-            this.lblBmsMsg.Text = "Script Merger uses this open-source tool by Luigi Auriemma to scan && unpack .bun" +
-    "dle files.";
+            lblBmsMsg.AutoSize = true;
+            lblBmsMsg.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            lblBmsMsg.Location = new System.Drawing.Point(9, 80);
+            lblBmsMsg.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            lblBmsMsg.Name = "lblBmsMsg";
+            lblBmsMsg.Size = new System.Drawing.Size(567, 19);
+            lblBmsMsg.TabIndex = 4;
+            lblBmsMsg.Text = "Script Merger uses this open-source tool by Luigi Auriemma to scan && unpack .bundle files.";
             // 
             // lblBmsPath
             // 
-            this.lblBmsPath.AutoSize = true;
-            this.lblBmsPath.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblBmsPath.Location = new System.Drawing.Point(7, 27);
-            this.lblBmsPath.Name = "lblBmsPath";
-            this.lblBmsPath.Size = new System.Drawing.Size(32, 13);
-            this.lblBmsPath.TabIndex = 3;
-            this.lblBmsPath.Text = "Path:";
+            lblBmsPath.AutoSize = true;
+            lblBmsPath.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            lblBmsPath.Location = new System.Drawing.Point(7, 40);
+            lblBmsPath.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            lblBmsPath.Name = "lblBmsPath";
+            lblBmsPath.Size = new System.Drawing.Size(48, 23);
+            lblBmsPath.TabIndex = 3;
+            lblBmsPath.Text = "Path:";
             // 
             // btnBmsPath
             // 
-            this.btnBmsPath.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnBmsPath.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnBmsPath.Location = new System.Drawing.Point(413, 22);
-            this.btnBmsPath.Name = "btnBmsPath";
-            this.btnBmsPath.Size = new System.Drawing.Size(26, 23);
-            this.btnBmsPath.TabIndex = 1;
-            this.btnBmsPath.Text = "...";
-            this.btnBmsPath.UseVisualStyleBackColor = true;
-            this.btnBmsPath.Click += new System.EventHandler(this.btnBmsPath_Click);
+            btnBmsPath.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            btnBmsPath.BackColor = System.Drawing.Color.LightSteelBlue;
+            btnBmsPath.FlatAppearance.BorderColor = System.Drawing.SystemColors.ButtonShadow;
+            btnBmsPath.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            btnBmsPath.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            btnBmsPath.ForeColor = System.Drawing.SystemColors.ControlText;
+            btnBmsPath.Location = new System.Drawing.Point(551, 34);
+            btnBmsPath.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            btnBmsPath.Name = "btnBmsPath";
+            btnBmsPath.Size = new System.Drawing.Size(35, 35);
+            btnBmsPath.TabIndex = 1;
+            btnBmsPath.Text = "...";
+            btnBmsPath.UseVisualStyleBackColor = false;
+            btnBmsPath.Click += BtnBmsPath_Click;
             // 
             // txtBmsPath
             // 
-            this.txtBmsPath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtBmsPath.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtBmsPath.Location = new System.Drawing.Point(45, 24);
-            this.txtBmsPath.Name = "txtBmsPath";
-            this.txtBmsPath.Size = new System.Drawing.Size(362, 20);
-            this.txtBmsPath.TabIndex = 0;
-            this.txtBmsPath.TextChanged += new System.EventHandler(this.exe_TextChanged);
+            txtBmsPath.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            txtBmsPath.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            txtBmsPath.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            txtBmsPath.ForeColor = System.Drawing.SystemColors.ControlText;
+            txtBmsPath.Location = new System.Drawing.Point(60, 37);
+            txtBmsPath.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            txtBmsPath.Name = "txtBmsPath";
+            txtBmsPath.Size = new System.Drawing.Size(481, 27);
+            txtBmsPath.TabIndex = 0;
+            txtBmsPath.TextChanged += Exe_TextChanged;
             // 
             // lnkBmsPlugin
             // 
-            this.lnkBmsPlugin.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.lnkBmsPlugin.AutoSize = true;
-            this.lnkBmsPlugin.LinkArea = new System.Windows.Forms.LinkArea(14, 53);
-            this.lnkBmsPlugin.Location = new System.Drawing.Point(292, 252);
-            this.lnkBmsPlugin.Name = "lnkBmsPlugin";
-            this.lnkBmsPlugin.Size = new System.Drawing.Size(159, 17);
-            this.lnkBmsPlugin.TabIndex = 5;
-            this.lnkBmsPlugin.TabStop = true;
-            this.lnkBmsPlugin.Text = "Download from QuickBMS Site";
-            this.lnkBmsPlugin.UseCompatibleTextRendering = true;
-            this.lnkBmsPlugin.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.lnkBms_LinkClicked);
+            lnkBmsPlugin.ActiveLinkColor = System.Drawing.Color.DodgerBlue;
+            lnkBmsPlugin.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            lnkBmsPlugin.AutoSize = true;
+            lnkBmsPlugin.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            lnkBmsPlugin.LinkArea = new System.Windows.Forms.LinkArea(14, 53);
+            lnkBmsPlugin.LinkColor = System.Drawing.Color.DodgerBlue;
+            lnkBmsPlugin.Location = new System.Drawing.Point(360, 388);
+            lnkBmsPlugin.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            lnkBmsPlugin.Name = "lnkBmsPlugin";
+            lnkBmsPlugin.Size = new System.Drawing.Size(244, 28);
+            lnkBmsPlugin.TabIndex = 5;
+            lnkBmsPlugin.TabStop = true;
+            lnkBmsPlugin.Text = "Download from QuickBMS Site";
+            lnkBmsPlugin.UseCompatibleTextRendering = true;
+            lnkBmsPlugin.VisitedLinkColor = System.Drawing.Color.DodgerBlue;
+            lnkBmsPlugin.LinkClicked += LnkBms_LinkClicked;
             // 
             // grpBmsPlugin
             // 
-            this.grpBmsPlugin.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.grpBmsPlugin.Controls.Add(this.lblBmsPluginMsg);
-            this.grpBmsPlugin.Controls.Add(this.lblBmsPluginPath);
-            this.grpBmsPlugin.Controls.Add(this.btnBmsPluginPath);
-            this.grpBmsPlugin.Controls.Add(this.txtBmsPluginPath);
-            this.grpBmsPlugin.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.grpBmsPlugin.Location = new System.Drawing.Point(12, 252);
-            this.grpBmsPlugin.Name = "grpBmsPlugin";
-            this.grpBmsPlugin.Size = new System.Drawing.Size(445, 80);
-            this.grpBmsPlugin.TabIndex = 6;
-            this.grpBmsPlugin.TabStop = false;
-            this.grpBmsPlugin.Text = "witcher3.bms Plugin";
+            grpBmsPlugin.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            grpBmsPlugin.Controls.Add(lblBmsPluginMsg);
+            grpBmsPlugin.Controls.Add(lblBmsPluginPath);
+            grpBmsPlugin.Controls.Add(btnBmsPluginPath);
+            grpBmsPlugin.Controls.Add(txtBmsPluginPath);
+            grpBmsPlugin.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            grpBmsPlugin.Location = new System.Drawing.Point(16, 388);
+            grpBmsPlugin.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            grpBmsPlugin.Name = "grpBmsPlugin";
+            grpBmsPlugin.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            grpBmsPlugin.Size = new System.Drawing.Size(593, 123);
+            grpBmsPlugin.TabIndex = 6;
+            grpBmsPlugin.TabStop = false;
+            grpBmsPlugin.Text = "witcher3.bms Plugin";
             // 
             // lblBmsPluginMsg
             // 
-            this.lblBmsPluginMsg.AutoSize = true;
-            this.lblBmsPluginMsg.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblBmsPluginMsg.Location = new System.Drawing.Point(7, 52);
-            this.lblBmsPluginMsg.Name = "lblBmsPluginMsg";
-            this.lblBmsPluginMsg.Size = new System.Drawing.Size(360, 13);
-            this.lblBmsPluginMsg.TabIndex = 4;
-            this.lblBmsPluginMsg.Text = "QuickBMS needs this plugin to handle The Witcher 3 .bundle files properly.";
+            lblBmsPluginMsg.AutoSize = true;
+            lblBmsPluginMsg.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            lblBmsPluginMsg.Location = new System.Drawing.Point(9, 80);
+            lblBmsPluginMsg.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            lblBmsPluginMsg.Name = "lblBmsPluginMsg";
+            lblBmsPluginMsg.Size = new System.Drawing.Size(465, 19);
+            lblBmsPluginMsg.TabIndex = 4;
+            lblBmsPluginMsg.Text = "QuickBMS needs this plugin to handle The Witcher 3 .bundle files properly.";
             // 
             // lblBmsPluginPath
             // 
-            this.lblBmsPluginPath.AutoSize = true;
-            this.lblBmsPluginPath.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblBmsPluginPath.Location = new System.Drawing.Point(7, 27);
-            this.lblBmsPluginPath.Name = "lblBmsPluginPath";
-            this.lblBmsPluginPath.Size = new System.Drawing.Size(32, 13);
-            this.lblBmsPluginPath.TabIndex = 3;
-            this.lblBmsPluginPath.Text = "Path:";
+            lblBmsPluginPath.AutoSize = true;
+            lblBmsPluginPath.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            lblBmsPluginPath.Location = new System.Drawing.Point(7, 40);
+            lblBmsPluginPath.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            lblBmsPluginPath.Name = "lblBmsPluginPath";
+            lblBmsPluginPath.Size = new System.Drawing.Size(48, 23);
+            lblBmsPluginPath.TabIndex = 3;
+            lblBmsPluginPath.Text = "Path:";
             // 
             // btnBmsPluginPath
             // 
-            this.btnBmsPluginPath.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnBmsPluginPath.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnBmsPluginPath.Location = new System.Drawing.Point(413, 22);
-            this.btnBmsPluginPath.Name = "btnBmsPluginPath";
-            this.btnBmsPluginPath.Size = new System.Drawing.Size(26, 23);
-            this.btnBmsPluginPath.TabIndex = 1;
-            this.btnBmsPluginPath.Text = "...";
-            this.btnBmsPluginPath.UseVisualStyleBackColor = true;
-            this.btnBmsPluginPath.Click += new System.EventHandler(this.btnBmsPluginPath_Click);
+            btnBmsPluginPath.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            btnBmsPluginPath.BackColor = System.Drawing.Color.LightSteelBlue;
+            btnBmsPluginPath.FlatAppearance.BorderColor = System.Drawing.SystemColors.ButtonShadow;
+            btnBmsPluginPath.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            btnBmsPluginPath.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            btnBmsPluginPath.ForeColor = System.Drawing.SystemColors.ControlText;
+            btnBmsPluginPath.Location = new System.Drawing.Point(551, 34);
+            btnBmsPluginPath.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            btnBmsPluginPath.Name = "btnBmsPluginPath";
+            btnBmsPluginPath.Size = new System.Drawing.Size(35, 35);
+            btnBmsPluginPath.TabIndex = 1;
+            btnBmsPluginPath.Text = "...";
+            btnBmsPluginPath.UseVisualStyleBackColor = false;
+            btnBmsPluginPath.Click += BtnBmsPluginPath_Click;
             // 
             // txtBmsPluginPath
             // 
-            this.txtBmsPluginPath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtBmsPluginPath.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtBmsPluginPath.Location = new System.Drawing.Point(45, 24);
-            this.txtBmsPluginPath.Name = "txtBmsPluginPath";
-            this.txtBmsPluginPath.Size = new System.Drawing.Size(362, 20);
-            this.txtBmsPluginPath.TabIndex = 0;
-            this.txtBmsPluginPath.TextChanged += new System.EventHandler(this.bms_TextChanged);
+            txtBmsPluginPath.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            txtBmsPluginPath.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            txtBmsPluginPath.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            txtBmsPluginPath.ForeColor = System.Drawing.SystemColors.ControlText;
+            txtBmsPluginPath.Location = new System.Drawing.Point(60, 37);
+            txtBmsPluginPath.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            txtBmsPluginPath.Name = "txtBmsPluginPath";
+            txtBmsPluginPath.Size = new System.Drawing.Size(481, 27);
+            txtBmsPluginPath.TabIndex = 0;
+            txtBmsPluginPath.TextChanged += Bms_TextChanged;
             // 
             // lnkWccLite
             // 
-            this.lnkWccLite.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.lnkWccLite.AutoSize = true;
-            this.lnkWccLite.LinkArea = new System.Windows.Forms.LinkArea(14, 53);
-            this.lnkWccLite.Location = new System.Drawing.Point(305, 348);
-            this.lnkWccLite.Name = "lnkWccLite";
-            this.lnkWccLite.Size = new System.Drawing.Size(146, 17);
-            this.lnkWccLite.TabIndex = 7;
-            this.lnkWccLite.TabStop = true;
-            this.lnkWccLite.Text = "Download from Nexus Mods";
-            this.lnkWccLite.UseCompatibleTextRendering = true;
-            this.lnkWccLite.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.lnkWccLite_LinkClicked);
+            lnkWccLite.ActiveLinkColor = System.Drawing.Color.DodgerBlue;
+            lnkWccLite.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            lnkWccLite.AutoSize = true;
+            lnkWccLite.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            lnkWccLite.LinkArea = new System.Windows.Forms.LinkArea(14, 53);
+            lnkWccLite.LinkColor = System.Drawing.Color.DodgerBlue;
+            lnkWccLite.Location = new System.Drawing.Point(380, 535);
+            lnkWccLite.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            lnkWccLite.Name = "lnkWccLite";
+            lnkWccLite.Size = new System.Drawing.Size(228, 28);
+            lnkWccLite.TabIndex = 7;
+            lnkWccLite.TabStop = true;
+            lnkWccLite.Text = "Download from Nexus Mods";
+            lnkWccLite.UseCompatibleTextRendering = true;
+            lnkWccLite.VisitedLinkColor = System.Drawing.Color.DodgerBlue;
+            lnkWccLite.LinkClicked += LnkWccLite_LinkClicked;
             // 
             // grpWccLite
             // 
-            this.grpWccLite.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.grpWccLite.Controls.Add(this.lblWccLiteMsg);
-            this.grpWccLite.Controls.Add(this.lblWccLitePath);
-            this.grpWccLite.Controls.Add(this.btnWccLitePath);
-            this.grpWccLite.Controls.Add(this.txtWccLitePath);
-            this.grpWccLite.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.grpWccLite.Location = new System.Drawing.Point(12, 348);
-            this.grpWccLite.Name = "grpWccLite";
-            this.grpWccLite.Size = new System.Drawing.Size(445, 80);
-            this.grpWccLite.TabIndex = 8;
-            this.grpWccLite.TabStop = false;
-            this.grpWccLite.Text = "wcc_lite.exe";
+            grpWccLite.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            grpWccLite.Controls.Add(lblWccLiteMsg);
+            grpWccLite.Controls.Add(lblWccLitePath);
+            grpWccLite.Controls.Add(btnWccLitePath);
+            grpWccLite.Controls.Add(txtWccLitePath);
+            grpWccLite.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            grpWccLite.Location = new System.Drawing.Point(16, 535);
+            grpWccLite.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            grpWccLite.Name = "grpWccLite";
+            grpWccLite.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            grpWccLite.Size = new System.Drawing.Size(593, 123);
+            grpWccLite.TabIndex = 8;
+            grpWccLite.TabStop = false;
+            grpWccLite.Text = "wcc_lite.exe";
             // 
             // lblWccLiteMsg
             // 
-            this.lblWccLiteMsg.AutoSize = true;
-            this.lblWccLiteMsg.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblWccLiteMsg.Location = new System.Drawing.Point(7, 52);
-            this.lblWccLiteMsg.Name = "lblWccLiteMsg";
-            this.lblWccLiteMsg.Size = new System.Drawing.Size(405, 13);
-            this.lblWccLiteMsg.TabIndex = 4;
-            this.lblWccLiteMsg.Text = "Script Merger uses this official CDPR tool to pack merged XML files into .bundle " +
-    "files.";
+            lblWccLiteMsg.AutoSize = true;
+            lblWccLiteMsg.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            lblWccLiteMsg.Location = new System.Drawing.Point(9, 80);
+            lblWccLiteMsg.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            lblWccLiteMsg.Name = "lblWccLiteMsg";
+            lblWccLiteMsg.Size = new System.Drawing.Size(524, 19);
+            lblWccLiteMsg.TabIndex = 4;
+            lblWccLiteMsg.Text = "Script Merger uses this official CDPR tool to pack merged XML files into .bundle files.";
             // 
             // lblWccLitePath
             // 
-            this.lblWccLitePath.AutoSize = true;
-            this.lblWccLitePath.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblWccLitePath.Location = new System.Drawing.Point(7, 27);
-            this.lblWccLitePath.Name = "lblWccLitePath";
-            this.lblWccLitePath.Size = new System.Drawing.Size(32, 13);
-            this.lblWccLitePath.TabIndex = 3;
-            this.lblWccLitePath.Text = "Path:";
+            lblWccLitePath.AutoSize = true;
+            lblWccLitePath.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            lblWccLitePath.Location = new System.Drawing.Point(7, 40);
+            lblWccLitePath.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            lblWccLitePath.Name = "lblWccLitePath";
+            lblWccLitePath.Size = new System.Drawing.Size(48, 23);
+            lblWccLitePath.TabIndex = 3;
+            lblWccLitePath.Text = "Path:";
             // 
             // btnWccLitePath
             // 
-            this.btnWccLitePath.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnWccLitePath.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnWccLitePath.Location = new System.Drawing.Point(413, 22);
-            this.btnWccLitePath.Name = "btnWccLitePath";
-            this.btnWccLitePath.Size = new System.Drawing.Size(26, 23);
-            this.btnWccLitePath.TabIndex = 1;
-            this.btnWccLitePath.Text = "...";
-            this.btnWccLitePath.UseVisualStyleBackColor = true;
-            this.btnWccLitePath.Click += new System.EventHandler(this.btnWccLitePath_Click);
+            btnWccLitePath.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            btnWccLitePath.BackColor = System.Drawing.Color.LightSteelBlue;
+            btnWccLitePath.FlatAppearance.BorderColor = System.Drawing.SystemColors.ButtonShadow;
+            btnWccLitePath.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            btnWccLitePath.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            btnWccLitePath.ForeColor = System.Drawing.SystemColors.ControlText;
+            btnWccLitePath.Location = new System.Drawing.Point(551, 34);
+            btnWccLitePath.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            btnWccLitePath.Name = "btnWccLitePath";
+            btnWccLitePath.Size = new System.Drawing.Size(35, 35);
+            btnWccLitePath.TabIndex = 1;
+            btnWccLitePath.Text = "...";
+            btnWccLitePath.UseVisualStyleBackColor = false;
+            btnWccLitePath.Click += BtnWccLitePath_Click;
             // 
             // txtWccLitePath
             // 
-            this.txtWccLitePath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtWccLitePath.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtWccLitePath.Location = new System.Drawing.Point(45, 24);
-            this.txtWccLitePath.Name = "txtWccLitePath";
-            this.txtWccLitePath.Size = new System.Drawing.Size(362, 20);
-            this.txtWccLitePath.TabIndex = 0;
-            this.txtWccLitePath.TextChanged += new System.EventHandler(this.exe_TextChanged);
+            txtWccLitePath.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            txtWccLitePath.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            txtWccLitePath.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            txtWccLitePath.ForeColor = System.Drawing.SystemColors.ControlText;
+            txtWccLitePath.Location = new System.Drawing.Point(60, 37);
+            txtWccLitePath.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            txtWccLitePath.Name = "txtWccLitePath";
+            txtWccLitePath.Size = new System.Drawing.Size(481, 27);
+            txtWccLitePath.TabIndex = 0;
+            txtWccLitePath.TextChanged += Exe_TextChanged;
             // 
             // btnOK
             // 
-            this.btnOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnOK.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnOK.Location = new System.Drawing.Point(251, 442);
-            this.btnOK.Name = "btnOK";
-            this.btnOK.Size = new System.Drawing.Size(100, 23);
-            this.btnOK.TabIndex = 9;
-            this.btnOK.Text = "OK";
-            this.btnOK.UseVisualStyleBackColor = true;
-            this.btnOK.Click += new System.EventHandler(this.btnOK_Click);
+            btnOK.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            btnOK.BackColor = System.Drawing.Color.DarkSeaGreen;
+            btnOK.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+            btnOK.FlatAppearance.BorderColor = System.Drawing.SystemColors.ButtonShadow;
+            btnOK.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            btnOK.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            btnOK.Location = new System.Drawing.Point(331, 672);
+            btnOK.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            btnOK.Name = "btnOK";
+            btnOK.Size = new System.Drawing.Size(133, 35);
+            btnOK.TabIndex = 9;
+            btnOK.Text = "OK";
+            btnOK.UseVisualStyleBackColor = false;
+            btnOK.Click += BtnOK_Click;
             // 
             // btnCancel
             // 
-            this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnCancel.Location = new System.Drawing.Point(357, 442);
-            this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(100, 23);
-            this.btnCancel.TabIndex = 10;
-            this.btnCancel.Text = "Cancel";
-            this.btnCancel.UseVisualStyleBackColor = true;
-            this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
+            btnCancel.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            btnCancel.BackColor = System.Drawing.Color.RosyBrown;
+            btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+            btnCancel.FlatAppearance.BorderColor = System.Drawing.SystemColors.ButtonShadow;
+            btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            btnCancel.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            btnCancel.Location = new System.Drawing.Point(476, 672);
+            btnCancel.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            btnCancel.Name = "btnCancel";
+            btnCancel.Size = new System.Drawing.Size(133, 35);
+            btnCancel.TabIndex = 10;
+            btnCancel.Text = "Cancel";
+            btnCancel.UseVisualStyleBackColor = false;
+            btnCancel.Click += BtnCancel_Click;
             // 
             // lnkBms
             // 
-            this.lnkBms.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.lnkBms.AutoSize = true;
-            this.lnkBms.LinkArea = new System.Windows.Forms.LinkArea(14, 53);
-            this.lnkBms.Location = new System.Drawing.Point(289, 156);
-            this.lnkBms.Name = "lnkBms";
-            this.lnkBms.Size = new System.Drawing.Size(159, 17);
-            this.lnkBms.TabIndex = 2;
-            this.lnkBms.TabStop = true;
-            this.lnkBms.Text = "Download from QuickBMS Site";
-            this.lnkBms.UseCompatibleTextRendering = true;
-            this.lnkBms.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.lnkBms_LinkClicked);
+            lnkBms.ActiveLinkColor = System.Drawing.Color.DodgerBlue;
+            lnkBms.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            lnkBms.AutoSize = true;
+            lnkBms.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            lnkBms.LinkArea = new System.Windows.Forms.LinkArea(14, 53);
+            lnkBms.LinkColor = System.Drawing.Color.DodgerBlue;
+            lnkBms.Location = new System.Drawing.Point(356, 240);
+            lnkBms.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            lnkBms.Name = "lnkBms";
+            lnkBms.Size = new System.Drawing.Size(244, 28);
+            lnkBms.TabIndex = 2;
+            lnkBms.TabStop = true;
+            lnkBms.Text = "Download from QuickBMS Site";
+            lnkBms.UseCompatibleTextRendering = true;
+            lnkBms.VisitedLinkColor = System.Drawing.Color.DodgerBlue;
+            lnkBms.LinkClicked += LnkBms_LinkClicked;
             // 
             // DependencyForm
             // 
-            this.AcceptButton = this.btnOK;
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.CancelButton = this.btnOK;
-            this.ClientSize = new System.Drawing.Size(469, 477);
-            this.ControlBox = false;
-            this.Controls.Add(this.lnkBms);
-            this.Controls.Add(this.btnCancel);
-            this.Controls.Add(this.btnOK);
-            this.Controls.Add(this.lnkWccLite);
-            this.Controls.Add(this.grpWccLite);
-            this.Controls.Add(this.lnkBmsPlugin);
-            this.Controls.Add(this.grpBmsPlugin);
-            this.Controls.Add(this.lblPrompt);
-            this.Controls.Add(this.grpBms);
-            this.Controls.Add(this.lnkKDiff3);
-            this.Controls.Add(this.grpKDiff3);
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.MaximumSize = new System.Drawing.Size(1920, 515);
-            this.MinimumSize = new System.Drawing.Size(485, 515);
-            this.Name = "DependencyForm";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Dependency Locations";
-            this.Load += new System.EventHandler(this.DependencyForm_Load);
-            this.grpKDiff3.ResumeLayout(false);
-            this.grpKDiff3.PerformLayout();
-            this.grpBms.ResumeLayout(false);
-            this.grpBms.PerformLayout();
-            this.grpBmsPlugin.ResumeLayout(false);
-            this.grpBmsPlugin.PerformLayout();
-            this.grpWccLite.ResumeLayout(false);
-            this.grpWccLite.PerformLayout();
-            this.ResumeLayout(false);
-            this.PerformLayout();
-
+            AcceptButton = btnOK;
+            AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            CancelButton = btnOK;
+            ClientSize = new System.Drawing.Size(625, 740);
+            Controls.Add(lnkBms);
+            Controls.Add(btnCancel);
+            Controls.Add(btnOK);
+            Controls.Add(lnkWccLite);
+            Controls.Add(grpWccLite);
+            Controls.Add(lnkBmsPlugin);
+            Controls.Add(grpBmsPlugin);
+            Controls.Add(lblPrompt);
+            Controls.Add(grpBms);
+            Controls.Add(lnkKDiff3);
+            Controls.Add(grpKDiff3);
+            Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
+            Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            MaximizeBox = false;
+            MaximumSize = new System.Drawing.Size(1892, 787);
+            MinimizeBox = false;
+            MinimumSize = new System.Drawing.Size(634, 787);
+            Name = "DependencyForm";
+            StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+            Text = "Dependency Locations";
+            TopMost = true;
+            Load += DependencyForm_Load;
+            grpKDiff3.ResumeLayout(false);
+            grpKDiff3.PerformLayout();
+            grpBms.ResumeLayout(false);
+            grpBms.PerformLayout();
+            grpBmsPlugin.ResumeLayout(false);
+            grpBmsPlugin.PerformLayout();
+            grpWccLite.ResumeLayout(false);
+            grpWccLite.PerformLayout();
+            ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion

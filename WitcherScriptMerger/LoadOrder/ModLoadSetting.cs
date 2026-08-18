@@ -1,26 +1,19 @@
-﻿namespace WitcherScriptMerger.LoadOrder
+﻿namespace WitcherScriptMerger.LoadOrder;
+
+internal class ModLoadSetting
 {
-    class ModLoadSetting
-    {
-        public string ModName { get; set; }
+	internal string ModName { get; set; }
 
-        public string VK { get; set; }
+	internal string VK { get; set; }
 
-        public bool? IsEnabled { get; set; }
+	internal bool? IsEnabled { get; set; }
 
-        public int? Priority { get; set; }
+	internal int? Priority { get; set; }
 
-        public ModLoadSetting()
-        { }
+	internal ModLoadSetting()
+	{ }
 
-        public ModLoadSetting(string modName)
-        {
-            ModName = modName;
-        }
+	internal ModLoadSetting(string modName) => ModName = modName;
 
-        public override string ToString()
-        {
-            return $"{ModName}, priority {Priority}, {(!IsEnabled.HasValue || IsEnabled.Value ? "enabled" : "disabled")}";
-        }
-    }
+	public override string ToString() => $"{ModName}, priority {Priority}, {(!IsEnabled.HasValue || IsEnabled.Value ? "enabled" : "disabled")}";
 }

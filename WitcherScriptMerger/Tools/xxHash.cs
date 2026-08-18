@@ -50,124 +50,116 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 */
 
+using System.Globalization;
 using System.IO;
 
-namespace WitcherScriptMerger.Tools
+namespace WitcherScriptMerger.Tools;
+
+internal static class Hasher
 {
-    static class Hasher
-    {
-        public static string ComputeHash(string filePath)
-        {
-            if (!File.Exists(filePath))
-                throw new FileNotFoundException("Can't find file to hash:  " + filePath);
+	internal static string ComputeHash(string filePath)
+	{
+		return !File.Exists(filePath)
+			? throw new FileNotFoundException("Can't find file to hash:  " + filePath)
+			: new xxHash(filePath).ToString();
+	}
+}
 
-            return new xxHash(filePath).ToString();
-        }
-    }
+internal class xxHash
+{
+	private const uint Seed = 0U,
+			   Prime1 = 2654435761U,
+			   Prime2 = 2246822519U,
+			   Prime3 = 3266489917U,
+			   Prime4 = 668265263U,
+			   Prime5 = 374761393U;
+	private const int TransformSize = sizeof(uint) * 4;
+	private uint _v1,
+		 _v2,
+		 _v3,
+		 _v4;
+	private readonly string _hex;
 
-    class xxHash
-    {
-        const uint Seed = 0U,
-                   Prime1 = 2654435761U,
-                   Prime2 = 2246822519U,
-                   Prime3 = 3266489917U,
-                   Prime4 = 668265263U,
-                   Prime5 = 374761393U;
+	public override string ToString() => _hex;
 
-        const int TransformSize = sizeof(uint) * 4;
-        uint _v1,
-             _v2,
-             _v3,
-             _v4;
+	internal xxHash(string filePath)
+	{
+		unchecked  // Allow integer overflow
+		{
+			_v1 = Seed + Prime1 + Prime2;
+			_v2 = Seed + Prime2;
+			_v3 = Seed;
+			_v4 = Seed - Prime1;
+		}
 
-        string _hex;
+		using BinaryReader reader = new(File.OpenRead(filePath));
+		// Limit prevents trying to transform by
+		// last chunk of input when it's too short
+		long streamLength = reader.BaseStream.Length;  // Cache this because it's IO-expensive
+		long limit = streamLength - TransformSize;
+		while (reader.BaseStream.Position <= limit)
+		{
+			TransformBy(reader);
+		}
 
-        public override string ToString() => _hex;
+		_hex = string.Format(CultureInfo.InvariantCulture, "{0:X}", Finalize(reader, streamLength));
+	}
 
-        public xxHash(string filePath)
-        {
-            unchecked  // Allow integer overflow
-            {
-                _v1 = Seed + Prime1 + Prime2;
-                _v2 = Seed + Prime2;
-                _v3 = Seed;
-                _v4 = Seed - Prime1;
-            }
+	private void TransformBy(BinaryReader reader)
+	{
+		_v1 += reader.ReadUInt32() * Prime2;
+		_v1 = XXH_rotl(_v1, 13);
+		_v1 *= Prime1;
 
-            using (var reader = new BinaryReader(File.OpenRead(filePath)))
-            {
-                // Limit prevents trying to transform by
-                // last chunk of input when it's too short
-                long streamLength = reader.BaseStream.Length;  // Cache this because it's IO-expensive
-                long limit = streamLength - TransformSize;
-                while (reader.BaseStream.Position <= limit)
-                {
-                    TransformBy(reader);
-                }
+		_v2 += reader.ReadUInt32() * Prime2;
+		_v2 = XXH_rotl(_v2, 13);
+		_v2 *= Prime1;
 
-                _hex = string.Format("{0:X}", Finalize(reader, streamLength));
-            }
-        }
+		_v3 += reader.ReadUInt32() * Prime2;
+		_v3 = XXH_rotl(_v3, 13);
+		_v3 *= Prime1;
 
-        void TransformBy(BinaryReader reader)
-        {
-            _v1 += reader.ReadUInt32() * Prime2;
-            _v1 = XXH_rotl(_v1, 13);
-            _v1 *= Prime1;
+		_v4 += reader.ReadUInt32() * Prime2;
+		_v4 = XXH_rotl(_v4, 13);
+		_v4 *= Prime1;
+	}
 
-            _v2 += reader.ReadUInt32() * Prime2;
-            _v2 = XXH_rotl(_v2, 13);
-            _v2 *= Prime1;
+	private uint Finalize(BinaryReader reader, long streamLength)
+	{
+		Stream stream = reader.BaseStream;
 
-            _v3 += reader.ReadUInt32() * Prime2;
-            _v3 = XXH_rotl(_v3, 13);
-            _v3 *= Prime1;
+		uint hash =
+			(streamLength >= 16)
+			? XXH_rotl(_v1, 1) + XXH_rotl(_v2, 7) + XXH_rotl(_v3, 12) + XXH_rotl(_v4, 18)
+			: Seed + Prime5;
 
-            _v4 += reader.ReadUInt32() * Prime2;
-            _v4 = XXH_rotl(_v4, 13);
-            _v4 *= Prime1;
-        }
+		hash += (uint)streamLength;
 
-        uint Finalize(BinaryReader reader, long streamLength)
-        {
-            var stream = reader.BaseStream;
+		// Transform hash by any leftover bytes at end of input
+		if (stream.Position < streamLength)
+		{
+			while (stream.Position + sizeof(uint) <= streamLength)
+			{
+				hash += reader.ReadUInt32() * Prime3;
+				hash = XXH_rotl(hash, 17) * Prime4;
+			}
 
-            uint hash =
-                (streamLength >= 16)
-                ? XXH_rotl(_v1, 1) + XXH_rotl(_v2, 7) + XXH_rotl(_v3, 12) + XXH_rotl(_v4, 18)
-                : Seed + Prime5;
+			while (stream.Position < streamLength)
+			{
+				hash += reader.ReadByte() * Prime5;
+				hash = XXH_rotl(hash, 11) * Prime1;
+			}
+		}
 
-            hash += (uint)streamLength;
+		hash ^= hash >> 15;
+		hash *= Prime2;
+		hash ^= hash >> 13;
+		hash *= Prime3;
+		hash ^= hash >> 16;
 
-            // Transform hash by any leftover bytes at end of input
-            if (stream.Position < streamLength)
-            {
-                while (stream.Position + sizeof(uint) <= streamLength)
-                {
-                    hash += reader.ReadUInt32() * Prime3;
-                    hash = XXH_rotl(hash, 17) * Prime4;
-                }
+		return hash;
+	}
 
-                while (stream.Position < streamLength)
-                {
-                    hash += reader.ReadByte() * Prime5;
-                    hash = XXH_rotl(hash, 11) * Prime1;
-                }
-            }
-
-            hash ^= hash >> 15;
-            hash *= Prime2;
-            hash ^= hash >> 13;
-            hash *= Prime3;
-            hash ^= hash >> 16;
-
-            return hash;
-        }
-
-        // Rotates unsigned 32-bit integer "x" to the left by the number of bits "r"
-        static uint XXH_rotl(uint x, int r)
-        {
-            return (x << r) | (x >> (32 - r));
-        }
-    }
+	// Rotates unsigned 32-bit integer "x" to the left by the number of bits "r"
+	private static uint XXH_rotl(uint x, int r) => (x << r) | (x >> (32 - r));
 }

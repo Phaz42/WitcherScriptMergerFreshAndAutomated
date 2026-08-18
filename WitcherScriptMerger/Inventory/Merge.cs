@@ -2,39 +2,34 @@
 using System.IO;
 using System.Linq;
 using System.Xml.Serialization;
+
 using WitcherScriptMerger.FileIndex;
 
-namespace WitcherScriptMerger.Inventory
+namespace WitcherScriptMerger.Inventory;
+
+[XmlRoot]
+public class Merge : ModFile
 {
-    [XmlRoot]
-    public class Merge : ModFile
-    {
-        [XmlElement]
-        public string MergedModName;
+	[XmlElement]
+	public string MergedModName { get; set; }
 
-        public string GetMergedFile()
-        {
-            if (Category == Categories.Script)
-                return Path.Combine(Paths.ModsDirectory, MergedModName, Paths.ModScriptBase, RelativePath);
-            else if (Category == Categories.Xml)
-                return Path.Combine(Paths.ModsDirectory, MergedModName, RelativePath);
-            else if (Category == Categories.BundleText)
-                return Path.Combine(Paths.MergedBundleContent, RelativePath);
-            else
-                throw new NotImplementedException();
-        }
+	internal string GetMergedFile()
+	{
+		return Category == Categories.Script
+			? Path.Combine(Paths.ModsDirectory, MergedModName, Paths.ModScriptBase, RelativePath)
+			: Category == Categories.Xml
+			? Path.Combine(Paths.ModsDirectory, MergedModName, RelativePath)
+			: Category == Categories.BundleText
+			? Path.Combine(Paths.MergedBundleContent, RelativePath)
+			: throw new NotImplementedException();
+	}
 
-        public string GetMergedBundle()
-        {
-            if (Category != Categories.BundleText)
-                throw new Exception($"Can't get bundle for file of category '{Category.DisplayName}'.");
+	internal string GetMergedBundle()
+	{
+		return Category != Categories.BundleText
+			? throw new InvalidOperationException($"Can't get bundle for file of category '{Category.DisplayName}'.")
+			: Path.Combine(Paths.ModsDirectory, MergedModName, Paths.BundleBase, BundleName);
+	}
 
-            return Path.Combine(Paths.ModsDirectory, MergedModName, Paths.BundleBase, BundleName);
-        }
-
-        public FileHash GetHashByModName(string modName)
-        {
-            return Mods.FirstOrDefault(m => m.Name.EqualsIgnoreCase(modName));
-        }
-    }
+	internal FileHash GetHashByModName(string modName) => Mods.FirstOrDefault(m => m.Name.EqualsIgnoreCase(modName));
 }

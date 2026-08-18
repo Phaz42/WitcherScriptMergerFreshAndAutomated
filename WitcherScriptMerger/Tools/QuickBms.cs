@@ -1,101 +1,108 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace WitcherScriptMerger.Tools
+using static WitcherScriptMerger.Program;
+
+namespace WitcherScriptMerger.Tools;
+
+internal static class QuickBms
 {
-    static class QuickBms
-    {
-        public static string ExePath = Program.Settings.Get("QuickBmsPath");
-        public static string PluginPath = Program.Settings.Get("QuickBmsPluginPath");
+	internal static string ExePath = Settings.Get("QuickBmsPath");
+	internal static string PluginPath = Settings.Get("QuickBmsPluginPath");
 
-        public static int UnpackFile(string bundlePath, string contentRelativePath, string outputDir)
-        {
-            if (!ValidateResources(bundlePath))
-                return 1;
+	internal static int UnpackFile(string bundlePath, string contentRelativePath, string outputDir)
+	{
+		if (!ValidateResources(bundlePath))
+			return 1;
 
-            if (!Directory.Exists(outputDir))
-                Directory.CreateDirectory(outputDir);
+		if (!Directory.Exists(outputDir))
+			_ = Directory.CreateDirectory(outputDir);
 
-            var startInfo = BuildStartInfo($"-Y -f \"{contentRelativePath}\" \"{PluginPath}\" \"{bundlePath}\" \"{outputDir}\"");
+		ProcessStartInfo startInfo = BuildStartInfo($"-Y -f \"{contentRelativePath}\" \"{PluginPath}\" \"{bundlePath}\" \"{outputDir}\"");
 
-            using (var bmsProc = new Process { StartInfo = startInfo })
-            {
-                bmsProc.Start();
-                var output = bmsProc.StandardError.ReadToEnd();  // QuickBMS prints results to std error, even if successful
+		using Process bmsProc = new()
+		{ StartInfo = startInfo };
+		_ = bmsProc.Start();
+		string output = bmsProc.StandardError.ReadToEnd();  // QuickBMS prints results to std error, even if successful
 
-                if (output.Contains("- 0 files found"))
-                {
-                    var errorMsg = "Error unpacking bundle content file using QuickBMS.\nIts output is below.";
-                    var outputStart = output.IndexOf("- filter string");
-                    if (outputStart != -1)
-                    {
-                        output = output.Substring(outputStart);
-                        errorMsg += "\n\n" + output;
-                    }
-                    Program.MainForm.ShowError(errorMsg);
-                    return 1;
-                }
+		if (output.Contains("- 0 files found", StringComparison.OrdinalIgnoreCase))
+		{
+			string errorMsg = "Error unpacking bundle content file using QuickBMS.\nIts output is below.";
+			int outputStart = output.IndexOf("- filter string", StringComparison.OrdinalIgnoreCase);
+			if (outputStart != -1)
+			{
+				output = output[outputStart..];
+				errorMsg += "\n\n" + output;
+			}
 
-                return 0;
-            }
-        }
+			_ = MainFrm.uiThreadManager.ShowError(errorMsg);
+			return 1;
+		}
 
-        public static string[] GetBundleContentPaths(string bundlePath)
-        {
-            if (!ValidateResources(bundlePath))
-                return null;
+		return 0;
+	}
 
-            var contentPaths = new List<string>();
+	internal static string[] GetBundleContentPaths(string bundlePath)
+	{
+		if (!ValidateResources(bundlePath))
+			return null;
 
-            var startInfo = BuildStartInfo($"-l \"{PluginPath}\" \"{bundlePath}\"");
+		List<string> contentPaths = [];
 
-            using (var bmsProc = new Process { StartInfo = startInfo })
-            {
-                bmsProc.Start();
-                var output = bmsProc.StandardOutput.ReadToEnd() + "\n\n" + bmsProc.StandardError.ReadToEnd();
-                var footerPos = output.LastIndexOf("QuickBMS generic");
-                var outputLines = output.Substring(0, footerPos).Split('\n');
-                var paths = outputLines
-                    .Where(line => line.Length > 5)
-                    .Select(line => line.Substring(line.LastIndexOf(' ')).Trim());
-                contentPaths.AddRange(paths);
-            }
-            return contentPaths.ToArray();
-        }
+		ProcessStartInfo startInfo = BuildStartInfo($"-l \"{PluginPath}\" \"{bundlePath}\"");
 
-        static bool ValidateResources(string bundlePath)
-        {
-            if (!File.Exists(bundlePath))
-            {
-                Program.MainForm.ShowError("Can't find bundle file:\n\n" + bundlePath, "Missing Bundle");
-                return false;
-            }
-            if (!File.Exists(ExePath))
-            {
-                Program.MainForm.ShowError("Can't find QuickBMS at this location:\n\n" + ExePath, "Missing QuickBMS");
-                return false;
-            }
-            if (!File.Exists(PluginPath))
-            {
-                Program.MainForm.ShowError("Can't find QuickBMS plugin at this location:\n\n" + PluginPath, "Missing QuickBMS Plugin");
-                return false;
-            }
-            return true;
-        }
+		using (Process bmsProc = new()
+		{ StartInfo = startInfo })
+		{
+			_ = bmsProc.Start();
+			string output = bmsProc.StandardOutput.ReadToEnd() + "\n\n" + bmsProc.StandardError.ReadToEnd();
+			int footerPos = output.LastIndexOf("QuickBMS generic", StringComparison.OrdinalIgnoreCase);
+			string[] outputLines = output[..footerPos].Split('\n');
+			IEnumerable<string> paths = outputLines
+				.Where(line => line.Length > 5)
+				.Select(line => line[line.LastIndexOf(' ')..].Trim());
+			contentPaths.AddRange(paths);
+		}
 
-        static ProcessStartInfo BuildStartInfo(string arguments)
-        {
-            return new ProcessStartInfo
-            {
-                FileName = ExePath,
-                Arguments = arguments,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
-        }
-    }
+		return contentPaths.ToArray();
+	}
+
+	private static bool ValidateResources(string bundlePath)
+	{
+		if (!File.Exists(bundlePath))
+		{
+			_ = MainFrm.uiThreadManager.ShowError("Can't find bundle file:\n\n" + bundlePath, "Missing Bundle");
+			return false;
+		}
+
+		if (!File.Exists(ExePath))
+		{
+			_ = MainFrm.uiThreadManager.ShowError("Can't find QuickBMS at this location:\n\n" + ExePath, "Missing QuickBMS");
+			return false;
+		}
+
+		if (!File.Exists(PluginPath))
+		{
+			_ = MainFrm.uiThreadManager.ShowError("Can't find QuickBMS plugin at this location:\n\n" + PluginPath, "Missing QuickBMS Plugin");
+			return false;
+		}
+
+		return true;
+	}
+
+	private static ProcessStartInfo BuildStartInfo(string arguments)
+	{
+		return new ProcessStartInfo
+		{
+			FileName = ExePath,
+			Arguments = arguments,
+			UseShellExecute = false,
+			RedirectStandardOutput = true,
+			RedirectStandardError = true,
+			CreateNoWindow = true
+		};
+	}
 }

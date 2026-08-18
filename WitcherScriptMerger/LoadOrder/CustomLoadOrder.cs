@@ -1,313 +1,414 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
+using System.Timers;
 
-namespace WitcherScriptMerger.LoadOrder
+using static WitcherScriptMerger.Program;
+
+namespace WitcherScriptMerger.LoadOrder;
+
+internal partial class CustomLoadOrder : IDisposable
 {
-    class CustomLoadOrder
-    {
-        public const int TopPriority = 0;
-        public const int BottomPriority = 9999;
+	internal const int TopPriority = 0;
+	internal const int BottomPriority = 9999;
+	private bool disposedValue;
+	private readonly FileSystemWatcher LoadOrderWatcher = new();
+	private Timer LoadOrderTimer;
 
-        public readonly string FilePath =
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                "The Witcher 3",
-                "mods.settings");
+	private List<ModLoadSetting> _mods = [];
+	internal IReadOnlyList<ModLoadSetting> Mods
+	{
+		get => _mods;
+		private set => _mods = value.OrderBy(m => m.Priority).ThenBy(m => m.ModName).ToList();
+	}
 
-        public List<ModLoadSetting> Mods { get; private set; }
+	private static readonly string LoadOrderDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "The Witcher 3");
+	private const string LoadOrderFileName = "mods.settings";
+	internal readonly string FilePath = Path.Combine(LoadOrderDirectory, LoadOrderFileName);
 
-        public bool IsValid { get; private set; }
-        
-        public CustomLoadOrder()
-        {
-            Refresh();
-        }
 
-        #region File Processing
+	internal bool IsValid { get; private set; }
 
-        public void Refresh()
-        {
-            Mods = new List<ModLoadSetting>();
-            IsValid = false;
+	internal CustomLoadOrder()
+	{
+		Refresh();
+		SetupLoadOrderWatcher();
+	}
 
-            if (!File.Exists(FilePath))
-            {
-                IsValid = true;
-                return;
-            }
+	protected virtual void Dispose(bool disposing)
+	{
+		if (!disposedValue)
+		{
+			if (disposing)
+			{
+				// Dispose managed state (managed objects)
+				LoadOrderWatcher.Dispose();
+				LoadOrderTimer.Dispose();
+			}
 
-            var lines = File.ReadAllLines(FilePath);
+			disposedValue = true;
+		}
+	}
 
-            List<ModLoadSetting> mods = new List<ModLoadSetting>();
-            ModLoadSetting currModSetting = null;
+	public void Dispose()
+	{
+		Dispose(disposing: true);
+		GC.SuppressFinalize(this);
+	}
 
-            for (int i = 0; i < lines.Length; ++i)
-            {
-                if (!ProcessLine(lines[i], i + 1, ref currModSetting))
-                    return;
+	#region File Processing
 
-                if (currModSetting != null
-                    && currModSetting.IsEnabled.HasValue
-                    && currModSetting.Priority.HasValue)
-                {
-                    mods.Add(currModSetting);
-                    currModSetting = null;
-                }
-            }
+	private void SetupLoadOrderWatcher()
+	{
+		LoadOrderWatcher.Path = LoadOrderDirectory;
+		LoadOrderWatcher.Filter = LoadOrderFileName;
+		LoadOrderWatcher.Changed += LoadOrderWatcher_Changed;
+		LoadOrderWatcher.EnableRaisingEvents = true;
 
-            IsValid = true;
+		LoadOrderTimer = new Timer(1000) { AutoReset = false };
+		LoadOrderTimer.Elapsed += LoadOrderTimer_Elapsed;
+	}
 
-            Mods = mods
-                .OrderBy(m => m.Priority)
-                .ThenBy(m => m.ModName)
-                .ToList();
-        }
+	private void LoadOrderTimer_Elapsed(object sender, ElapsedEventArgs e)
+	{
+		Refresh();
+		_ = MainFrm.treConflicts.BeginInvoke(MainFrm.treConflicts.SetStylesForCustomLoadOrder);
+	}
 
-        bool ProcessLine(string line, int lineNum, ref ModLoadSetting setting)
-        {
-            line = line.Replace(" ", "").Replace("\t", "");
+	private void LoadOrderWatcher_Changed(object sender, FileSystemEventArgs e)
+	{
+		LoadOrderTimer.Stop();
+		LoadOrderTimer.Start();
+	}
 
-            if (line.StartsWith("[") && line.EndsWith("]"))
-            {
-                if (!ProcessModNameLine(line, ref setting))
-                    return false;
-            }
-            else if (line.StartsWith("Enabled="))
-            {
-                if (!ProcessIsEnabledLine(line, lineNum, setting))
-                    return false;
-            }
-            else if (line.StartsWith("Priority="))
-            {
-                if (!ProcessPriorityLine(line, lineNum, setting))
-                    return false;
-            }
-            else if (line.StartsWith("VK="))
-            {
-                // Ignore
-            }
-            else if (!string.IsNullOrWhiteSpace(line) && !line.StartsWith(";"))
-            {
-                ShowWarningForMalformedFile($"Unrecognized value on line {lineNum}:\n\n{line}");
-                return false;
-            }
-            return true;
-        }
+	internal void Refresh(bool keepVortexKey = false)
+	{
+		IsValid = false;
 
-        bool ProcessModNameLine(string line, ref ModLoadSetting setting)
-        {
-            if (setting != null)
-            {
-                ShowWarningForMalformedFile($"{setting.ModName} settings are incomplete.  'Enabled' and 'Priority' are both required.");
-                return false;
-            }
+		if (!File.Exists(FilePath))
+		{
+			IsValid = true;
+			return;
+		}
 
-            var modName = line.Substring(1, line.Length - 2);  // Trim brackets
-            setting = new ModLoadSetting(modName);
-            return true;
-        }
+		if (ParseFileToMods(FilePath, keepVortexKey))
+			IsValid = true;
+	}
 
-        bool ProcessIsEnabledLine(string line, int lineNum, ModLoadSetting setting)
-        {
-            if (setting == null)
-            {
-                ShowWarningForMalformedFile($"The 'Enabled' setting on line {lineNum} doesn't have a corresponding mod name.");
-                return false;
-            }
-            if (!new Regex("^Enabled=[0|1]$").IsMatch(line))
-            {
-                ShowWarningForMalformedFile($"The 'Enabled' setting on line {lineNum} isn't within the valid range of 0 or 1:\n\n{line}");
-                return false;
-            }
+	internal bool ParseFileToMods(string filePath, bool keepVortexKey)
+	{
+		List<ModLoadSetting> mods = [];
+		ModLoadSetting currentMod = null;
 
-            setting.IsEnabled = line.EndsWith("1");
-            return true;
-        }
+		string[] lines = File.ReadAllLines(filePath);
 
-        bool ProcessPriorityLine(string line, int lineNum, ModLoadSetting setting)
-        {
-            if (setting == null)
-            {
-                ShowWarningForMalformedFile($"The 'Priority' setting on line {lineNum} doesn't have a corresponding mod name.");
-                return false;
-            }
+		foreach (string line in lines)
+		{
+			string trimmedLine = line.Trim();
 
-            var priorityString = line.Substring(line.IndexOf('=') + 1);
-            int parsedPriority;
+			if (string.IsNullOrEmpty(trimmedLine))
+				continue; // Skip empty lines
 
-            if (!int.TryParse(priorityString, out parsedPriority))
-            {
-                ShowWarningForMalformedFile($"Can't parse the priority on line {lineNum}:\n\n{line}");
-                return false;
-            }
-            if (TopPriority > parsedPriority || parsedPriority > BottomPriority)
-            {
-                ShowWarningForMalformedFile($"The priority on line {lineNum} isn't within the valid range of {TopPriority} to {BottomPriority}:\n\n{line}");
-                return false;
-            }
+			if (trimmedLine.StartsWith("[", StringComparison.Ordinal) && trimmedLine.EndsWith("]", StringComparison.Ordinal))
+			{
+				// New mod section. If we had a previous mod, add it to the list
+				if (currentMod != null)
+				{
+					if (!currentMod.Priority.HasValue || !currentMod.IsEnabled.HasValue)
+					{
+						ShowWarningForMalformedFile($"{currentMod.ModName} settings are incomplete. 'Enabled' and 'Priority' are both required.");
+						return false;
+					}
 
-            setting.Priority = parsedPriority;
-            return true;
-        }
+					mods.Add(currentMod);
+				}
 
-        void ShowWarningForMalformedFile(string reason)
-        {
-            Program.MainForm.ShowMessage(
-                "Your mods.settings file is invalid.\n\n" + reason,
-                "Invalid Load Order File",
-                System.Windows.Forms.MessageBoxButtons.OK,
-                System.Windows.Forms.MessageBoxIcon.Warning);
-        }
+				// Create new mod
+				currentMod = new ModLoadSetting(trimmedLine.TrimStart('[').TrimEnd(']'));
+			}
+			else
+			{
+				// This is a key=value line
+				string[] parts = trimmedLine.Split('=');
+				if (parts.Length != 2)
+				{
+					ShowWarningForMalformedFile($"Unrecognized setting or value for mod {currentMod.ModName},on line:\n\n{line}");
+					return false;
+				}
 
-        public void Save()
-        {
-            var builder = new StringBuilder();
+				string key = parts[0];
+				string value = parts[1];
 
-            foreach (var modSetting in Mods)
-            {
-                builder
-                    .Append("[").Append(modSetting.ModName).AppendLine("]")
-                    .Append("Enabled=").AppendLine(Convert.ToInt32(modSetting.IsEnabled).ToString())
-                    .Append("Priority=").AppendLine(modSetting.Priority.ToString());
+				if (key.Equals("Priority", StringComparison.OrdinalIgnoreCase))
+				{
+					if (!int.TryParse(value, out int priority) || TopPriority > priority || priority > BottomPriority)
+					{
+						ShowWarningForMalformedFile($"The priority for mod {currentMod.ModName} isn't within the valid range of {TopPriority} to {BottomPriority}:\n\n{line}");
+						return false;
+					}
 
-                if (modSetting != Mods.Last())
-                    builder.AppendLine();
-            }
+					currentMod.Priority = priority;
+				}
+				else if (key.Equals("Enabled", StringComparison.OrdinalIgnoreCase))
+				{
+					if (!value.Equals("0", StringComparison.Ordinal) && !value.Equals("1", StringComparison.Ordinal))
+					{
+						ShowWarningForMalformedFile($"The 'Enabled' setting for mod {currentMod.ModName} isn't within the valid range of 0 or 1:\n\n{line}");
+						return false;
+					}
 
-            File.WriteAllText(FilePath, builder.ToString());
-        }
+					currentMod.IsEnabled = value.Equals("1", StringComparison.Ordinal);
+				}
+				else if (key.Equals("VK", StringComparison.OrdinalIgnoreCase))
+				{
+					if (keepVortexKey)
+						currentMod.VK = value;
+				}
+				else
+				{
+					ShowWarningForMalformedFile($"Unrecognized setting for mod {currentMod.ModName},on line:\n\n{line}");
+					return false;
+				}
+			}
+		}
 
-        #endregion
+		// Add last mod to list
+		if (currentMod != null)
+		{
+			if (!currentMod.Priority.HasValue || !currentMod.IsEnabled.HasValue)
+			{
+				ShowWarningForMalformedFile($"{currentMod.ModName} settings are incomplete. 'Enabled' and 'Priority' are both required.");
+				return false;
+			}
 
-        public void AddMergedModIfMissing()
-        {
-            var mergedModName = Paths.RetrieveMergedModName();
+			mods.Add(currentMod);
+		}
 
-            if (!Mods.Any(setting => setting.ModName.EqualsIgnoreCase(mergedModName)))
-            {
-                Mods.Insert(0,
-                    new ModLoadSetting
-                    {
-                        ModName = mergedModName,
-                        IsEnabled = true,
-                        Priority = TopPriority
-                    });
-            }
-        }
+		Mods = mods;
+		return true;
+	}
 
-        public bool HasResolvedConflict(IEnumerable<string> modNames)
-        {
-            var loadSettings = modNames
-                .Select(GetModLoadSettingByName)
-                .Where(setting => setting != null);
+	private static void ShowWarningForMalformedFile(string reason)
+	{
+		_ = MainFrm.uiThreadManager.ShowMessage(
+			"Your mods.settings file is invalid.\n\n" + reason,
+			"Invalid Load Order File",
+			System.Windows.Forms.MessageBoxButtons.OK,
+			System.Windows.Forms.MessageBoxIcon.Warning);
+	}
 
-            if (!loadSettings.Any())
-                return false;
+	internal void Save()
+	{
+		StringBuilder builder = new();
 
-            if (loadSettings.Any(setting => setting.IsEnabled.Value))
-                return true;
+		foreach (ModLoadSetting modSetting in Mods)
+		{
+			_ = builder
+				.Append('[').Append(modSetting.ModName).AppendLine("]")
+				.Append("Enabled=").AppendLine(Convert.ToInt32(modSetting.IsEnabled, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture))
+				.Append("Priority=").AppendLine(modSetting.Priority?.ToString(CultureInfo.InvariantCulture));
 
-            var numSettings = loadSettings.Count();
-            var numMods = modNames.Count();
+			if (!string.IsNullOrEmpty(modSetting.VK))
+			{
+				_ = builder.Append("VK=").AppendLine(modSetting.VK);
+			}
 
-            return (numSettings >= numMods - 1);
-        }
+			if (modSetting != Mods.Last())
+				_ = builder.AppendLine();
+		}
 
-        public bool ContainsMod(string modName)
-        {
-            return Mods.Any(setting => setting.ModName.EqualsIgnoreCase(modName));
-        }
+		LoadOrderWatcher.EnableRaisingEvents = false;
+		File.WriteAllText(FilePath, builder.ToString());
+		LoadOrderWatcher.EnableRaisingEvents = true;
+	}
 
-        public ModLoadSetting GetTopPriorityEnabledMod()
-        {
-            return Mods
-                .OrderBy(setting => setting, new LoadOrderComparer())
-                .FirstOrDefault();
-        }
 
-        public string GetTopPriorityEnabledMod(IEnumerable<string> conflictMods)
-        {
-            var conflictModSettings = Mods.Where(setting => conflictMods.Any(modName => modName.EqualsIgnoreCase(setting.ModName)));
-            var enabledModSettings = conflictModSettings.Where(setting => setting.IsEnabled.Value);
+	#endregion
 
-            if (!conflictModSettings.Any())
-                return conflictMods
-                    .OrderBy(name => name, new LoadOrderComparer())
-                    .FirstOrDefault();
+	internal void AddMergedModIfMissingAndSave()
+	{
+		string mergedModName = Paths.RetrieveMergedModName();
+		if (Mods.All(setting => !setting.ModName.EqualsIgnoreCase(mergedModName)))
+		{
+			AddMod(new ModLoadSetting
+			{
+				ModName = mergedModName,
+				IsEnabled = true,
+				Priority = TopPriority
+			});
+		}
 
-            if (!enabledModSettings.Any())
-                return conflictMods
-                    .Except(conflictModSettings.Select(setting => setting.ModName))
-                    .OrderBy(name => name, new LoadOrderComparer())
-                    .FirstOrDefault();
+		Save();
+	}
 
-            return enabledModSettings
-                .OrderBy(setting => setting, new LoadOrderComparer())
-                .ThenBy(setting => setting.ModName, new LoadOrderComparer())
-                .FirstOrDefault()
-                ?.ModName;
-        }
+	/// <summary>
+	/// Checks if a conflict between the given mods has been resolved.
+	/// A conflict is considered resolved if any of the following conditions are met:
+	/// 1. At least one of the mods is enabled.
+	/// 2. The count of mod load settings is greater than or equal to the total number of mods minus one. This ensures that at least all but one of the mods are accounted for in the load settings.
+	/// If none of the mods exist or no conditions are met, the method returns false indicating that the conflict is not resolved.
+	/// </summary>
+	/// <param name="modNames">An enumeration of mod names.</param>
+	/// <returns>True if the conflict between the mods has been resolved, otherwise false.</returns>
+	internal bool HasResolvedConflict(IEnumerable<string> modNames)
+	{
+		IEnumerable<ModLoadSetting> loadSettings = modNames.Select(GetModLoadSettingByName).Where(setting => setting != null);
+		if (!loadSettings.Any())
+			return false;
+		if (loadSettings.Any(setting => setting.IsEnabled.Value))
+			return true;
+		int numSettings = loadSettings.Count();
+		int numMods = modNames.Count();
 
-        public ModLoadSetting GetModLoadSettingByName(string modName)
-        {
-            return Mods.FirstOrDefault(setting => setting.ModName.EqualsIgnoreCase(modName));
-        }
+		return numSettings >= numMods - 1;
+	}
 
-        public bool IsModDisabledByName(string modName)
-        {
-            var mod = GetModLoadSettingByName(modName);
+	internal bool ContainsMod(string modName) => Mods.Any(setting => setting.ModName.EqualsIgnoreCase(modName));
 
-            return (mod != null && !mod.IsEnabled.Value);
-        }
+	internal ModLoadSetting GetTopPriorityEnabledMod() =>
+		Mods.OrderBy(setting => setting, new LoadOrderComparer()).FirstOrDefault();
 
-        public void ToggleModByName(string modName)
-        {
-            var mod = GetModLoadSettingByName(modName);
+	internal string GetTopPriorityEnabledMod(IEnumerable<string> conflictMods)
+	{
+		IEnumerable<ModLoadSetting> conflictModSettings = Mods.Where(setting => conflictMods.Any(modName => modName.EqualsIgnoreCase(setting.ModName)));
+		IEnumerable<ModLoadSetting> enabledModSettings = conflictModSettings.Where(setting => setting.IsEnabled.Value);
 
-            if (mod != null)
-                mod.IsEnabled = !mod.IsEnabled;
-            else
-            {
-                Mods.Add(new ModLoadSetting
-                {
-                    ModName = modName,
-                    IsEnabled = false,
-                    Priority = BottomPriority
-                });
-            }
-        }
+		return !conflictModSettings.Any()
+			? conflictMods
+				.OrderBy(name => name, new LoadOrderComparer())
+				.FirstOrDefault()
+			: !enabledModSettings.Any()
+			? conflictMods
+				.Except(conflictModSettings.Select(setting => setting.ModName))
+				.OrderBy(name => name, new LoadOrderComparer())
+				.FirstOrDefault()
+			: (enabledModSettings
+			.OrderBy(setting => setting, new LoadOrderComparer())
+			.ThenBy(setting => setting.ModName, new LoadOrderComparer())
+			.FirstOrDefault()
+			?.ModName);
+	}
 
-        public int GetPriorityByName(string modName)
-        {
-            var mod = GetModLoadSettingByName(modName);
+	internal ModLoadSetting GetModLoadSettingByName(string modName) => Mods.FirstOrDefault(setting => setting.ModName.EqualsIgnoreCase(modName));
 
-            return
-                mod != null
-                ? mod.Priority.Value
-                : -1;
-        }
+	internal bool IsModDisabledByName(string modName)
+	{
+		ModLoadSetting mod = GetModLoadSettingByName(modName);
+		return mod != null && !mod.IsEnabled.Value;
+	}
 
-        public void SetPriorityByName(string modName, int priority)
-        {
-            var mod = GetModLoadSettingByName(modName);
+	internal void ToggleModByName(string modName)
+	{
+		Refresh();
+		ModLoadSetting mod = GetModLoadSettingByName(modName);
 
-            if (mod != null)
-            {
-                mod.Priority = priority;
-            }
-            else
-            {
-                Mods.Add(new ModLoadSetting
-                {
-                    ModName = modName,
-                    IsEnabled = true,
-                    Priority = priority
-                });
-            }
-        }
-    }
+		if (mod != null)
+		{
+			mod.IsEnabled = !mod.IsEnabled;
+		}
+		else
+		{
+			AddMod(new ModLoadSetting
+			{
+				ModName = modName,
+				IsEnabled = false,
+				Priority = BottomPriority
+			});
+		}
+
+		AddMergedModIfMissingAndSave();
+	}
+
+	internal int GetPriorityByName(string modName)
+	{
+		ModLoadSetting mod = GetModLoadSettingByName(modName);
+		return mod != null ? mod.Priority.Value : -1;
+	}
+
+	internal void SetPriorityByName(string modName, int priority)
+	{
+		Refresh();
+		ModLoadSetting mod = GetModLoadSettingByName(modName);
+
+		if (mod != null)
+		{
+			List<ModLoadSetting> updatedMods = Mods.Select(m => m.ModName.EqualsIgnoreCase(modName) ?
+				new ModLoadSetting
+				{
+					ModName = m.ModName,
+					IsEnabled = m.IsEnabled,
+					VK = m.VK,
+					Priority = priority
+				} : m).ToList();
+			Mods = updatedMods;
+			ModLoadSetting newMod = Mods.First(m => m.ModName.EqualsIgnoreCase(modName));
+			IncrementLeadingContiguousPriorities(newMod);
+		}
+		else
+		{
+			ModLoadSetting newMod = new()
+			{
+				ModName = modName,
+				IsEnabled = true,
+				Priority = priority
+			};
+			AddMod(newMod);
+		}
+
+		AddMergedModIfMissingAndSave();
+	}
+
+	internal void AddMod(ModLoadSetting modLoadSetting, bool keepVortexKey = false)
+	{
+		if (keepVortexKey)
+			Refresh(true);
+		IncrementLeadingContiguousPriorities(modLoadSetting);
+		Mods = Mods.Concat(new[] { modLoadSetting }).ToList();
+		AddMergedModIfMissingAndSave();
+		if (keepVortexKey)
+			Refresh(false);
+	}
+
+	internal void RemoveMod(string modName)
+	{
+		Refresh();
+
+		ModLoadSetting modToRemove = Mods.FirstOrDefault(setting => setting.ModName.EqualsIgnoreCase(modName));
+		if (modToRemove != null)
+		{
+			Mods = Mods.Where(mod => mod != modToRemove).ToList();
+			Save();
+		}
+	}
+
+	private void IncrementLeadingContiguousPriorities(ModLoadSetting incomingMod)
+	{
+		IncrementLeadingContiguousPrioritiesInternal(incomingMod);
+		Mods = Mods; // Re-sort list
+	}
+
+	private void IncrementLeadingContiguousPrioritiesInternal(ModLoadSetting incomingMod)
+	{
+		int? startingPriority = incomingMod.Priority;
+		if (startingPriority is null)
+			return;
+		int? nextPriority = startingPriority + 1;
+		ModLoadSetting[] modsToIncrement = Mods.Where(mod => mod.Priority == startingPriority && mod.ModName != incomingMod.ModName).ToArray();
+		ModLoadSetting[] displacedMods = Mods.Where(mod => mod.Priority == nextPriority && mod.ModName != incomingMod.ModName).ToArray();
+
+		if (!modsToIncrement.Any())
+			return;
+
+		if (displacedMods.Any() &&
+			nextPriority < BottomPriority)
+		{
+			IncrementLeadingContiguousPrioritiesInternal(new ModLoadSetting { ModName = incomingMod.ModName, Priority = nextPriority });
+		}
+
+		foreach (ModLoadSetting mod in modsToIncrement)
+			++mod.Priority;
+	}
 }

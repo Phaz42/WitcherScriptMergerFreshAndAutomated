@@ -1,93 +1,100 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Forms;
 
-namespace WitcherScriptMerger.LoadOrder
+namespace WitcherScriptMerger.LoadOrder;
+
+internal static class LoadOrderValidator
 {
-    static class LoadOrderValidator
-    {
-        public static void ValidateAndFix(CustomLoadOrder loadOrder)
-        {
-            if (!loadOrder.Mods.Any())
-                return;
+	internal static void ValidateAndFix(CustomLoadOrder loadOrder)
+	{
+		if (!loadOrder.Mods.Any())
+			return;
 
-            var mergedModName = Paths.RetrieveMergedModName();
-            var mergedMod = loadOrder.Mods.Find(m => m.ModName.EqualsIgnoreCase(mergedModName));
+		string mergedModName = Paths.RetrieveMergedModName();
+		ModLoadSetting mergedMod = loadOrder.Mods.FirstOrDefault(m => m.ModName.EqualsIgnoreCase(mergedModName));
 
-            if (mergedMod != null && mergedMod == loadOrder.GetTopPriorityEnabledMod())
-                return;
+		if (mergedMod != null && mergedMod == loadOrder.GetTopPriorityEnabledMod())
+			return;
 
-            var choice = PromptToPrioritizeMergedMod(loadOrder.FilePath);
-            if (choice == DialogResult.Yes)
-            {
-                PrioritizeMergedMod(loadOrder, mergedMod);
-            }
-            else if (choice == DialogResult.Cancel)  // Never
-            {
-                Program.Settings.Set("ValidateCustomLoadOrder", false);
-                Program.Settings.Save();
-            }
-        }
+		DialogResult choice = PromptToPrioritizeMergedMod(loadOrder.FilePath);
+		if (choice == DialogResult.Yes)
+		{
+			PrioritizeMergedMod(loadOrder, mergedMod);
+		}
+		else if (choice == DialogResult.Cancel)  // Never
+		{
+			Program.Settings.Set("ValidateCustomLoadOrder", false);
+			Program.Settings.Save();
+		}
+	}
 
-        static DialogResult PromptToPrioritizeMergedMod(string modsSettingsPath)
-        {
-            MessageBoxManager.Cancel = "Ne&ver";
-            MessageBoxManager.Register();
+	internal static List<KeyValuePair<int, string>> CheckForDuplicatePrios(CustomLoadOrder loadOrder)
+	{
+		List<KeyValuePair<int, string>> duplicates = [];
+		Dictionary<int, List<string>> priorities = [];
 
-            var choice = MessageBox.Show(
-                $"{modsSettingsPath}\n\n" +
-                "Detected custom load order in the file above, and merged files aren't configured to load first.\n\n" +
-                "Would you like Script Merger to modify your custom load order so that your merged files have top priority?",
-                "Custom Load Order Problem",
-                MessageBoxButtons.YesNoCancel,
-                MessageBoxIcon.Exclamation,
-                MessageBoxDefaultButton.Button2);
+		// Group ModLoadSetting objects by Priority
+		foreach (ModLoadSetting mod in loadOrder.Mods)
+		{
+			if (mod.Priority.HasValue)
+			{
+				if (!priorities.ContainsKey(mod.Priority.Value))
+				{
+					priorities[mod.Priority.Value] = [];
+				}
 
-            MessageBoxManager.Unregister();
-            return choice;
-        }
+				priorities[mod.Priority.Value].Add(mod.ModName);
+			}
+		}
 
-        static void PrioritizeMergedMod(CustomLoadOrder loadOrder, ModLoadSetting mergedModSetting)
-        {
-            // Priority of min - 1 will be incremented to min
-            var priority = CustomLoadOrder.TopPriority - 1;
+		// Look for duplicates and add them to the result list
+		foreach (KeyValuePair<int, List<string>> priority in priorities)
+		{
+			if (priority.Value.Count > 1)
+			{
+				foreach (string modName in priority.Value)
+				{
+					duplicates.Add(new KeyValuePair<int, string>(priority.Key, modName));
+				}
+			}
+		}
 
-            if (mergedModSetting != null)
-            {
-                mergedModSetting.IsEnabled = true;
-                mergedModSetting.Priority = priority;
-            }
-            else
-            {
-                loadOrder.Mods.Insert(0, new ModLoadSetting
-                {
-                    ModName = Paths.RetrieveMergedModName(),
-                    IsEnabled = true,
-                    Priority = priority
-                });
-            }
+		return duplicates;
+	}
 
-            IncrementLeadingContiguousPriorities(loadOrder, priority);
+	private static DialogResult PromptToPrioritizeMergedMod(string modsSettingsPath)
+	{
+		DialogResult choice = MessageBox.Show(
+			$"Detected custom load order in {modsSettingsPath}, but merged files aren't configured to load first.\n\n" +
+			"Would you like Script Merger to modify the load order so that your merged files have top priority?\n\n" +
+			"Yes:       Recommended\nNo:        Not recommended, the merged scripts may not get loaded\nCancel:  No, and never perform this check again",
+			"Custom Load Order Problem",
+			MessageBoxButtons.YesNoCancel,
+			MessageBoxIcon.Exclamation,
+			MessageBoxDefaultButton.Button1);
 
-            loadOrder.Save();
-        }
+		return choice;
+	}
 
-        static void IncrementLeadingContiguousPriorities(CustomLoadOrder loadOrder, int startingPriority)
-        {
-            var nextPriority = startingPriority + 1;
-            var modsToIncrement = loadOrder.Mods.Where(mod => mod.Priority == startingPriority).ToArray();
-            var displacedMods = loadOrder.Mods.Where(mod => mod.Priority == nextPriority).ToArray();
+	private static void PrioritizeMergedMod(CustomLoadOrder loadOrder, ModLoadSetting mergedModSetting)
+	{
+		int priority = CustomLoadOrder.TopPriority;
 
-            if (!modsToIncrement.Any())
-                return;
-
-            if (displacedMods.Any() &&
-                nextPriority < CustomLoadOrder.BottomPriority)
-            {
-                IncrementLeadingContiguousPriorities(loadOrder, nextPriority);
-            }
-
-            foreach (var mod in modsToIncrement)
-                ++mod.Priority;
-        }
-    }
+		if (mergedModSetting != null)
+		{
+			mergedModSetting.IsEnabled = true;
+			mergedModSetting.Priority = priority;
+		}
+		else
+		{
+			loadOrder.AddMod(new ModLoadSetting
+			{
+				ModName = Paths.RetrieveMergedModName(),
+				IsEnabled = true,
+				Priority = priority,
+				VK = Paths.RetrieveMergedModName()
+			}, true);
+		}
+	}
 }

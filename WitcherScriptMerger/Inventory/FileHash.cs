@@ -1,17 +1,16 @@
 ﻿using System.Xml.Serialization;
 
-namespace WitcherScriptMerger.Inventory
+namespace WitcherScriptMerger.Inventory;
+
+[XmlRoot]
+public class FileHash
 {
-    [XmlRoot]
-    public class FileHash
-    {
-        [XmlAttribute]
-        public string Hash { get; set; }
+	[XmlAttribute]
+	public string Hash { get; set; }
 
-        [XmlText]
-        public string Name { get; set; }
+	[XmlText]
+	public string Name { get; set; }
 
-        [XmlIgnore]
-        public bool IsOutdated { get; set; }
-    }
+	[XmlIgnore]
+	public bool IsOutdated { get; set; }
 }

@@ -1,17 +1,11 @@
 ﻿using System.Linq;
 using System.Windows.Forms;
 
-namespace WitcherScriptMerger.Controls
+namespace WitcherScriptMerger.Controls;
+
+internal class ToolStripRegion(ToolStrip owner, ToolStripItem[] value)
 {
-    class ToolStripRegion
-    {
-        public ToolStripItemCollection Items;
+	internal ToolStripItemCollection Items = new(owner, value);
 
-        public bool Available => Items.Cast<ToolStripItem>().Any(item => item.Available);
-
-        public ToolStripRegion(ToolStrip owner, ToolStripItem[] value)
-        {
-            Items = new ToolStripItemCollection(owner, value);
-        }
-    }
+	internal bool Available => Items.Cast<ToolStripItem>().Any(item => item.Available);
 }

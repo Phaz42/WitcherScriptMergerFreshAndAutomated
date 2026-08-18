@@ -1,37 +1,122 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.17763.0</TargetFramework>
     <OutputType>WinExe</OutputType>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
-    <CodeAnalysisRuleSet>DeadCodeDetection.ruleset</CodeAnalysisRuleSet>
-    <!--<RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <SelfContained>true</SelfContained>-->
+    <CodeAnalysisRuleSet></CodeAnalysisRuleSet>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>WolfMedallion.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Update="Controls\ConflictTree.cs" />
-    <Compile Update="Controls\MergeTree.cs" />
-    <Compile Update="Controls\SMTree.cs" />
+    <!--Prevent
+    app.config being copied to output directory-->
+    <None Remove="app.config" />
+    <Resource Include="app.config" CopyToOutputDirectory="Never" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="appsettings.json" />
+    <None Remove="Properties\Resources\thumbsuplight.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Controls\ConflictTree.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="Controls\MergeTree.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="Controls\SMTree.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="Forms\BaseForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\DependencyForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\MainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\MergeReportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\MessageForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\OptionsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\PackReportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\PriorityPromptForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Properties\Settings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
     <Content Include="WolfMedallion.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources\thumbsupdark.png" />
+    <EmbeddedResource Include="Properties\Resources\thumbsuplight.png" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
-    <PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.3.261602">
+    <PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.4.421302">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Windows.Compatibility" Version="6.0.0" />
-	<PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="9.0.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="BuildEvents\" />
   </ItemGroup>
   <PropertyGroup>
-    <PreBuildEvent Condition=" '$(OS)' != 'Unix' ">if exist "$(TargetPath).locked" del "$(TargetPath).locked"
-if exist "$(TargetPath)" if not exist "$(TargetPath).locked" move "$(TargetPath)" "$(TargetPath).locked"</PreBuildEvent>
+    <AssemblyVersion>$(PackageVersion)</AssemblyVersion>
+    <Version>0.9.8-rc.3</Version>
+    <PackageProjectUrl>https://www.nexusmods.com/witcher3/mods/8405</PackageProjectUrl>
+    <Title>Script Merger: Fresh &amp; Automated Edition</Title>
+    <Description>Script Merger: Fresh &amp; Automated Edition</Description>
+    <Copyright>Script Merger: Fresh &amp; Automated Edition</Copyright>
+    <RepositoryUrl>https://github.com/Phaz42/WitcherScriptMergerFreshAndAutomated</RepositoryUrl>
+    <FileVersion>$(PackageVersion)</FileVersion>
+    <Authors>$(AssemblyName)FAE</Authors>
+    <Product>Script Merger: Fresh &amp; Automated Edition</Product>
+    <PackageId>$(AssemblyName)FAE</PackageId>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <AnalysisLevel>6.0-all</AnalysisLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <NoWarn />
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <NoWarn />
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec
+      Command="powershell.exe -ExecutionPolicy Bypass -File $(ProjectDir)BuildEvents\PostBuild.ps1 -ProjectDir '$(ProjectDir)' -ProjectPath '$(ProjectPath)' -ProjectName '$(ProjectName)' -TargetDir '$(TargetDir)' -TargetPath '$(TargetPath)' -SolutionDir '$(SolutionDir)' -SolutionPath '$(SolutionPath)' -SolutionName '$(SolutionName)' -Configuration '$(Configuration)' -Platform '$(Platform)' -OutDir '$(OutDir)' -DevEnvDir &quot;'$(DevEnvDir)'&quot;" />
+  </Target>
 </Project>

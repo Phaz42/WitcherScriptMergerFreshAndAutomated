@@ -1,1056 +1,512 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Text;
 using System.Windows.Forms;
+
 using WitcherScriptMerger.Controls;
-using WitcherScriptMerger.FileIndex;
+using WitcherScriptMerger.Events;
 using WitcherScriptMerger.Inventory;
-using WitcherScriptMerger.LoadOrder;
+using WitcherScriptMerger.Theming;
+using WitcherScriptMerger.UI;
 
-namespace WitcherScriptMerger.Forms
+using static WitcherScriptMerger.Program;
+
+using Timer = System.Threading.Timer;
+
+
+namespace WitcherScriptMerger.Forms;
+
+internal partial class MainForm : BaseForm
 {
-    partial class MainForm : Form
-    {
-        #region Members
-
-        public string GameDirectorySetting => txtGameDir.Text;
-
-        ModFileIndex _modIndex = null;
-
-        #endregion
-
-        #region Form Operations
-
-        public MainForm()
-        {
-            InitializeComponent();
-            this.Text += " v" + Application.ProductVersion;
-        }
-
-        void MainForm_Load(object sender, EventArgs e)
-        {
-            string gameDir = Program.Settings.Get("GameDirectory");
-            txtGameDir.Text = (Directory.Exists(gameDir)) ? gameDir : "";
-            LoadLastWindowConfiguration();
-        }
-
-        async void MainForm_Shown(object sender, EventArgs e)
-        {
-            Update();
-
-            var repackingBundle = false;
-            if (!string.IsNullOrWhiteSpace(txtGameDir.Text) || !Paths.IsModsDirectoryDerived)
-                repackingBundle = await RefreshMergeInventory();
-            if (repackingBundle)
-                return;
-
-            if (!string.IsNullOrWhiteSpace(txtGameDir.Text) ||
-                (!Paths.IsScriptsDirectoryDerived && !Paths.IsModsDirectoryDerived))
-                RefreshConflictsTree();
-            else
-                lblStatusLeft1.Text = "Please locate your 'The Witcher 3 Wild Hunt' game directory.";
-        }
-
-        void MainForm_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            if (pnlProgress.Visible)
-            {
-                e.Cancel = true;
-                return;
-            }
-
-            Program.Settings.Set("GameDirectory", txtGameDir.Text);
-
-            if (WindowState == FormWindowState.Maximized)
-                Program.Settings.Set("StartMaximized", true);
-            else
-            {
-                Program.Settings.Set("StartMaximized", false);
-                Program.Settings.Set("StartWidth", Width);
-                Program.Settings.Set("StartHeight", Height);
-                Program.Settings.Set("StartPosTop", Top);
-                Program.Settings.Set("StartPosLeft", Left);
-            }
-            Program.Settings.Set("StartSplitterPosPct", (int)((float)splitContainer.SplitterDistance / splitContainer.Width * 100f));
-            Program.Settings.Save();
-        }
-
-        void LoadLastWindowConfiguration()
-        {
-            var top = Program.Settings.Get<int>("StartPosTop");
-            var left = Program.Settings.Get<int>("StartPosLeft");
-            if (top > 0)
-                Top = top;
-            if (left > 0)
-                Left = left;
-            if (Top > 0 || Left > 0)
-                StartPosition = FormStartPosition.Manual;
-            
-            var startWidth = Program.Settings.Get<int>("StartWidth");
-            var startHeight = Program.Settings.Get<int>("StartHeight");
-            if (startWidth > 0)
-                Width = startWidth;
-            if (startHeight > 0)
-                Height = startHeight;
-
-            if (Program.Settings.Get<bool>("StartMaximized"))
-                WindowState = FormWindowState.Maximized;
-
-            var splitterPosPct = Program.Settings.Get<int>("StartSplitterPosPct");
-            if (splitterPosPct > 0)
-                splitContainer.SplitterDistance = (int)(splitterPosPct / 100f * splitContainer.Width);
-        }
-
-        void txtGameDir_TextChanged(object sender, EventArgs e)
-        {
-            Program.Settings.Set("GameDirectory", txtGameDir.Text);
-        }
-
-        void UpdateStatusText()
-        {
-            var solvableCount = treConflicts.FileNodes.Count(node => ModFile.IsTextFile(node.Text));
-
-            if (treConflicts.IsEmpty())
-                lblStatusLeft1.Text = "0 conflicts";
-            else
-            {
-                lblStatusLeft1.Text = $"{solvableCount} mergeable";
-                if (solvableCount < treConflicts.FileNodes.Count)
-                {
-                    lblStatusLeft2.Text = $"{treConflicts.FileNodes.Count - solvableCount} not mergeable";
-                    lblStatusLeft2.Visible = true;
-                }
-            }
-
-            lblStatusLeft3.Text = string.Format(
-                "{0} merge{1}",
-                treMerges.FileNodes.Count,
-                treMerges.FileNodes.Count.GetPluralS()
-                );
-            lblStatusLeft3.Visible = true;
-
-            if (_modIndex != null)
-            {
-                lblStatusRight.Text = string.Format(
-                    "Found {0} mod{1}, {2} script{3}, {4} XML{5}, {6} bundle{7}",
-                    _modIndex.ModCount,
-                    _modIndex.ModCount.GetPluralS(),
-                    _modIndex.ScriptCount,
-                    _modIndex.ScriptCount.GetPluralS(),
-                    _modIndex.XmlCount,
-                    _modIndex.XmlCount.GetPluralS(),
-                    _modIndex.BundleCount,
-                    _modIndex.BundleCount.GetPluralS());
-            }
-        }
-
-        public void EnableMergeIfValidSelection()
-        {
-            var validFileNodeCount = treConflicts.FileNodes.Count(node => node.GetTreeNodes().Count(modNode => modNode.Checked) > 1);
-            btnCreateMerges.Enabled = (validFileNodeCount > 0);
-            btnCreateMerges.Text = (validFileNodeCount > 1
-                ? "&Create " + validFileNodeCount + " Selected Merges"
-                : "&Create Selected Merge");
-        }
-
-        public void EnableUnmergeIfValidSelection()
-        {
-            var selectedCount = treMerges.FileNodes.Count(node => node.Checked);
-            btnDeleteMerges.Enabled = (selectedCount > 0);
-            btnDeleteMerges.Text = (selectedCount > 1
-                ? "&Delete " + selectedCount + " Selected Merges"
-                : "&Delete Selected Merge");
-        }
-
-        #endregion
-
-        #region Refreshing Trees
-
-        async Task<bool> RefreshMergeInventory()
-        {
-            InitializeProgressScreen("Loading Merges", ProgressBarStyle.Continuous);
-
-            lblProgressCurrentAction.Text = "Loading MergeInventory.xml file";
-            Program.Inventory = await Task.Run(() =>
-                MergeInventory.Load(Paths.Inventory)
-            );
-            progressBar.Value = 25;
-
-            lblProgressCurrentAction.Text = "Loading mods.settings file";
-            Program.LoadOrder = await Task.Run(() =>
-                new CustomLoadOrder()
-            );
-            progressBar.Value = 50;
-
-            if (Program.Settings.Get<bool>("ValidateCustomLoadOrder") && Program.Inventory.Merges.Any())
-            {
-                lblProgressCurrentAction.Text = "Validating load order";
-                await Task.Run(() =>
-                    LoadOrderValidator.ValidateAndFix(Program.LoadOrder)
-                );
-            }
-            progressBar.Value = 75;
-
-            lblProgressCurrentAction.Text = "Refreshing merge tree";
-            return await Task.Run(() =>
-                RefreshMergeTree()
-            );
-        }
-        
-        bool RefreshMergeTree()
-        {
-            this.Invoke((MethodInvoker)delegate
-            {
-                treMerges.Nodes.Clear();
-            });
-            var changed = false;
-            var bundleMergesPruned = new List<Merge>();
-            var mergesToDelete = new List<Merge>();
-            for (int i = Program.Inventory.Merges.Count - 1; i >= 0; --i)
-            {
-                var merge = Program.Inventory.Merges[i];
-                if (!File.Exists(merge.GetMergedFile()) && ConfirmPruneMissingMergeFile(merge))
-                {
-                    Program.Inventory.Merges.RemoveAt(i);
-                    changed = true;
-
-                    if (merge.IsBundleContent)
-                        bundleMergesPruned.Add(merge);
-                    continue;
-                }
-                else
-                {
-                    var willDelete = false;
-                    foreach (var mod in merge.Mods)
-                    {
-                        var modFilePath = merge.GetModFile(mod.Name);
-                        if (!File.Exists(modFilePath) && ConfirmDeleteMergeForMissingMod(merge, mod.Name))
-                        {
-                            willDelete = true;
-                            break;
-                        }
-                        var modLoadSetting = Program.LoadOrder.GetModLoadSettingByName(mod.Name);
-                        if (modLoadSetting != null && !modLoadSetting.IsEnabled.Value && ConfirmDeleteMergeForDisabledMod(merge, mod.Name))
-                        {
-                            willDelete = true;
-                            break;
-                        }
-                        var latestHash = Tools.Hasher.ComputeHash(modFilePath);
-                        if (latestHash != null && mod.Hash != latestHash)
-                        {
-                            mod.IsOutdated = true;
-                            if (Program.Settings.Get<bool>("ValidateMergeSources"))
-                            {
-                                var choice = PromptToDeleteForChangedHash(merge, modFilePath, mod.Name);
-                                if (choice == DialogResult.Yes)
-                                {
-                                    willDelete = true;
-                                    break;
-                                }
-                                else if (choice == DialogResult.Cancel)  // Never
-                                {
-                                    Program.Settings.Set("ValidateMergeSources", false);
-                                    Program.Settings.Save();
-                                }
-                            }
-                        }
-                    }
-                    if (willDelete)
-                    {
-                        mergesToDelete.Add(merge);
-                        continue;
-                    }
-                }
-
-                this.Invoke((MethodInvoker)delegate
-                {
-                    var fileNode = new TreeNode
-                    {
-                        Text = merge.RelativePath,
-                        ForeColor = MergeTree.FileNodeForeColor,
-                        Tag = new MergeTree.NodeMetadata
-                        {
-                            FilePath = merge.GetMergedFile(),
-                            ModFile = merge
-                        }
-                    };
-
-                    var categoryNode = treMerges.GetCategoryNode(merge.Category);
-                    if (categoryNode == null)
-                    {
-                        categoryNode = new TreeNode
-                        {
-                            Text = merge.Category.DisplayName,
-                            ToolTipText = merge.Category.ToolTipText,
-                            Tag = merge.Category
-                        };
-                        treMerges.Nodes.Add(categoryNode);
-                    }
-                    categoryNode.Nodes.Add(fileNode);
-
-                    foreach (var mod in merge.Mods)
-                    {
-                        fileNode.Nodes.Add(
-                            new TreeNode
-                            {
-                                Text = mod.Name,
-                                Tag = new MergeTree.NodeMetadata
-                                {
-                                    FilePath = merge.GetModFile(mod.Name),
-                                    FileHash = mod,
-                                    ModFile = merge
-                                }
-                            }
-                        );
-                    }
-                });
-            }
-            if (mergesToDelete.Any())
-            {
-                if (DeleteMerges(mergesToDelete))
-                    return true;
-            }
-            if (changed)
-            {
-                Program.Inventory.Save();
-                if (bundleMergesPruned.Any())
-                    return DeleteMerges(bundleMergesPruned);
-            }
-            this.Invoke((MethodInvoker)delegate
-            {
-                treMerges.Sort();
-                treMerges.ExpandAll();
-                treMerges.ScrollToTop();
-                treMerges.SetFontBold(SMTree.LevelType.Categories);
-                foreach (var modNode in treMerges.ModNodes)
-                    modNode.SetIsCheckBoxVisible(false);
-
-                UpdateStatusText();
-                EnableUnmergeIfValidSelection();
-
-                progressBar.Value = 100;
-            });
-            return false;
-        }
-
-        bool ConfirmPruneMissingMergeFile(Merge merge)
-        {
-            var msg =
-                "Can't find the merged version of the following file.\n\n" +
-                merge.RelativePath + "\n        " +
-                string.Join("\n        ", merge.Mods.Select(mod => mod.Name)) + "\n\n" +
-                "Expected path:\n" +
-                merge.GetMergedFile() + "\n\n";
-
-            msg += merge.IsBundleContent
-                ? "Remove from Merges list & repack merged bundle?"
-                : "Remove from Merges list?";
-
-            return (DialogResult.Yes == ShowMessage(
-                msg,
-                "Missing Merge Inventory File",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question));
-        }
-
-        bool ConfirmDeleteMergeForMissingMod(Merge merge, string modName)
-        {
-            var msg =
-                $"Can't find the '{modName}' version of the following file, " +
-                "perhaps because the mod was uninstalled or updated.\n\n" +
-                merge.RelativePath + "\n        " +
-                string.Join("\n        ", merge.Mods.Select(mod => mod.Name)) + "\n\n" +
-                "Expected path:\n" +
-                merge.GetModFile(modName) + "\n\n";
-
-            msg += merge.IsBundleContent
-                ? "Delete this affected merge & repack the merged bundle?"
-                : "Delete this affected merge?";
-
-            return (DialogResult.Yes == ShowMessage(
-                msg,
-                "Missing Merge Inventory File",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question));
-        }
-
-        bool ConfirmDeleteMergeForDisabledMod(Merge merge, string modName)
-        {
-            var msg =
-                $"In your custom load order, {modName} is disabled.\n" +
-                "Delete the following merge that includes the disabled mod?\n\n" +
-                merge.RelativePath + "\n        " +
-                string.Join("\n        ", merge.Mods.Select(mod => mod.Name));
-
-            return (DialogResult.Yes == ShowMessage(
-                msg,
-                "Disabled Mod in Merge",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question));
-        }
-
-        private DialogResult PromptToDeleteForChangedHash(Merge merge, string modFilePath, string modName)
-        {
-            var msg =
-                $"The '{modName}' {(merge.IsBundleContent ? "bundle" : "version of the following file")} " +
-                "is different from when it was used in a merge, perhaps because the mod has been updated.\n\n" +
-                $"This file has changed:\n\n{modFilePath}\n\n" +
-                $"This merge is affected:\n\n{merge.RelativePath}\n        " +
-                string.Join("\n        ", merge.Mods.Select(mod => mod.Name)) + "\n\n";
-
-            msg += merge.IsBundleContent
-                ? "Delete this affected merge & repack the merged bundle?"
-                : "Delete this affected merge?";
-
-            MessageBoxManager.Cancel = "Ne&ver";
-            MessageBoxManager.Register();
-
-            var choice = MessageBox.Show(
-                msg,
-                "Merged Mod File Changed",
-                MessageBoxButtons.YesNoCancel,
-                MessageBoxIcon.Exclamation);
-
-            MessageBoxManager.Unregister();
-            return choice;
-        }
-
-        void RefreshConflictsTree(bool checkBundles = true)
-        {
-            checkBundles = checkBundles && Program.Settings.Get<bool>("CheckBundleContents");
-
-            InitializeProgressScreen("Detecting Conflicts", ProgressBarStyle.Continuous);
-            lblStatusLeft1.Text = "Refreshing...";
-            lblStatusLeft2.Visible = lblStatusLeft3.Visible = false;
-
-            if (Program.Inventory.ScriptsChanged && Program.Inventory.BundleChanged)
-                treConflicts.Nodes.Clear();
-            else
-            {
-                var nodesToUpdate = new List<TreeNode>();
-
-                var scriptCatNode = treConflicts.GetCategoryNode(Categories.Script);
-                if (scriptCatNode != null)
-                    nodesToUpdate.Add(scriptCatNode);
-
-                var xmlCatNode = treConflicts.GetCategoryNode(Categories.Xml);
-                if (xmlCatNode != null)
-                    nodesToUpdate.Add(xmlCatNode);
-
-                if (Program.Inventory.BundleChanged || checkBundles || !Program.Settings.Get<bool>("CheckBundleContents"))
-                {
-                    var bundleTextCatNode = treConflicts.GetCategoryNode(Categories.BundleText);
-                    if (bundleTextCatNode != null)
-                        nodesToUpdate.Add(bundleTextCatNode);
-                    var bundleNotMergeableCatNode = treConflicts.GetCategoryNode(Categories.BundleNotMergeable);
-                    if (bundleNotMergeableCatNode != null)
-                        nodesToUpdate.Add(bundleNotMergeableCatNode);
-                }
-
-                var missingFileNodes = treConflicts.FileNodes.Where(node =>
-                    node.GetTreeNodes().Any(modNode =>
-                        !File.Exists(modNode.GetMetadata().FilePath)
-                    )
-                );
-                nodesToUpdate.AddRange(missingFileNodes);
-
-                foreach (var node in nodesToUpdate)
-                    treConflicts.Nodes.Remove(node);
-                foreach (var catNode in treConflicts.CategoryNodes) // Hack-fix for bug: Empty category remained on refresh after resolving conflicts outside of SM
-                {
-                    if (catNode.Nodes.Count == 0)
-                        treConflicts.Nodes.Remove(catNode);
-                }
-            }
-
-            _modIndex = new ModFileIndex();
-            _modIndex.BuildAsync(
-                Program.Settings.Get<bool>("CheckScripts"),
-                Program.Settings.Get<bool>("CheckXmlFiles"),
-                Program.Settings.Get<bool>("CheckBundleContents"),
-                OnRefreshConflictsProgressChanged,
-                OnRefreshConflictsComplete);
-        }
-
-        void OnRefreshConflictsProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            progressBar.Value = e.ProgressPercentage;
-            lblProgressCurrentAction.Text = e.UserState as string;
-
-            TaskbarProgress.SetState(this.Handle, TaskbarProgress.TaskbarStates.Normal);
-            TaskbarProgress.SetValue(this.Handle, e.ProgressPercentage, 100);
-        }
-
-        void OnRefreshConflictsComplete(object sender, RunWorkerCompletedEventArgs e)
-        {
-            if (_modIndex.HasConflict)
-            {
-                foreach (var conflict in _modIndex.Conflicts)
-                {
-                    if (Program.Inventory.HasResolvedConflict(conflict))
-                        continue;
-
-                    var fileNode = treConflicts.FileNodes.FirstOrDefault(node =>
-                        node.Text.EqualsIgnoreCase(conflict.RelativePath));
-
-                    if (fileNode == null)
-                    {
-                        fileNode = new TreeNode
-                        {
-                            Text = conflict.RelativePath,
-                            Tag = new SMTree.NodeMetadata
-                            {
-                                FilePath = (conflict.Category == Categories.Script || conflict.Category == Categories.Xml
-                                    ? conflict.GetVanillaFile()
-                                    : conflict.RelativePath),
-                                ModFile = conflict
-                            }
-                        };
-
-                        var categoryNode = treConflicts.GetCategoryNode(conflict.Category);
-                        if (categoryNode == null)
-                        {
-                            categoryNode = new TreeNode
-                            {
-                                Text = conflict.Category.DisplayName,
-                                ToolTipText = conflict.Category.ToolTipText,
-                                Tag = conflict.Category
-                            };
-                            treConflicts.Nodes.Add(categoryNode);
-                        }
-                        categoryNode.Nodes.Add(fileNode);
-                    }
-
-                    var merge = Program.Inventory.Merges.FirstOrDefault(mrg => mrg.RelativePath.EqualsIgnoreCase(conflict.RelativePath));
-                    foreach (var mod in conflict.Mods)
-                    {
-                        var mergeModHash = merge?.Mods.FirstOrDefault(m => m.Name.EqualsIgnoreCase(mod.Name));
-                        if (mergeModHash != null && !mergeModHash.IsOutdated)
-                            continue;
-
-                        var modNode = fileNode.GetTreeNodes().FirstOrDefault(node =>
-                            node.Text.EqualsIgnoreCase(mod.Name));
-
-                        if (modNode == null)
-                        {
-                            modNode = new TreeNode
-                            {
-                                Text = mod.Name,
-                                Tag = new SMTree.NodeMetadata
-                                {
-                                    FilePath = conflict.GetModFile(mod.Name),
-                                    FileHash = mergeModHash,
-                                    ModFile = conflict
-                                }
-                            };
-                            fileNode.Nodes.Add(modNode);
-                        }
-                    }
-                }
-
-                treConflicts.Sort();
-                treConflicts.ExpandAll();
-                treConflicts.Select();
-                foreach (var catNode in treConflicts.CategoryNodes)
-                {
-                    if (!(catNode.Tag as ModFileCategory).IsSupported)
-                    {
-                        catNode.SetIsCheckBoxVisible(false, true);
-                        if (Program.Settings.Get<bool>("CollapseNotMergeable"))
-                            catNode.Collapse();
-                    }
-                }
-
-                treConflicts.SetStylesForCustomLoadOrder();
-
-                foreach (var fileNode in treConflicts.FileNodes)
-                {
-                    if (Program.Settings.Get<bool>("CollapseCustomLoadOrder") && fileNode.ForeColor == ConflictTree.ResolvedForeColor)
-                        fileNode.Collapse();
-                }
-            }
-
-            treConflicts.ScrollToTop();
-            treConflicts.SetFontBold(SMTree.LevelType.Categories);
-            UpdateStatusText();
-            HideProgressScreen();
-            EnableMergeIfValidSelection();
-        }
-
-        #endregion
-
-        #region Button Clicks
-
-        void btnSelectGameDirectory_Click(object sender, EventArgs e)
-        {
-            var dirChoice = GetUserDirectoryChoice();
-            if (!string.IsNullOrWhiteSpace(dirChoice))
-            {
-                if (dirChoice.EndsWithIgnoreCase("The Witcher 3 Wild Hunt\\Mods"))  // Auto-truncate "Mods"
-                    dirChoice = Path.GetDirectoryName(dirChoice);
-
-                txtGameDir.Text = dirChoice;
-                RefreshTrees();
-            }
-        }
-
-        string GetUserDirectoryChoice()
-        {
-            var dlgSelectRoot = new FolderBrowserDialog();
-            if (Directory.Exists(txtGameDir.Text))
-                dlgSelectRoot.SelectedPath = txtGameDir.Text;
-            if (DialogResult.OK == dlgSelectRoot.ShowDialog())
-                return dlgSelectRoot.SelectedPath;
-            else
-                return null;
-        }
-
-        async void btnRefreshMerged_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(txtGameDir.Text))
-            {
-                Program.MainForm.ShowMessage(
-                    "Please locate your 'The Witcher 3 Wild Hunt' game directory.");
-                return;
-            }
-
-            if (txtGameDir.Text.EndsWithIgnoreCase("The Witcher 3 Wild Hunt\\Mods"))  // Auto-truncate "Mods"
-                txtGameDir.Text = Path.GetDirectoryName(txtGameDir.Text);
-
-            if (Paths.ValidateModsDirectory())
-                await RefreshMergeInventory();
-
-            HideProgressScreen();
-        }
-
-        void btnRefreshConflicts_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(txtGameDir.Text))
-            {
-                Program.MainForm.ShowMessage(
-                    "Please locate your 'The Witcher 3 Wild Hunt' game directory.");
-                return;
-            }
-
-            if (txtGameDir.Text.EndsWithIgnoreCase("The Witcher 3 Wild Hunt\\Mods"))  // Auto-truncate "Mods"
-                txtGameDir.Text = Path.GetDirectoryName(txtGameDir.Text);
-            
-            RefreshTrees();
-        }
-
-        void btnMergeFiles_Click(object sender, EventArgs e)
-        {
-            if (!Paths.ValidateModsDirectory() ||
-                (treConflicts.FileNodes.Any(node => ModFile.IsScript(node.Text)) && !Paths.ValidateScriptsDirectory()) ||
-                (treConflicts.FileNodes.Any(node => ModFile.IsBundle(node.Text)) && !Paths.ValidateBundlesDirectory()))
-                return;
-
-            var mergedModName = Paths.RetrieveMergedModName();
-            if (mergedModName == null)
-                return;
-            
-            InitializeProgressScreen("Merging");
-
-            Program.Inventory = MergeInventory.Load(Paths.Inventory);
-
-            var merger = new FileMerger(Program.Inventory, OnMergeProgressChanged, OnMergeComplete);
-
-            var fileNodes = treConflicts.FileNodes.Where(node => node.GetTreeNodes().Count(modNode => modNode.Checked) > 1);
-
-            merger.MergeByTreeNodesAsync(fileNodes, mergedModName);
-        }
-
-        void OnMergeProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            var mergeProgress = (MergeProgressInfo)e.UserState;
-            lblProgressCurrentPhase.Text = mergeProgress.CurrentPhase;
-            lblProgressCurrentAction.Text = mergeProgress.CurrentAction;
-        }
-
-        void OnMergeComplete(object sender, RunWorkerCompletedEventArgs e)
-        {
-            if (Program.Inventory.HasChanged)
-            {
-                Program.Inventory.Save();
-                RefreshTrees(Program.Inventory.BundleChanged);
-            }
-            else
-            {
-                HideProgressScreen();
-                EnableMergeIfValidSelection();
-            }
-        }
-
-        void btnDeleteMerges_Click(object sender, EventArgs e)
-        {
-            var fileNodes = treMerges.FileNodes.Where(node => node.Checked);
-            DeleteMerges(fileNodes);
-        }
-
-        async void RefreshTrees(bool checkBundles = true)
-        {
-            if (!Paths.ValidateModsDirectory() ||
-                (Program.Settings.Get<bool>("CheckScripts") && !Paths.ValidateScriptsDirectory()) ||
-                (Program.Settings.Get<bool>("CheckBundleContents") && !Paths.ValidateBundlesDirectory()))
-                return;
-
-            if (Program.Inventory == null)
-                await RefreshMergeInventory();
-            else
-            {
-                InitializeProgressScreen("Loading Merges");
-                Program.LoadOrder.Refresh();
-                RefreshMergeTree();
-            }
-            RefreshConflictsTree(checkBundles);
-        }
-
-        #endregion
-
-        #region Key Input
-
-        private void MainForm_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.F5 && btnRefreshConflicts.Enabled)
-                btnRefreshConflicts_Click(null, null);
-        }
-
-        void txt_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Control && e.KeyCode == Keys.A)
-                (sender as TextBox).SelectAll();
-        }
-        
-        void splitContainer_Panel1_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
-        {
-            if (e.KeyCode == Keys.Enter && btnCreateMerges.Enabled)
-                btnMergeFiles_Click(null, null);
-        }
-
-        void splitContainer_Panel2_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
-        {
-            if (e.KeyCode == Keys.Delete && btnDeleteMerges.Enabled)
-                btnDeleteMerges_Click(null, null);
-        }
-
-        #endregion
-
-        #region Deleting Merges
-
-        public void DeleteMerges(IEnumerable<TreeNode> fileNodes)
-        {
-            var merges = fileNodes.Select(node =>
-                Program.Inventory.Merges.First(merge =>
-                    merge.RelativePath.EqualsIgnoreCase(node.Text)))
-                    .ToList();
-            DeleteMerges(merges);
-            if (Program.Inventory.Merges.Count == 0)
-            {
-                string gameDir = Program.Settings.Get("GameDirectory");
-                string mergeModPath = Path.Combine(gameDir, "Mods", Paths.RetrieveMergedModName());
-                if (!Directory.Exists(mergeModPath))
-                {
-                    // Folder is gone - nothing to do here.
-                    return;
-                }
-
-                // KDiff must've created a backup which is why the mod folder still exists.
-                string[] filePaths = Directory.GetFiles(mergeModPath, "*", SearchOption.AllDirectories);
-                string[] dirPaths = Directory.GetDirectories(mergeModPath, "*", SearchOption.AllDirectories)
-                    .OrderByDescending(dir => dir.Length).ToArray();
-                string errorMsg = "Merges have been removed successfully, but we were unable to automatically "
-                                + $"remove the generated merged mod folder: {mergeModPath}; please remove the folder manually.";
-                Array.ForEach(filePaths, filePath =>
-                {
-                    try
-                    {
-                        File.Delete(filePath);
-                    }
-                    catch
-                    {
-                        ShowError(errorMsg);
-                        return;
-                    }
-                });
-
-                Array.ForEach(dirPaths, dirPath =>
-                {
-                    try
-                    {
-                        Directory.Delete(dirPath);
-                    }
-                    catch
-                    {
-                        ShowError(errorMsg);
-                        return;
-                    }
-                });
-            }
-        }
-
-        bool DeleteMerges(List<Merge> merges)
-        {
-            var bundleMerges = new List<Merge>();
-            string[] segments = Paths.ScriptsDirectory
-              .Split(Path.DirectorySeparatorChar)
-              .Where((whatever) => !whatever.EqualsIgnoreCase("content0"))
-              .ToArray();
-            string stopPath = Path.Combine(segments);
-            foreach (var merge in merges)
-            {
-                var mergePath = merge.GetMergedFile();
-                if (File.Exists(mergePath))
-                {
-                    File.Delete(mergePath);
-                    DeleteEmptyDirs(Path.GetDirectoryName(mergePath), stopPath);
-                }
-                if (merge.IsBundleContent)
-                {
-                    var mergesForBundle = Program.Inventory.Merges.Where(m =>
-                    m.IsBundleContent &&
-                    m.MergedModName.EqualsIgnoreCase(merge.MergedModName) &&
-                    m.BundleName.EqualsIgnoreCase(merge.BundleName));
-                    if (mergesForBundle.All(m => merges.Contains(m)))
-                    {
-                        var bundlePath = merge.GetMergedBundle();
-                        if (File.Exists(bundlePath))
-                            File.Delete(bundlePath);
-
-                        var metadataPath = Path.Combine(Path.GetDirectoryName(bundlePath), "metadata.store");
-                        if (File.Exists(metadataPath))
-                            File.Delete(metadataPath);
-                        
-                        DeleteEmptyDirs(Path.GetDirectoryName(bundlePath), stopPath);
-                    }
-                    else if (merge.IsBundleContent)
-                        bundleMerges.Add(merge);
-                }
-
-                Program.Inventory.Merges.Remove(merge);
-            }
-            if (Program.Inventory.HasChanged)
-            {
-                Program.Inventory.Save();
-                if (bundleMerges.Count > 0)
-                {
-                    HandleDeletedBundleMerges(bundleMerges);
-                    return true;
-                }
-                // If mod index is null, we haven't refreshed it for the 1st time yet. Don't do it here.
-                if (_modIndex != null)
-                    RefreshTrees(Program.Inventory.BundleChanged);
-            }
-            return false;
-        }
-
-        void HandleDeletedBundleMerges(List<Merge> bundleMerges)
-        {
-            var affectedBundles = bundleMerges.Select(merge => merge.GetMergedBundle()).Distinct();
-            foreach (var bundlePath in affectedBundles)
-            {
-                InitializeProgressScreen("Merge Deleted");
-
-                new FileMerger(Program.Inventory, OnMergeProgressChanged, OnMergeComplete)
-                    .RepackBundleAsync(bundlePath);
-            }
-        }
-
-        #endregion
-
-        #region File/Dir Operations
-
-        void DeleteEmptyDirs(string dirPath, string stopPath)
-        {
-            if (dirPath.EqualsIgnoreCase(stopPath))
-                return;
-            var dirInfo = new DirectoryInfo(dirPath);
-            if (!dirInfo.Exists || dirInfo.GetFiles().Length > 0 || dirInfo.GetDirectories().Length > 0)
-                return;
-            Directory.Delete(dirPath);
-            DeleteEmptyDirs(dirInfo.Parent.FullName, stopPath);
-        }
-
-        #endregion
-
-        #region Progress Screen
-
-        void InitializeProgressScreen(string progressOf, ProgressBarStyle style = ProgressBarStyle.Marquee)
-        {
-            menuStrip.Enabled
-                = lblGameDir.Enabled
-                = txtGameDir.Enabled
-                = btnSelectGameDir.Enabled
-                = splitContainer.Panel1.Enabled
-                = splitContainer.Panel2.Enabled
-                = false;
-            progressBar.Value = 0;
-            lblProgressCurrentPhase.Text = progressOf;
-            lblProgressCurrentAction.Text = string.Empty;
-            progressBar.Style = style;
-
-            switch (style)
-            {
-                case ProgressBarStyle.Continuous:
-                    TaskbarProgress.SetValue(this.Handle, 0, 100);
-                    TaskbarProgress.SetState(this.Handle, TaskbarProgress.TaskbarStates.Normal);
-                    break;
-                case ProgressBarStyle.Marquee:
-                    TaskbarProgress.SetState(this.Handle, TaskbarProgress.TaskbarStates.Indeterminate);
-                    break;
-            }
-
-            pnlProgress.Visible = true;
-            Update();
-        }
-
-        void HideProgressScreen()
-        {
-            pnlProgress.Visible = false;
-            menuStrip.Enabled
-                = lblGameDir.Enabled
-                = txtGameDir.Enabled
-                = btnSelectGameDir.Enabled
-                = splitContainer.Panel1.Enabled
-                = splitContainer.Panel2.Enabled
-                = true;
-            treMerges.Select();
-
-            TaskbarProgress.SetState(this.Handle, TaskbarProgress.TaskbarStates.NoProgress);
-        }
-
-        #endregion
-
-        #region Cross-thread Operations
-
-        public DialogResult ShowMessage(string text,
-            string title = "",
-            MessageBoxButtons buttons = MessageBoxButtons.OK,
-            MessageBoxIcon icon = MessageBoxIcon.None)
-        {
-            this.ActivateSafely();
-
-            if (this.InvokeRequired)
-            {
-                return (DialogResult)this.Invoke(new Func<DialogResult>(
-                    () => { return MessageBox.Show(this, text, title, buttons, icon); }));
-            }
-            else
-            {
-                return MessageBox.Show(this, text, title, buttons, icon);
-            }
-        }
-
-        public DialogResult ShowError(string text, string title = "Error")
-        {
-            return ShowMessage(text, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
-
-        public DialogResult ShowModal(Form form)
-        {
-            this.ActivateSafely();
-
-            if (this.InvokeRequired)
-            {
-                return (DialogResult)this.Invoke(
-                    new Func<DialogResult>(
-                        () => { return form.ShowDialog(this); }
-                    )
-                );
-            }
-            else
-            {
-                return form.ShowDialog(this);
-            }
-        }
-
-        public void ActivateSafely()
-        {
-            if (this.InvokeRequired)
-            {
-                this.Invoke((MethodInvoker)delegate ()
-                    {
-                        this.Activate();
-                    });
-            }
-            else
-                this.Activate();
-        }
-
-        #endregion
-
-        #region Menus
-
-        void menuDependencies_Click(object sender, EventArgs e)
-        {
-            using (var dependencyForm = new DependencyForm())
-            {
-                ShowModal(dependencyForm);
-            }
-        }
-
-        private void menuOpenLoadOrderFile_Click(object sender, EventArgs e)
-        {
-            Program.TryOpenFile(Program.LoadOrder.FilePath);
-        }
-
-        private void menuOpenMergedModDir_Click(object sender, EventArgs e)
-        {
-            Program.TryOpenDirectory(Paths.RetrieveMergedModDir());
-        }
-
-        private void menuOpenBundleContentDir_Click(object sender, EventArgs e)
-        {
-            Program.TryOpenDirectory(Paths.MergedBundleContent);
-        }
-
-        private void menuOptions_Click(object sender, EventArgs e)
-        {
-            using (var optionsForm = new OptionsForm())
-            {
-                ShowModal(optionsForm);
-            }
-        }
-
-        private void menuRepackBundle_Click(object sender, EventArgs e)
-        {
-            var mergedBundles = Program.Inventory.Merges.Where(merge => merge.IsBundleContent).Select(merge => merge.GetMergedBundle()).Distinct();
-            var mergedBundleCount = mergedBundles.Count();
-            foreach (var bundlePath in mergedBundles)
-            {
-                InitializeProgressScreen($"Repacking Bundle{mergedBundleCount.GetPluralS()}");
-
-                new FileMerger(Program.Inventory, OnMergeProgressChanged, OnMergeComplete)
-                    .RepackBundleAsync(bundlePath);
-            }
-        }
-
-        private void menuExitAndPlay_Click(object sender, EventArgs e)
-        {
-            if (Program.TryOpenFile(Paths.GameExe))
-                Environment.Exit(0);
-        }
-
-        private void menuFile_DropDownOpening(object sender, EventArgs e)
-        {
-            menuRepackBundle.Enabled = Directory.Exists(Paths.MergedBundleContent);
-            menuExitAndPlay.Enabled = File.Exists(Paths.GameExe);
-        }
-
-        private void menuOpen_DropDownOpening(object sender, EventArgs e)
-        {
-            menuOpenLoadOrderFile.Enabled = (Program.LoadOrder?.FilePath != null)
-              ? File.Exists(Program.LoadOrder.FilePath)
-              : false;
-
-            var mergedModDir = Paths.RetrieveMergedModDir();
-            menuOpenMergedModDir.Enabled = (mergedModDir != null && Directory.Exists(mergedModDir));
-
-            menuOpenBundleContentDir.Enabled = Directory.Exists(Paths.MergedBundleContent);
-        }
-
-        #endregion
-    }
+	#region Members
+
+	internal Timer _autoExitTimer;
+	internal ContextMenuStrip MainMenu;
+	internal TreeManager treeManager;
+	internal ConflictTree treConflicts;
+	internal MergeTree treMerges;
+	internal PictureBox pbNoConflicts;
+	internal UIThreadManager uiThreadManager;
+	internal ProgressManager progressManager;
+	internal InventoryMergeManager inventoryMergeManager;
+
+	#endregion
+
+
+	#region Dispose
+
+	private bool _disposed;
+
+	protected override void Dispose(bool disposing)
+	{
+		if (!_disposed)
+		{
+			if (disposing)
+			{
+				// Dispose managed resources
+				_autoExitTimer?.Dispose();
+				MainMenu?.Dispose();
+				treConflicts?.Dispose();
+				treMerges?.Dispose();
+				pbNoConflicts?.Dispose();
+			}
+
+			// Dispose unmanaged resources (if any)
+
+			_disposed = true;
+		}
+
+		base.Dispose(disposing);
+	}
+
+	#endregion
+
+
+	#region Form Operations
+
+	private void InitializeCustomComponent()
+	{
+		// Initialize the ConflictTree control
+		treConflicts = new ConflictTree(ThemeManager.CurrentTheme)
+		{
+			Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
+			BorderStyle = BorderStyle.None,
+			CheckBoxes = true,
+			Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point),
+			ItemHeight = 30,
+			Location = new Point(4, 74),
+			Margin = new Padding(0),
+			Name = "treConflicts",
+			ShowLines = false,
+			Size = new Size(470, 809),
+			Sorted = true,
+			TabIndex = 1,
+			TabStop = false
+		};
+		tlpMain.SetColumnSpan(treConflicts, 2);
+		tlpMain.Controls.Add(treConflicts, 1, 1);
+
+		// Initialize the MergeTree control
+		treMerges = new MergeTree(ThemeManager.CurrentTheme)
+		{
+			Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
+			BorderStyle = BorderStyle.None,
+			CheckBoxes = true,
+			Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point),
+			ItemHeight = 30,
+			Location = new Point(482, 74),
+			Margin = new Padding(0),
+			Name = "treMerges",
+			ShowLines = false,
+			ShowNodeToolTips = true,
+			Size = new Size(470, 809),
+			Sorted = true,
+			TabIndex = 1,
+			TabStop = false
+		};
+		tlpMain.SetColumnSpan(treMerges, 2);
+		tlpMain.Controls.Add(treMerges, 4, 1);
+
+		// Initialize the NoConflicts PictureBox control
+		pbNoConflicts = new();
+	}
+
+	internal MainForm()
+	{
+		InitializeComponent();
+		InitializeCustomComponent();
+	}
+
+	/// <summary>
+	/// Handles the Load event of the MainForm.
+	/// </summary>
+	private void MainForm_Load(object sender, EventArgs e)
+	{
+		Text += $" v{Application.ProductVersion}";
+		pnlProgress.BringToFront();
+		MainMenu = CreateMainMenu();
+		LoadLastWindowConfiguration();
+		ThemeMngr.ApplyThemeOnForm(this);
+
+		uiThreadManager = new UIThreadManager(this);
+		progressManager = new ProgressManager(this);
+		treeManager = new TreeManager(treConflicts, treMerges, uiThreadManager, progressManager, treConflictsToolTip);
+		treeManager.InvokeRequired += OnTreeManagerInvokeRequired;
+		inventoryMergeManager = new InventoryMergeManager(uiThreadManager, progressManager, treeManager);
+
+		// Assign delegates for tree manager actions
+		treeManager.CreateAllScriptMergesDelegate = inventoryMergeManager.CreateAllScriptMerges;
+		treeManager.RefreshMergeInventoryDelegate = inventoryMergeManager.RefreshMergeInventory;
+		treeManager.DeleteMergesDelegate = inventoryMergeManager.DeleteMerges;
+
+		// Attach tree mouse move event handlers
+		treConflicts.MouseMove += treeManager.OnTreeViewMouseMove;
+		treMerges.MouseMove += treeManager.OnTreeViewMouseMove;
+	}
+
+	private void OnTreeManagerInvokeRequired(object sender, InvokeRequiredEventArgs e) => BeginInvoke(e.Action);
+
+	/// <summary>
+	/// Handles the Shown event of the MainForm.
+	/// </summary>
+	private async void MainForm_Shown(object sender, EventArgs e)
+	{
+		Update();
+		OptionsFrm.CheckSetGameDir();
+
+		// Validate directories and dependencies
+		if (!Paths.ValidateAllDirectories())
+			AutoExit(null);
+		if (!Paths.ValidateDependencyPaths())
+			AutoExit(null, "(Some) dependencies are missing. Restart the application and set the right dependency paths. Alternatively, download the SM-FAE \"FULL\" package, which includes all dependencies, and install that.");
+
+		// Check inventory order
+		if (!inventoryMergeManager.GetIsInventoryInOrder())
+			AutoExit(null);
+
+		// Refresh merge inventory
+		bool refreshRunning = await inventoryMergeManager.RefreshMergeInventory().ConfigureAwait(true);
+		if (refreshRunning)
+			// Don't continue (and don't call RefreshConflictsTree) if RefreshMergeInventory() is still running.
+			// RefreshConflictsTree will be called through RefreshMergeInventory -> RefreshMergeTree ->
+			// DeleteMergesDelegate -> DeleteMerges -> RefreshTrees if needed.
+			return;
+
+		// Refresh conflicts tree based on settings
+		treeManager.RefreshConflictsTree(Settings.Get<int>("CheckBundles") == 0);
+	}
+
+	/// <summary>
+	/// Handles the FormClosing event of the MainForm.
+	/// </summary>
+	private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+	{
+		// Prevent closing if progress is visible
+		if (pnlProgress.Visible)
+		{
+			e.Cancel = true;
+			return;
+		}
+
+		// Save game directory and window state settings
+		Settings.Set("GameDirectory", Paths.GameDirectory);
+
+		if (WindowState == FormWindowState.Maximized)
+		{
+			Settings.Set("StartMaximized", true);
+		}
+		else
+		{
+			Settings.Set("StartMaximized", false);
+			Settings.Set("StartWidth", Width);
+			Settings.Set("StartHeight", Height);
+			Settings.Set("StartPosTop", Top);
+			Settings.Set("StartPosLeft", Left);
+		}
+
+		Settings.Save();
+
+		StopListening();
+	}
+
+	/// <summary>
+	/// Loads the last window configuration from settings.
+	/// </summary>
+	private void LoadLastWindowConfiguration()
+	{
+		// Load window position
+		int top = Settings.Get<int>("StartPosTop");
+		int left = Settings.Get<int>("StartPosLeft");
+		if (top > 0)
+			Top = top;
+		if (left > 0)
+			Left = left;
+		if (Top > 0 || Left > 0)
+			StartPosition = FormStartPosition.Manual;
+
+		// Load window size
+		int startWidth = Settings.Get<int>("StartWidth");
+		int startHeight = Settings.Get<int>("StartHeight");
+		if (startWidth > 0)
+			Width = startWidth;
+		if (startHeight > 0)
+			Height = startHeight;
+
+		// Load window state
+		if (Settings.Get<bool>("StartMaximized"))
+			WindowState = FormWindowState.Maximized;
+	}
+
+	#endregion
+
+
+	#region Key Input
+
+	/// <summary>
+	/// Handles the KeyDown event of the MainForm.
+	/// </summary>
+	private void MainForm_KeyDown(object sender, KeyEventArgs e)
+	{
+		// Trigger button clicks based on key presses
+		if (e.KeyCode == Keys.F5) BtnRefreshConflicts_Click(null, null);
+		if (e.KeyCode == Keys.F6) BtnRefreshMerged_Click(null, null);
+		if (e.KeyCode == Keys.C) BtnMergeFiles_Click(null, null);
+		if (e.KeyCode == Keys.A) BtnCreateAllMerges_Click(null, null);
+		if (e.KeyCode == Keys.D) BtnDeleteMerges_Click(null, null);
+		if (e.KeyCode == Keys.E) BtnDeleteAllMerges_Click(null, null);
+		if (e.KeyCode == Keys.Escape) Application.Exit();
+	}
+
+	#endregion
+
+
+	#region File/Dir Operations
+
+	/// <summary>
+	/// Generates a CSV file containing conflict information from the specified TreeView.
+	/// </summary>
+	internal static void GenerateConflictsCsv(TreeView treeView)
+	{
+		// Configure save file dialog
+		using SaveFileDialog saveFileDialog = new()
+		{
+			FileName = "Conflicts.csv",
+			InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+			Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
+			DefaultExt = "csv",
+			AddExtension = true
+		};
+
+		if (saveFileDialog.ShowDialog() == DialogResult.OK)
+		{
+			string filePath = saveFileDialog.FileName;
+
+			StringBuilder csvContent = new();
+			string sep = CultureInfo.CurrentCulture.TextInfo.ListSeparator;
+			_ = csvContent.AppendLine(CultureInfo.InvariantCulture, $"\"Category\"{sep}\"FilePath\"{sep}\"ModName\"{sep}\"ModPrio\"");
+
+			// Iterate through tree nodes to build CSV content
+			foreach (TreeNode rootNode in treeView.Nodes)
+				foreach (TreeNode scriptNode in rootNode.Nodes)
+					foreach (TreeNode modNode in scriptNode.Nodes)
+					{
+						string line = $"\"{rootNode.Text}\"{sep}\"{scriptNode.Text}\"{sep}\"{modNode.Text}\"{sep}\"{Program.LoadOrder.GetPriorityByName(modNode.Text)}\"";
+						_ = csvContent.AppendLine(line);
+					}
+
+			File.WriteAllText(filePath, csvContent.ToString());
+		}
+	}
+
+	#endregion
+
+
+	#region Menus
+
+	internal ContextMenuStrip CreateMainMenu()
+	{
+		ContextMenuStrip mainMenu = new()
+		{
+			ShowImageMargin = false,
+			Renderer = new MenuRenderer(ThemeManager.CurrentTheme, 12),
+		};
+		mainMenu.Opening += MainMenu_Opening;
+		mainMenu.Closing += MainMenu_Closing;
+
+		ContextMenuStrip openMenu = new()
+		{
+			ShowImageMargin = false,
+			Renderer = new MenuRenderer(ThemeManager.CurrentTheme, 12)
+		};
+
+		// Open
+		ToolStripMenuItem mnOpen = new("Open...") { Name = "mnOpen" };
+		mnOpen.DropDownOpening += MnOpen_DropDownOpening;
+		_ = mainMenu.Items.Add(mnOpen);
+
+
+		// Open Submenu
+		ToolStripMenuItem mnOpenLoadOrderFile = new("Open Load Order File Directory") { Name = "mnOpenLoadOrderFile" };
+		mnOpenLoadOrderFile.Click += MnOpenLoadOrderFile_Click;
+		_ = openMenu.Items.Add(mnOpenLoadOrderFile);
+
+		ToolStripMenuItem mnOpenMergedModDir = new("Open Merged Mod Directory") { Name = "mnOpenMergedModDir" };
+		mnOpenMergedModDir.Click += MnOpenMergedModDir_Click;
+		_ = openMenu.Items.Add(mnOpenMergedModDir);
+
+		ToolStripMenuItem mnOpenBundleContentDir = new("Open Merged Bundle Content Directory") { Name = "mnOpenBundleContentDir" };
+		mnOpenBundleContentDir.Click += MnOpenBundleContentDir_Click;
+		_ = openMenu.Items.Add(mnOpenBundleContentDir);
+
+		mnOpen.DropDown = openMenu;
+
+
+		// Options
+		ToolStripMenuItem mnOptions = new("Options...") { Name = "mnOptions" };
+		mnOptions.Click += MnOptions_Click;
+		_ = mainMenu.Items.Add(mnOptions);
+
+		// Dependency
+		ToolStripMenuItem mnDependencies = new("Dependency Locations...") { Name = "mnDependencies" };
+		mnDependencies.Click += MnDependencies_Click;
+		_ = mainMenu.Items.Add(mnDependencies);
+
+		// Repack
+		ToolStripMenuItem mnExportConflicts = new("Export conflicts to CSV file") { Name = "mnExportConflicts" };
+		mnExportConflicts.Click += MnExportConflicts_Click;
+		_ = mainMenu.Items.Add(mnExportConflicts);
+
+		// Repack
+		ToolStripMenuItem mnRepackBundle = new("Repack Merged Bundle") { Name = "mnRepackBundle" };
+		mnRepackBundle.Click += MnRepackBundle_Click;
+		_ = mainMenu.Items.Add(mnRepackBundle);
+
+		// Keyboard
+		ToolStripMenuItem mnKeyboardShortcuts = new("Keyboard Shortcuts...") { Name = "mnKeyboardShortcuts" };
+		mnKeyboardShortcuts.Click += MnKeyboardShortcuts_Click;
+		_ = mainMenu.Items.Add(mnKeyboardShortcuts);
+
+		ToolStripSeparator sep = new();
+		_ = mainMenu.Items.Add(sep);
+
+		// Exit DX11
+		ToolStripMenuItem mnExitAndPlayDX11 = new("Exit and launch game (DX11)") { Name = "mnExitAndPlayDX11" };
+		mnExitAndPlayDX11.Click += MnExitAndPlayDX11_Click;
+		_ = mainMenu.Items.Add(mnExitAndPlayDX11);
+
+		// Exit DX12
+		ToolStripMenuItem mnExitAndPlayDX12 = new("Exit and launch game (DX12)") { Name = "mnExitAndPlayDX12" };
+		mnExitAndPlayDX12.Click += MnExitAndPlayDX12_Click;
+		_ = mainMenu.Items.Add(mnExitAndPlayDX12);
+
+		// Exit
+		ToolStripMenuItem mnExit = new("Exit") { Name = "mnExit" };
+		mnExit.Click += MnExit_Click;
+		_ = mainMenu.Items.Add(mnExit);
+
+		return mainMenu;
+	}
+
+	private void MnExportConflicts_Click(object sender, EventArgs e) => GenerateConflictsCsv(treConflicts);
+
+	private void MainMenu_Closing(object sender, ToolStripDropDownClosingEventArgs e)
+	{
+		Point mousePosition = MousePosition;
+		if (btnMainMenu.Bounds.Contains(btnMainMenu.PointToClient(mousePosition)) &&
+			e.CloseReason != ToolStripDropDownCloseReason.CloseCalled)
+		{
+			e.Cancel = true;
+		}
+	}
+
+	private void BtnMainMenu_Click(object sender, EventArgs e)
+	{
+		Button btn = (Button)sender;
+		if (MainMenu.Visible)
+			MainMenu.Close(ToolStripDropDownCloseReason.CloseCalled);
+		else
+			MainMenu.Show(btn, new Point(0, btn.Height + 2));
+	}
+
+	private void MainMenu_Opening(object sender, CancelEventArgs e) => MainMenu.Items["mnRepackBundle"].Enabled = Directory.Exists(Paths.MergedBundleContent);
+
+	private void MnOpen_DropDownOpening(object sender, EventArgs e)
+	{
+		ToolStripMenuItem mnOpen = (ToolStripMenuItem)MainMenu.Items["mnOpen"];
+
+		ToolStripMenuItem mnOpenLoadOrderFile = (ToolStripMenuItem)mnOpen.DropDownItems["mnOpenLoadOrderFile"];
+		mnOpenLoadOrderFile.Enabled = File.Exists(Program.LoadOrder?.FilePath ?? "");
+
+		ToolStripMenuItem mnOpenMergedModDir = (ToolStripMenuItem)mnOpen.DropDownItems["mnOpenMergedModDir"];
+		mnOpenMergedModDir.Enabled = Directory.Exists(Paths.RetrieveMergedModDir());
+
+		ToolStripMenuItem mnOpenBundleContentDir = (ToolStripMenuItem)mnOpen.DropDownItems["mnOpenBundleContentDir"];
+		mnOpenBundleContentDir.Enabled = Directory.Exists(Paths.MergedBundleContent);
+	}
+
+	private void MnOpenLoadOrderFile_Click(object sender, EventArgs e) => TryOpenFile(Program.LoadOrder.FilePath);
+
+	private void MnOpenMergedModDir_Click(object sender, EventArgs e)
+	{
+		if (!Directory.Exists(Paths.RetrieveMergedModDir()))
+		{
+			_ = MessageBox.Show($"The Merged Mods directory ({Paths.RetrieveMergedModDir()}) does not exist. Did you create any merges yet?");
+			return;
+		}
+
+		_ = TryOpenDirectory(Paths.RetrieveMergedModDir());
+	}
+
+	private void MnOpenBundleContentDir_Click(object sender, EventArgs e) => TryOpenDirectory(Paths.MergedBundleContent);
+
+	private void MnOptions_Click(object sender, EventArgs e) => uiThreadManager.ShowModal(OptionsFrm);
+
+	private void MnDependencies_Click(object sender, EventArgs e)
+	{
+		using DependencyForm dependencyForm = new();
+		_ = uiThreadManager.ShowModal(dependencyForm);
+	}
+
+	private void MnRepackBundle_Click(object sender, EventArgs e) => inventoryMergeManager.RepackBundle();
+
+	private void MnKeyboardShortcuts_Click(object sender, EventArgs e)
+	{
+		string caption = $"{AppName} Keyboard Shortcuts";
+		string msg =
+			$"These keyboard shortcuts are enabled in the main window:\n\n" +
+			$"F5: Refresh Conflicts Panel\n\n" +
+			$"F6: Refresh Merges Panel\n\n" +
+			$"C: Create Selected Merges\n\n" +
+			$"A: Create ALL Script (only) Merges\n\n" +
+			$"D: Delete Selected Merges\n\n" +
+			$"E: Delete ALL Merges\n\n" +
+			$"Esc: Exit Application";
+		_ = uiThreadManager.ShowMessage(msg, caption, MessageBoxButtons.OK, MessageBoxIcon.Information);
+	}
+
+	private void MnExitAndPlayDX11_Click(object sender, EventArgs e)
+	{
+		if (TryOpenFile(Paths.GameExeDX11))
+			Environment.Exit(0);
+		else
+			_ = MessageBox.Show($"DX11 game executable not found at expected location:\n\n{Paths.GameExeDX11}", "Game executable not found", MessageBoxButtons.OK);
+	}
+
+	private void MnExitAndPlayDX12_Click(object sender, EventArgs e)
+	{
+		if (TryOpenFile(Paths.GameExeDX12))
+			Environment.Exit(0);
+		else
+			_ = MessageBox.Show($"DX12 game executable not found at expected location:\n\n{Paths.GameExeDX12}", "Game executable not found", MessageBoxButtons.OK);
+	}
+
+	private void MnExit_Click(object sender, EventArgs e) => AutoExit();
+
+	#endregion
+
+
+	#region Button Clicks
+
+	private async void BtnRefreshMerged_Click(object sender, EventArgs e) =>
+		await inventoryMergeManager.ManualMergesRefresh().ConfigureAwait(true);
+
+	private void BtnRefreshConflicts_Click(object sender, EventArgs e) => treeManager.ManualConflictsRefresh();
+
+	private void BtnMergeFiles_Click(object sender, EventArgs e) => inventoryMergeManager.MergeFiles();
+
+	private void BtnDeleteMerges_Click(object sender, EventArgs e) => inventoryMergeManager.ManualDeleteMerges();
+
+	private void BtnDeleteAllMerges_Click(object sender, EventArgs e) => inventoryMergeManager.ManualDeleteAllMerges();
+
+	private void BtnCreateAllMerges_Click(object sender, EventArgs e) => inventoryMergeManager.CreateAllScriptMerges(true);
+
+	private void BtnDontExit_Click(object sender, EventArgs e) => progressManager.DontExit();
+
+	private void BtnExitNow_Click(object sender, EventArgs e) => AutoExit();
+
+	#endregion
 }
