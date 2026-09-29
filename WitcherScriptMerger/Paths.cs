@@ -31,6 +31,32 @@ internal static class Paths
 	internal static string ModsDirectory => Path.Combine(GameDirectory, "Mods");
 
 	/// <summary>
+	/// Determines whether the game's vanilla scripts are in the form The Witcher 3 5.x ships them in.
+	/// 4.x and older ship every vanilla script as UTF-16LE with a byte order mark; 5.x ships them as UTF-8
+	/// without one. Checked on one script both versions ship. A missing or unreadable file counts as not 5.x,
+	/// so an older installation always keeps the behaviour it had.
+	/// </summary>
+	/// <returns><see langword="true"/> if the vanilla scripts are in 5.x's form, <see langword="false"/> otherwise.</returns>
+	internal static bool HasRemasterScripts()
+	{
+		try
+		{
+			using FileStream stream = File.OpenRead(Path.Combine(ScriptsDirectory, "core", "array.ws"));
+			Span<byte> head = stackalloc byte[2];
+			return stream.ReadAtLeast(head, head.Length, throwOnEndOfStream: false) == head.Length
+				&& !(head[0] == 0xFF && head[1] == 0xFE);
+		}
+		catch (IOException)
+		{
+			return false;
+		}
+		catch (UnauthorizedAccessException)
+		{
+			return false;
+		}
+	}
+
+	/// <summary>
 	/// Gets the relative path of a file or directory within a base path.
 	/// </summary>
 	internal static string GetRelativePath(string fullPath, string basePath)

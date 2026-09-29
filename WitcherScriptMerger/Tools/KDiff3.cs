@@ -54,6 +54,23 @@ internal static class KDiff3
 		args += " --cs \"ShowWhiteSpaceCharacters=0\"";
 		args += " --cs \"EscapeKeyQuits=1\"";
 
+		// On 5.x a merged script takes vanilla's form: UTF-8 without a byte order mark. Unless told otherwise,
+		// KDiff3 reads a file without a mark in the local code page, which mangles non-ASCII text as soon as the
+		// inputs differ in encoding (a UTF-8 mod beside a UTF-16 one), and picks the output encoding from the inputs.
+		// So: UTF-8 is the fallback for unmarked files, UTF-16 is still detected by its mark, and the output is UTF-8.
+		// 4.x and older, and bundle content, get exactly the arguments they always had.
+		if (outputPath.EndsWithIgnoreCase(".ws") && Paths.HasRemasterScripts())
+		{
+			args += " --cs \"EncodingForA=UTF-8\" --cs \"EncodingForB=UTF-8\" --cs \"EncodingForC=UTF-8\"";
+			args += " --cs \"AutoDetectUnicodeA=1\" --cs \"AutoDetectUnicodeB=1\" --cs \"AutoDetectUnicodeC=1\"";
+			args += " --cs \"AutoSelectOutEncoding=0\" --cs \"EncodingForOutput=UTF-8\"";
+
+			// Its own KDiff3 settings file too, beside SM-FAE. KDiff3 saves the settings it was given when its
+			// window is closed; saved into the user's own settings file, these would change every later 4.x merge.
+			// KDiff3 starts it from its defaults on first use, and whatever the user changes there is kept.
+			args += $" --config \"{Path.Combine(AppContext.BaseDirectory, "KDiff3-5x.kdiff3rc")}\"";
+		}
+
 		if (hasVanillaVersion)
 			args += $" --L1 Vanilla --L2 \"{source1.Name}\" --L3 \"{source2.Name}\"";
 		else
