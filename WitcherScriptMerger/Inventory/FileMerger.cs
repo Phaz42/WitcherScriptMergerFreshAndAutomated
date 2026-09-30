@@ -84,6 +84,11 @@ internal partial class FileMerger : IDisposable
 	private bool _bundleChanged;
 	private bool disposedValue;
 	private readonly List<Merge> _pendingBundleMerges = [];
+
+	// Each vanilla bundle's listing, read once per merge run. Finding vanilla's copy of a bundled file lists vanilla
+	// bundles with QuickBMS until it is found - on 5.x a full pass over the 31 bundles takes about 12 seconds - and that
+	// search runs for every bundled file merged. Vanilla does not change during a run.
+	private readonly Dictionary<string, string[]> _vanillaBundleContents = new(StringComparer.OrdinalIgnoreCase);
 	private readonly BackgroundWorker _bgWorker;
 
 	#endregion
@@ -212,6 +217,16 @@ internal partial class FileMerger : IDisposable
 
 		_vanillaFile = new FileInfo(fileNode.GetMetadata().FilePath);
 
+		// Asked once per file, over the mods' own copies, before anything is merged (GameVersionCheck says why).
+		IEnumerable<(string, FileInfo)> modCopies = checkedModNodes
+			.Select(node => MergeSource.FromFlatFile(new FileInfo(node.GetMetadata().FilePath), null))
+			.Select(source => (source.Name, source.TextFile));
+		if (!GameVersionCheck.Confirm(merge.RelativePath, _vanillaFile, modCopies))
+		{
+			ProgressInfo.CurrentMergeNum += checkedModNodes.Length - 1;
+			return;
+		}
+
 		for (int i = 1; i < checkedModNodes.Length; ++i)
 		{
 			++ProgressInfo.CurrentMergeNum;
@@ -249,12 +264,44 @@ internal partial class FileMerger : IDisposable
 		Controls.SMTree.NodeMetadata metadata1 = checkedModNodes[0].GetMetadata();
 		MergeSource source1 = MergeSource.FromBundle(new FileInfo(metadata1.FilePath), metadata1.FileHash);
 
+		// Asked once per file, over the mods' own copies, before anything is merged (GameVersionCheck says why). The
+		// copies must be unpacked to be compared, so on 5.x that happens first, and the merges below reuse them.
+		Dictionary<string, FileInfo> unpackedCopies = null;
+		if (Paths.HasRemasterScripts())
+		{
+			if (!FindAndUnpackVanilla(fileNode.Text))
+			{
+				ProgressInfo.CurrentMergeNum += checkedModNodes.Length - 1;
+				return;
+			}
+
+			unpackedCopies = new(StringComparer.OrdinalIgnoreCase);
+			foreach (TreeNode modNode in checkedModNodes)
+			{
+				MergeSource source = MergeSource.FromBundle(new FileInfo(modNode.GetMetadata().FilePath), null);
+				ProgressInfo.CurrentAction = $"Unpacking bundle content file for {source.Name}";
+				string unpacked = UnpackFile(source.Bundle.FullName, fileNode.Text, source.Name);
+				unpackedCopies[source.Name] = unpacked != null ? new FileInfo(unpacked) : null;
+			}
+
+			IEnumerable<(string, FileInfo)> modCopies = unpackedCopies.Select(copy => (copy.Key, copy.Value));
+			if (!GameVersionCheck.Confirm(fileNode.Text, _vanillaFile, modCopies))
+			{
+				ProgressInfo.CurrentMergeNum += checkedModNodes.Length - 1;
+				return;
+			}
+
+			source1.TextFile = unpackedCopies.GetValueOrDefault(source1.Name);
+		}
+
 		for (int i = 1; i < checkedModNodes.Length; ++i)
 		{
 			++ProgressInfo.CurrentMergeNum;
 
 			Controls.SMTree.NodeMetadata metadata2 = checkedModNodes[i].GetMetadata();
 			MergeSource source2 = MergeSource.FromBundle(new FileInfo(metadata2.FilePath), metadata2.FileHash);
+			if (unpackedCopies != null)
+				source2.TextFile = unpackedCopies.GetValueOrDefault(source2.Name);
 
 			if (!GetUnpackedFiles(fileNode.Text, ref source1, ref source2))
 			{
@@ -371,55 +418,8 @@ internal partial class FileMerger : IDisposable
 
 	private bool GetUnpackedFiles(string contentRelativePath, ref MergeSource source1, ref MergeSource source2)
 	{
-		if (_vanillaFile == null)
-		{
-			ProgressInfo.CurrentAction = "Searching for corresponding vanilla bundle";
-
-			List<string> bundleDirsList =
-				Directory.GetDirectories(Paths.BundlesDirectory)
-					.Select(path => Path.Combine(path, "bundles"))
-					.Concat(
-						Directory.GetDirectories(Paths.DlcDirectory)
-							.Where(path => new Regex("DLC[0-9]*$", RegexOptions.IgnoreCase).IsMatch(path) ||
-											new Regex("ep[0-9]$", RegexOptions.IgnoreCase).IsMatch(path) ||
-											new Regex("bob$", RegexOptions.IgnoreCase).IsMatch(path))
-							.Select(path => Path.Combine(path, Paths.BundleBase, "bundles"))
-					)
-					.Where(Directory.Exists)
-					.OrderBy(path => path, new LoadOrderComparer())
-					.ToList();
-
-			// Ensure patch bundle directories are always last
-			List<string> patchDirs = bundleDirsList.FindAll(x => x.Contains("patch", StringComparison.Ordinal));
-			string[] bundleDirs = bundleDirsList
-				.Except(patchDirs)
-				.Union(patchDirs)
-				.ToArray();
-
-			for (int i = bundleDirs.Length - 1; i >= 0; --i)  // Search vanilla directories in reverse
-			{                                                 // order, as patches & DLC override content.
-				string[] bundleFiles = Directory.GetFiles(bundleDirs[i], "*.bundle");
-				foreach (string bundle in bundleFiles)
-				{
-					string[] contentPaths = QuickBms.GetBundleContentPaths(bundle);
-					if (contentPaths.Any(path => path.EqualsIgnoreCase(contentRelativePath)))
-					{
-						_vanillaFile = new FileInfo(bundle);
-						break;
-					}
-				}
-
-				if (_vanillaFile != null)
-					break;
-			}
-
-			if (_vanillaFile != null)
-			{
-				ProgressInfo.CurrentAction = "Unpacking vanilla bundle content file";
-				string vanillaContentPath = UnpackFile(_vanillaFile.FullName, contentRelativePath, "Vanilla");
-				_vanillaFile = new FileInfo(vanillaContentPath);
-			}
-		}
+		if (_vanillaFile == null && !FindAndUnpackVanilla(contentRelativePath))
+			return false;
 
 		if (source1.TextFile == null)
 		{
@@ -430,11 +430,92 @@ internal partial class FileMerger : IDisposable
 			source1.TextFile = new FileInfo(modContentFile1);
 		}
 
-		ProgressInfo.CurrentAction = $"Unpacking bundle content file for {source2.Name}";
-		string modContentFile2 = UnpackFile(source2.Bundle.FullName, contentRelativePath, source2.Name);
-		if (modContentFile2 == null)
-			return false;
-		source2.TextFile = new FileInfo(modContentFile2);
+		if (source2.TextFile == null)
+		{
+			ProgressInfo.CurrentAction = $"Unpacking bundle content file for {source2.Name}";
+			string modContentFile2 = UnpackFile(source2.Bundle.FullName, contentRelativePath, source2.Name);
+			if (modContentFile2 == null)
+				return false;
+			source2.TextFile = new FileInfo(modContentFile2);
+		}
+
+		return true;
+	}
+
+	/// <summary>
+	/// Finds vanilla's copy of a bundled file and unpacks it into <see cref="_vanillaFile"/>, which stays null when
+	/// vanilla has no such file. False only when the copy was found but could not be unpacked (the error is shown).
+	/// </summary>
+	private bool FindAndUnpackVanilla(string contentRelativePath)
+	{
+		ProgressInfo.CurrentAction = "Searching for corresponding vanilla bundle";
+
+		// 5.x has no DLC folder: the expansions' and DLCs' bundles are in content\content0\bundles. A DLC folder
+		// exists there only if a mod created one, so its absence is normal and not an error.
+		string[] dlcDirs = Directory.Exists(Paths.DlcDirectory)
+			? Directory.GetDirectories(Paths.DlcDirectory)
+			: [];
+
+		List<string> bundleDirsList =
+			Directory.GetDirectories(Paths.BundlesDirectory)
+				.Select(path => Path.Combine(path, "bundles"))
+				.Concat(
+					dlcDirs
+						.Where(path => new Regex("DLC[0-9]*$", RegexOptions.IgnoreCase).IsMatch(path) ||
+										new Regex("ep[0-9]$", RegexOptions.IgnoreCase).IsMatch(path) ||
+										new Regex("bob$", RegexOptions.IgnoreCase).IsMatch(path))
+						.Select(path => Path.Combine(path, Paths.BundleBase, "bundles"))
+				)
+				.Where(Directory.Exists)
+				.OrderBy(path => path, new LoadOrderComparer())
+				.ToList();
+
+		// Ensure patch bundle directories are always last
+		List<string> patchDirs = bundleDirsList.FindAll(x => x.Contains("patch", StringComparison.Ordinal));
+		string[] bundleDirs = bundleDirsList
+			.Except(patchDirs)
+			.Union(patchDirs)
+			.ToArray();
+
+		for (int i = bundleDirs.Length - 1; i >= 0; --i)  // Search vanilla directories in reverse
+		{                                                 // order, as patches & DLC override content.
+			string[] bundleFiles = Directory.GetFiles(bundleDirs[i], "*.bundle");
+			foreach (string bundle in bundleFiles)
+			{
+				if (!_vanillaBundleContents.TryGetValue(bundle, out string[] contentPaths))
+				{
+					contentPaths = QuickBms.GetBundleContentPaths(bundle);
+					_vanillaBundleContents[bundle] = contentPaths;
+				}
+
+				if (contentPaths.Any(path => path.EqualsIgnoreCase(contentRelativePath)))
+				{
+					_vanillaFile = new FileInfo(bundle);
+					break;
+				}
+			}
+
+			if (_vanillaFile != null)
+				break;
+		}
+
+		if (_vanillaFile != null)
+		{
+			ProgressInfo.CurrentAction = "Unpacking vanilla bundle content file";
+			string vanillaContentPath = UnpackFile(_vanillaFile.FullName, contentRelativePath, "Vanilla");
+
+			// The file is in a vanilla bundle but could not be extracted (the error has been shown). Merging without
+			// vanilla's copy would merge against no base at all, so this merge is skipped; and _vanillaFile, which
+			// points at the bundle, is cleared so the next pair does not take the bundle itself as its base.
+			if (vanillaContentPath == null)
+			{
+				_vanillaFile = null;
+				return false;
+			}
+
+			_vanillaFile = new FileInfo(vanillaContentPath);
+		}
+
 		return true;
 	}
 

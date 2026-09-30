@@ -14,11 +14,9 @@
 > ### 🧊 DEVELOPMENT FROZEN
 > This project is currently in a **frozen state**.  
 > 
-> Development has recently started on a **completely rebuilt, from-scratch next-generation script merger app**. The new project aims to feature a modern UI framework (Avalonia), **native SteamOS/Linux support**, and a much cleaner, headless architecture using modern .NET. 
+> A **completely rebuilt, from-scratch next-generation script merger app** is well under way: roughly 75% of it is built, and nearly all of its functionality is already in place — only the user interface remains. The new project features a modern UI framework (Avalonia), **native SteamOS/Linux support**, and a much cleaner, headless architecture using modern .NET.
 > 
 > The goal is to release this next-gen version well in time for the upcoming **Witcher 3: Songs of the Past** expansion, ensuring the modding community is fully prepared for the new era of content!
->
-> *Please note: The new rewrite is entirely experimental and remains a volunteer side-project. There are no promises or timelines. It may be completely cancelled if time or feasibility becomes an issue. If the rewrite is cancelled, development on this SM-FAE repository might be unfrozen. For full transparency: nothing is guaranteed!*
 
 ---
 
@@ -28,13 +26,15 @@ This repository contains the source code for **Script Merger - Fresh & Automated
 For actual application downloads, detailed feature lists, user documentation, and comments/contact info, please visit the Nexus Mods page:  
 👉 **[SM-FAE on Nexus Mods](https://www.nexusmods.com/witcher3/mods/8405)**
 
-## 📂 Repository State & Commit History (v0.9.8-rc.3)
+## 📂 Repository State & Commit History (v0.9.8-rc.4)
 
 If you are browsing the source, you may notice a lack of incremental commit history.
 
-All development over the lifecycle of SM-FAE was done locally in this repository without intermediary commits. The code you see here represents a single "snapshot" of the absolute latest development stage. In fact, the source in this repository is slightly ahead of the currently published binaries on Nexus Mods, representing the unreleased **`v0.9.8-rc.3`** Release Candidate. 
+All development over the lifecycle of SM-FAE was done locally in this repository without intermediary commits. The first commit is a single "snapshot" of the latest development stage at the time: the **`v0.9.8-rc.3`** Release Candidate, which was never published as binaries.
 
-While the granular history is not available, the codebase itself is complete and represents the fully functional application as it was last actively developed.
+**Despite the frozen state, one more update was released: `v0.9.8-rc.4`.** The Witcher 3 Remastered (5.x) arrived unanticipated, and with it a changed script encoding and a changed bundle format that SM-FAE could not handle. `v0.9.8-rc.4` adds support for the Remastered version — script and bundle merging, and a warning before merging a mod made for an older game version — while merges on 4.04 give the same results as before. Its changes are committed incrementally on top of the snapshot, and the published binaries are built from the `v0.9.8-rc.4` tag.
+
+`v0.9.8-rc.4` is intended to be the last SM-FAE release, bridging the gap until the next-generation app is released.
 
 ## 📜 License & Lineage
 

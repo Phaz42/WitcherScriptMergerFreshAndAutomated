@@ -412,7 +412,13 @@ internal partial class MainForm : BaseForm
 			MainMenu.Show(btn, new Point(0, btn.Height + 2));
 	}
 
-	private void MainMenu_Opening(object sender, CancelEventArgs e) => MainMenu.Items["mnRepackBundle"].Enabled = Directory.Exists(Paths.MergedBundleContent);
+	private void MainMenu_Opening(object sender, CancelEventArgs e)
+	{
+		MainMenu.Items["mnRepackBundle"].Enabled = Directory.Exists(Paths.MergedBundleContent);
+
+		// 5.x ships only the DirectX 12 executable (bin\x64_dx12); the DirectX 11 one is gone.
+		MainMenu.Items["mnExitAndPlayDX11"].Enabled = !Paths.HasRemasterScripts();
+	}
 
 	private void MnOpen_DropDownOpening(object sender, EventArgs e)
 	{

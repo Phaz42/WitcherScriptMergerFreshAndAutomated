@@ -37,7 +37,33 @@ internal static class KDiff3
 		string source1FullName = followFileLinks ? source1.TextFile.ResolveTargetFileFullName() : source1.TextFile.FullName;
 		string source2FullName = followFileLinks ? source2.TextFile.ResolveTargetFileFullName() : source2.TextFile.FullName;
 
-		args += $" \"{source1FullName}\" \"{source2FullName}\"";
+		bool isRemaster = Paths.HasRemasterScripts();
+		bool isXml = outputPath.EndsWithIgnoreCase(".xml");
+
+		// On 5.x a merged XML file takes the form of the vanilla file it is merged against - UTF-8 with a byte order
+		// mark for nearly every file, but not all, and a merge converts nothing - or, with no vanilla file, 5.x's usual
+		// XML form. The mods' declarations are set to that encoding in temporary copies, never in the mods' own files,
+		// so line 1 never conflicts over it and never carries a declaration that does not fit.
+		string xmlOutputCodec = null;
+		string xmlTempDir = null;
+		string source1Arg = source1FullName;
+		string source2Arg = source2FullName;
+		if (isRemaster && isXml)
+		{
+			XmlDeclaration.TextForm outputForm = hasVanillaVersion
+				? XmlDeclaration.DetectForm(File.ReadAllBytes(vanillaFile.FullName))
+				: XmlDeclaration.TextForm.Utf8Bom;
+			xmlOutputCodec = XmlDeclaration.KDiff3Codec(outputForm);
+			string declaredName = XmlDeclaration.DeclaredName(outputForm, hasVanillaVersion ? vanillaFile.FullName : null);
+
+			xmlTempDir = Path.Combine(Path.GetTempPath(), "SM-FAE-xml-" + Guid.NewGuid().ToString("N"));
+			source1Arg = Path.Combine(xmlTempDir, "1", Path.GetFileName(source1FullName));
+			source2Arg = Path.Combine(xmlTempDir, "2", Path.GetFileName(source2FullName));
+			XmlDeclaration.CopyWithEncoding(source1FullName, source1Arg, declaredName);
+			XmlDeclaration.CopyWithEncoding(source2FullName, source2Arg, declaredName);
+		}
+
+		args += $" \"{source1Arg}\" \"{source2Arg}\"";
 		args += $" -o \"{outputPath}\"";
 		args += " --cs \"WhiteSpace3FileMergeDefault=2\"";
 		args += " --cs \"CreateBakFiles=0\"";
@@ -58,12 +84,13 @@ internal static class KDiff3
 		// KDiff3 reads a file without a mark in the local code page, which mangles non-ASCII text as soon as the
 		// inputs differ in encoding (a UTF-8 mod beside a UTF-16 one), and picks the output encoding from the inputs.
 		// So: UTF-8 is the fallback for unmarked files, UTF-16 is still detected by its mark, and the output is UTF-8.
-		// 4.x and older, and bundle content, get exactly the arguments they always had.
-		if (outputPath.EndsWithIgnoreCase(".ws") && Paths.HasRemasterScripts())
+		// XML on 5.x reads its inputs the same way, and is written in the form chosen above.
+		// 4.x and older get exactly the arguments they always had.
+		if (isRemaster && (outputPath.EndsWithIgnoreCase(".ws") || isXml))
 		{
 			args += " --cs \"EncodingForA=UTF-8\" --cs \"EncodingForB=UTF-8\" --cs \"EncodingForC=UTF-8\"";
 			args += " --cs \"AutoDetectUnicodeA=1\" --cs \"AutoDetectUnicodeB=1\" --cs \"AutoDetectUnicodeC=1\"";
-			args += " --cs \"AutoSelectOutEncoding=0\" --cs \"EncodingForOutput=UTF-8\"";
+			args += $" --cs \"AutoSelectOutEncoding=0\" --cs \"EncodingForOutput={xmlOutputCodec ?? "UTF-8"}\"";
 
 			// Its own KDiff3 settings file too, beside SM-FAE. KDiff3 saves the settings it was given when its
 			// window is closed; saved into the user's own settings file, these would change every later 4.x merge.
@@ -100,7 +127,32 @@ internal static class KDiff3
 
 		Process kdiff3Proc = Process.Start(kdiff3Path, args);
 		kdiff3Proc.WaitForExit();
+		int exitCode = kdiff3Proc.ExitCode;
 
-		return kdiff3Proc.ExitCode;
+		if (xmlTempDir != null)
+		{
+			try
+			{ Directory.Delete(xmlTempDir, true); }
+			catch (IOException) { }  // a temporary copy left behind costs nothing
+			catch (UnauthorizedAccessException) { }
+		}
+
+		// On every version, a merged XML file whose declaration names an encoding it is not in is never kept: the
+		// normalising above prevents it on 5.x, and this catches whatever else produces one - a user's edit in the
+		// KDiff3 window, a mod on 4.x saved in another encoding.
+		if (exitCode == 0 && isXml && File.Exists(outputPath))
+		{
+			string mismatch = XmlDeclaration.FindMismatch(outputPath);
+			if (mismatch != null)
+			{
+				File.Delete(outputPath);
+				_ = MainFrm.uiThreadManager.ShowError(
+					$"SM-FAE did not keep this merged file, because its XML declaration does not fit its encoding: it {mismatch}.\n\n{outputPath}",
+					"Merged File Refused");
+				return 2;
+			}
+		}
+
+		return exitCode;
 	}
 }

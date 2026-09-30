@@ -29,7 +29,7 @@ internal class DefaultSettings
 	internal const bool RanThroughVortex = false;
 	internal const string MergedModName = "mod0000_MergedFiles";
 	internal const string KDiff3Path = @"Tools\KDiff3\KDiff3.exe";
-	internal const string QuickBmsPath = @"Tools\QuickBMS\quickbms.exe";
+	internal const string QuickBmsPath = @"Tools\QuickBMS\quickbms_4gb_files.exe";
 	internal const string QuickBmsPluginPath = @"Tools\QuickBMS\witcher3.bms";
 	internal const string WccLitePath = @"Tools\wcc_lite\bin\x64\wcc_lite.exe";
 	internal const bool StartMaximized = false;

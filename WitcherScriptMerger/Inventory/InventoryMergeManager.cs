@@ -162,6 +162,15 @@ internal class InventoryMergeManager
 
 	internal void OnMergeComplete(object sender, RunWorkerCompletedEventArgs e)
 	{
+		// An exception inside the merge worker ends the run and arrives here, not as a crash. Unreported, the merge
+		// just stops: files after that point are silently not merged. Merges finished before it stay as they are.
+		if (e.Error != null)
+		{
+			_ = uiThreadManager.ShowError(
+				"The merge stopped because of an unexpected error. Files after this point were not merged.\n\n" + e.Error.Message,
+				"Merge Stopped");
+		}
+
 		if (Program.Inventory.HasChanged)
 		{
 			Program.Inventory.Save();

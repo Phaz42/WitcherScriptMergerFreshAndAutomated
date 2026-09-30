@@ -75,6 +75,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Windows.Compatibility" Version="9.0.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.0" />
+    <PackageReference Include="System.IO.Hashing" Version="9.0.0" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Update="Properties\Resources.resx">
@@ -91,9 +92,13 @@
   <ItemGroup>
     <Folder Include="BuildEvents\" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The QuickBMS script, with its 5.x bundle branch, ships in Tools\QuickBMS beside the released tools. -->
+    <None Update="Tools\QuickBMS\witcher3.bms" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
   <PropertyGroup>
     <AssemblyVersion>$(PackageVersion)</AssemblyVersion>
-    <Version>0.9.8-rc.3</Version>
+    <Version>0.9.8-rc.4</Version>
     <PackageProjectUrl>https://www.nexusmods.com/witcher3/mods/8405</PackageProjectUrl>
     <Title>Script Merger: Fresh &amp; Automated Edition</Title>
     <Description>Script Merger: Fresh &amp; Automated Edition</Description>

@@ -371,6 +371,16 @@ internal class TreeManager
 	{
 		ProgressManager.lblBundleScanInfo.Visible = false;
 
+		// An exception inside the scan worker arrives here, not as a crash. The conflict list is then incomplete, so
+		// the user is told, and nothing automatic acts on it: no merges created, no exit as if nothing conflicted.
+		bool scanFailed = e.Error != null;
+		if (scanFailed)
+		{
+			_ = UIThreadManager.ShowError(
+				"The conflict scan stopped because of an unexpected error. The list of conflicts may be incomplete.\n\n" + e.Error.Message,
+				"Scan Stopped");
+		}
+
 		if (ModIndex.HasConflict)
 		{
 			// Add conflict nodes to the tree
@@ -479,14 +489,14 @@ internal class TreeManager
 		ThemeManager.AttachColorFaderToTreeNodes(ConflictsTree, out _treConflictsColorFaders);
 
 		// Auto Create Merges
-		if (Settings.Get<bool>("AutoCreateScriptMerges"))
+		if (Settings.Get<bool>("AutoCreateScriptMerges") && !scanFailed)
 			CreateAllScriptMergesDelegate?.Invoke(false);
 
 		// Show/hide "no conflicts" image if enabled
 		UIThreadManager.ShowHideNoConflictsWitcher();
 
 		// Auto Quit
-		if (!_manualConflictsRefreshRunning)
+		if (!_manualConflictsRefreshRunning && !scanFailed)
 		{
 			if (Settings.Get<bool>("AutoExit"))
 				UIThreadManager.ExitIfNoMoreConflicts();
