@@ -26,15 +26,15 @@ This repository contains the source code for **Script Merger - Fresh & Automated
 For actual application downloads, detailed feature lists, user documentation, and comments/contact info, please visit the Nexus Mods page:  
 👉 **[SM-FAE on Nexus Mods](https://www.nexusmods.com/witcher3/mods/8405)**
 
-## 📂 Repository State & Commit History (v0.9.8-rc.4)
+## 📂 Repository State & Commit History (v0.9.8-rc.5)
 
 If you are browsing the source, you may notice a lack of incremental commit history.
 
 All development over the lifecycle of SM-FAE was done locally in this repository without intermediary commits. The first commit is a single "snapshot" of the latest development stage at the time: the **`v0.9.8-rc.3`** Release Candidate, which was never published as binaries.
 
-**Despite the frozen state, one more update was released: `v0.9.8-rc.4`.** The Witcher 3 Remastered (5.x) arrived unanticipated, and with it a changed script encoding and a changed bundle format that SM-FAE could not handle. `v0.9.8-rc.4` adds support for the Remastered version — script and bundle merging, and a warning before merging a mod made for an older game version — while merges on 4.04 give the same results as before. Its changes are committed incrementally on top of the snapshot, and the published binaries are built from the `v0.9.8-rc.4` tag.
+**Despite the frozen state, one more update was released: `v0.9.8-rc.4`.** The Witcher 3 Remastered (5.x) arrived unanticipated, and with it a changed script encoding and a changed bundle format that SM-FAE could not handle. `v0.9.8-rc.4` adds support for the Remastered version — script and bundle merging, and a warning before merging a mod made for an older game version — while merges on 4.04 give the same results as before. A follow-up, `v0.9.8-rc.5`, fixes choosing the game folder, which `v0.9.8-rc.4` broke for most GOG installations. The changes are committed incrementally on top of the snapshot, and the published binaries are built from each release's tag.
 
-`v0.9.8-rc.4` is intended to be the last SM-FAE release, bridging the gap until the next-generation app is released.
+`v0.9.8-rc.5` is intended to be the last SM-FAE release, bridging the gap until the next-generation app is released.
 
 ## 📜 License & Lineage
 

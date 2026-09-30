@@ -84,8 +84,12 @@ internal static class Paths
 	/// Validates all required directories.
 	/// </summary>
 	/// <returns><see langword="true"/> if all directories are valid, <see langword="false"/> otherwise.</returns>
+	/// <remarks>
+	/// The game folder is checked first: validating the Mods directory creates it when missing, which must only happen
+	/// inside a real game folder - never beside SM-FAE when no game folder is set, nor in a wrongly chosen folder.
+	/// </remarks>
 	internal static bool ValidateAllDirectories() =>
-		ValidateModsDirectory() && ValidateScriptsDirectory() && ValidateBundlesDirectory();
+		ValidateScriptsDirectory() && ValidateBundlesDirectory() && ValidateModsDirectory();
 
 	/// <summary>
 	/// Validates the Mods directory.

@@ -118,32 +118,21 @@ internal partial class OptionsForm : BaseForm
 		if (Directory.Exists(GameDirectory))
 			return;
 
-		string SteamPath = string.Empty;
-		string GogPath = string.Empty;
-		try
-		{
-			SteamPath = Registry.GetValue(
-				"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 292030",
-				"InstallLocation", null).ToString();
-			GogPath = Registry.GetValue(
-				"HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\GOG.com\\Games\\1207664643",
-				"path", null).ToString();
-		}
-		catch (Exception) { } // Don't care
+		// Each store's registry entry is read on its own: a missing entry is normal (most players own the game in one
+		// store only), and must not stop the other from being found.
+		string steamPath = ReadRegistryPath(
+			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 292030", "InstallLocation");
+		string gogPath = ReadRegistryPath(
+			"HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\GOG.com\\Games\\1207664643", "path");
 
-		if (Directory.Exists(SteamPath))
-		{
-			if (ConfirmAutoGameDir(SteamPath))
-				GameDirectory = SteamPath;
-		}
+		// With both installed, the second is offered only if the first was declined.
+		if (Directory.Exists(steamPath) && ConfirmAutoGameDir(steamPath))
+			GameDirectory = steamPath;
+		else if (Directory.Exists(gogPath) && ConfirmAutoGameDir(gogPath))
+			GameDirectory = gogPath;
 
-		if (Directory.Exists(GogPath))
-		{
-			if (ConfirmAutoGameDir(GogPath))
-				GameDirectory = GogPath;
-		}
-
-		if (string.IsNullOrEmpty(GameDirectory))
+		// Also when a saved folder no longer exists: it is not a game folder, so the user is asked for one.
+		if (!Directory.Exists(GameDirectory))
 		{
 			_ = MainFrm.uiThreadManager.ShowMessage("In the following screen, please select your main Witcher 3 game directory.",
 				"Select Witcher 3 game directory", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -162,15 +151,34 @@ internal partial class OptionsForm : BaseForm
 			MessageBoxIcon.Question);
 	}
 
-	private void SelectGameDirectory()
+	// A registry value holding a folder, or empty when the key or value does not exist or cannot be read.
+	private static string ReadRegistryPath(string keyName, string valueName)
+	{
+		try
+		{
+			return Registry.GetValue(keyName, valueName, null) as string ?? string.Empty;
+		}
+		catch (Exception ex) when (ex is System.Security.SecurityException or IOException or UnauthorizedAccessException)
+		{
+			return string.Empty;
+		}
+	}
+
+	/// <summary>
+	/// Lets the user pick the game folder and takes it. Cancelling exits only when no game folder exists to keep.
+	/// </summary>
+	internal void SelectGameDirectory()
 	{
 		string dirChoice = GetUserDirectoryChoice();
 		if (Directory.Exists(dirChoice))
 		{
-			if (dirChoice.EndsWithIgnoreCase("The Witcher 3 Wild Hunt\\Mods"))
-				GameDirectory = Path.GetDirectoryName(dirChoice);
+			// Picking the Mods folder inside the game folder is taken to mean the game folder.
+			if (Path.GetFileName(dirChoice.TrimEnd('\\', '/')).EqualsIgnoreCase("Mods"))
+				dirChoice = Path.GetDirectoryName(dirChoice.TrimEnd('\\', '/'));
+
+			GameDirectory = dirChoice;
 		}
-		else
+		else if (!Directory.Exists(GameDirectory))
 		{
 			_ = MainFrm.uiThreadManager.ShowMessage("Invalid or no game directory selected, Script Merger will now exit.\n\n" +
 				"Restart the program to try again.", "Invalid game directory", MessageBoxButtons.OK, MessageBoxIcon.Error);

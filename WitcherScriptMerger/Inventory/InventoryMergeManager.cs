@@ -59,7 +59,7 @@ internal class InventoryMergeManager
 		string removeOldMergesMsg = $"Old merges (not registered in the Script Merger inventory) were found " +
 			$"in the \"merged mods\" directory:\n\n{Paths.RetrieveMergedModDir()}\n\nOld merges should be removed. " +
 			"This is safe to do, unless you have made manual changes in this directory. Regular (non-manual) " +
-			"merges will be re-created automatically. " +
+			"merges can be re-created automatically. " +
 			"If you do not remove the old merges, Script Merger will close.\n\n" +
 			"Remove the old merges now?";
 

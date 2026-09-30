@@ -158,9 +158,16 @@ internal partial class MainForm : BaseForm
 		Update();
 		OptionsFrm.CheckSetGameDir();
 
-		// Validate directories and dependencies
+		// Validate directories and dependencies. A game folder that fails - moved since, or picked wrongly once - is
+		// asked for again here: the Options window, where the message points, cannot be reached once the program exits.
 		if (!Paths.ValidateAllDirectories())
-			AutoExit(null);
+		{
+			_ = uiThreadManager.ShowMessage("In the following screen, please select your main Witcher 3 game directory.",
+				"Select Witcher 3 game directory", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			OptionsFrm.SelectGameDirectory();
+			if (!Paths.ValidateAllDirectories())
+				AutoExit(null);
+		}
 		if (!Paths.ValidateDependencyPaths())
 			AutoExit(null, "(Some) dependencies are missing. Restart the application and set the right dependency paths. Alternatively, download the SM-FAE \"FULL\" package, which includes all dependencies, and install that.");
 
