@@ -13,7 +13,7 @@ internal class DefaultSettings
 	internal const bool ValidateCustomLoadOrder = true;
 	internal const bool ReviewEachMerge = false;
 	internal const bool CheckDuplicatePrios = true;
-	internal const bool PlayCompletionSounds = false;
+	internal const bool ShowKDiff3Guide = true;
 	internal const bool ReportAfterMerge = false;
 	internal const bool ReportAfterPack = false;
 	internal const bool AutoCreateScriptMerges = false;

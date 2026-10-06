@@ -552,6 +552,11 @@ internal partial class MainForm : BaseForm
 		mnKeyboardShortcuts.Click += MnKeyboardShortcuts_Click;
 		_ = mainMenu.Items.Add(mnKeyboardShortcuts);
 
+		// KDiff3 guide
+		ToolStripMenuItem mnKDiff3Guide = new("KDiff3 Guide...") { Name = "mnKDiff3Guide" };
+		mnKDiff3Guide.Click += (sender, e) => KDiff3Guide.ShowFromMenu();
+		_ = mainMenu.Items.Add(mnKDiff3Guide);
+
 		ToolStripSeparator sep = new();
 		_ = mainMenu.Items.Add(sep);
 

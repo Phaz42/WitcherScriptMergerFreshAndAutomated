@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 using WitcherScriptMerger.Inventory;
+using WitcherScriptMerger.UI;
 
 using static WitcherScriptMerger.Program;
 
@@ -16,7 +18,7 @@ internal static class KDiff3
 		FileMerger.MergeSource source1,
 		FileMerger.MergeSource source2,
 		FileInfo vanillaFile,
-		string outputPath, bool followFileLinks)
+		string outputPath, bool followFileLinks, string relativePath)
 	{
 		if (!File.Exists(ExePath))
 		{
@@ -95,7 +97,12 @@ internal static class KDiff3
 			// Its own KDiff3 settings file too, beside SM-FAE. KDiff3 saves the settings it was given when its
 			// window is closed; saved into the user's own settings file, these would change every later 4.x merge.
 			// KDiff3 starts it from its defaults on first use, and whatever the user changes there is kept.
-			args += $" --config \"{Path.Combine(AppContext.BaseDirectory, "KDiff3-5x.kdiff3rc")}\"";
+			string config = Path.Combine(AppContext.BaseDirectory, "KDiff3-5x.kdiff3rc");
+			args += $" --config \"{config}\"";
+
+			// Except its window: from its defaults it opens at about 300 by 240 pixels, so it is given a size.
+			if (NeedsWindowSize(config))
+				args += FirstWindowArgs();
 		}
 
 		if (hasVanillaVersion)
@@ -103,11 +110,16 @@ internal static class KDiff3
 		else
 			args += $" --L1 \"{source1.Name}\" --L2 \"{source2.Name}\"";
 
-		if (!Settings.Get<bool>("ReviewEachMerge") && hasVanillaVersion)
+		// Without --auto KDiff3 always opens, and why is known here; with it, it opens only for a conflict.
+		KDiff3Reason reason = Settings.Get<bool>("ReviewEachMerge") ? KDiff3Reason.Review
+			: hasVanillaVersion ? KDiff3Reason.Conflict
+			: KDiff3Reason.NoGameFile;
+		if (reason == KDiff3Reason.Conflict)
 		{
 			if (source1FullName.EqualsIgnoreCase(outputPath)
 				&& source2.Hash != null && source2.Hash.IsOutdated)
 			{
+				reason = KDiff3Reason.UpdatedMod;
 				_ = MainFrm.uiThreadManager.ShowMessage(
 					"You are merging an updated mod file into a merge created with a previous version of the file.\n\n" +
 					"You should carefully inspect this merge, because KDiff3's auto-solving behavior KEEPS changes from the previous version of the mod file that have been REMOVED in the new version.",
@@ -125,9 +137,17 @@ internal static class KDiff3
 			? ExePath
 			: Path.Combine(Environment.CurrentDirectory, ExePath);
 
-		Process kdiff3Proc = Process.Start(kdiff3Path, args);
-		kdiff3Proc.WaitForExit();
+		// The first side is the file merged so far when earlier mods were merged into it already.
+		KDiff3GuideContext guide = new(
+			relativePath, source1.Name, source2.Name, hasVanillaVersion,
+			source1FullName.EqualsIgnoreCase(outputPath) || source1FullName.StartsWithIgnoreCase(Paths.MergedBundleContentAbsolute),
+			reason);
+
+		using Process kdiff3Proc = Process.Start(kdiff3Path, args);
+		bool windowShown = WaitForExit(kdiff3Proc, guide);
 		int exitCode = kdiff3Proc.ExitCode;
+		if (windowShown)
+			KDiff3Guide.KDiff3Closed();
 
 		if (xmlTempDir != null)
 		{
@@ -154,5 +174,62 @@ internal static class KDiff3
 		}
 
 		return exitCode;
+	}
+
+	// KDiff3 0.9.98 saves its window's size only once the user has moved or resized it; otherwise it writes back its
+	// default, 600,400, whatever size it was given (measured). So the size is given until the file holds another one.
+	private static bool NeedsWindowSize(string config)
+	{
+		try
+		{
+			return !File.Exists(config)
+				|| !File.ReadLines(config).Any(line => line.StartsWith("Geometry=", StringComparison.Ordinal) && line.Trim() != "Geometry=600,400");
+		}
+		catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+		{
+			return false;  // KDiff3 reads it as it is
+		}
+	}
+
+	// KDiff3's first window: most of the screen's height, with room on the right for the guide's panel beside it. KDiff3
+	// takes both in physical pixels (0.9.98, measured).
+	private static string FirstWindowArgs()
+	{
+		System.Drawing.Rectangle screen = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea;
+		int margin = screen.Width / 40;
+		int panel = Forms.KDiff3GuideForm.PanelWidth * MainFrm.DeviceDpi / 96;
+		int width = Math.Clamp(screen.Width - panel - (3 * margin), screen.Width * 6 / 10, screen.Width * 8 / 10);
+		int height = screen.Height * 85 / 100;
+		int top = screen.Top + ((screen.Height - height) / 2);
+		return $" --cs \"Geometry={width},{height}\" --cs \"Position={screen.Left + margin},{top}\"";
+	}
+
+	// Waits for KDiff3 to close, and tells the guide when its main window appears: with --auto, only when something is
+	// left for the user to decide. Its info dialogs belong to that window, so they are never taken for it (KDiff3 0.9.98).
+	private static bool WaitForExit(Process kdiff3, KDiff3GuideContext guide)
+	{
+		bool windowShown = false;
+		while (!kdiff3.WaitForExit(100))
+		{
+			if (windowShown)
+				continue;
+
+			try
+			{
+				kdiff3.Refresh();
+				IntPtr window = kdiff3.MainWindowHandle;
+				if (window == IntPtr.Zero)
+					continue;
+
+				windowShown = true;
+				KDiff3Guide.KDiff3Opened(window, guide);
+			}
+			catch (InvalidOperationException)
+			{
+				// It closed between the wait and the look.
+			}
+		}
+
+		return windowShown;
 	}
 }

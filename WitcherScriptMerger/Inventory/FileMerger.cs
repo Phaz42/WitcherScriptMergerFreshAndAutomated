@@ -184,11 +184,6 @@ internal partial class FileMerger : IDisposable
 					foreach (Merge bundleMerge in _pendingBundleMerges)
 						_inventory.Merges.Add(bundleMerge);
 
-					if (Settings.Get<bool>("PlayCompletionSounds"))
-					{
-						System.Media.SystemSounds.Asterisk.Play();
-					}
-
 					if (Settings.Get<bool>("ReportAfterPack"))
 					{
 						using PackReportForm reportForm = new(newBundlePath);
@@ -361,7 +356,7 @@ internal partial class FileMerger : IDisposable
 	{
 		ProgressInfo.CurrentAction = $"Merging {source1.Name} && {source2.Name} — waiting for KDiff3 to close";
 
-		int exitCode = KDiff3.Run(source1, source2, _vanillaFile, _outputPath, !isBundled);
+		int exitCode = KDiff3.Run(source1, source2, _vanillaFile, _outputPath, !isBundled, merge.RelativePath);
 
 		if (exitCode == 0)
 		{
@@ -375,11 +370,6 @@ internal partial class FileMerger : IDisposable
 				&& !source2.TextFile.FullName.StartsWithIgnoreCase(Paths.MergedBundleContentAbsolute))
 			{
 				_inventory.AddModToMerge(source2, merge);
-			}
-
-			if (Settings.Get<bool>("PlayCompletionSounds"))
-			{
-				System.Media.SystemSounds.Asterisk.Play();
 			}
 
 			if (Settings.Get<bool>("ReportAfterMerge"))
@@ -581,11 +571,6 @@ internal partial class FileMerger : IDisposable
 			string newBundlePath = PackNewBundle(bundlePath, true);
 			if (newBundlePath == null)
 				return;
-
-			if (Settings.Get<bool>("PlayCompletionSounds"))
-			{
-				System.Media.SystemSounds.Asterisk.Play();
-			}
 
 			if (Settings.Get<bool>("ReportAfterPack"))
 			{

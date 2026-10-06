@@ -68,7 +68,6 @@ internal class AppSettings
 					new XElement("add", new XAttribute("key", "ValidateCustomLoadOrder"), new XAttribute("value", DefaultSettings.ValidateCustomLoadOrder.ToString().ToUpperInvariant())),
 					new XElement("add", new XAttribute("key", "ReviewEachMerge"), new XAttribute("value", DefaultSettings.ReviewEachMerge.ToString().ToUpperInvariant())),
 					new XElement("add", new XAttribute("key", "CheckDuplicatePrios"), new XAttribute("value", DefaultSettings.CheckDuplicatePrios.ToString().ToUpperInvariant())),
-					new XElement("add", new XAttribute("key", "PlayCompletionSounds"), new XAttribute("value", DefaultSettings.PlayCompletionSounds.ToString().ToUpperInvariant())),
 					new XElement("add", new XAttribute("key", "ReportAfterMerge"), new XAttribute("value", DefaultSettings.ReportAfterMerge.ToString().ToUpperInvariant())),
 					new XElement("add", new XAttribute("key", "ReportAfterPack"), new XAttribute("value", DefaultSettings.ReportAfterPack.ToString().ToUpperInvariant())),
 					new XElement("add", new XAttribute("key", "AutoCreateScriptMerges"), new XAttribute("value", DefaultSettings.AutoCreateScriptMerges.ToString().ToUpperInvariant())),

@@ -30,9 +30,26 @@ internal class InventoryMergeManager
 
 	internal bool GetIsInventoryInOrder()
 	{
-		bool mergedModDirExists = Directory.Exists(Paths.RetrieveMergedModDir());
+		string mergedModDir = Paths.RetrieveMergedModDir();
+		bool mergedModDirExists = Directory.Exists(mergedModDir);
 		bool inventoryFileExists = File.Exists(Paths.Inventory);
 		int mergeCount = inventoryFileExists ? MergeInventory.GetMergeCount(Paths.Inventory) : 0;
+
+		// An empty merged mod folder with no merges registered holds no old merges - it is what deleting merges can leave
+		// behind - so it is removed without asking.
+		if (mergedModDirExists && mergeCount == 0
+			&& !Directory.EnumerateFiles(mergedModDir, "*", SearchOption.AllDirectories).Any())
+		{
+			try
+			{
+				Directory.Delete(mergedModDir, true);
+				mergedModDirExists = false;
+			}
+			catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+			{
+				// Left in place, it is asked about below, as before.
+			}
+		}
 
 		// Inventory is in order if:
 		// - Merged mod directory doesn't exist AND the inventory file also doesn't exist
@@ -162,6 +179,8 @@ internal class InventoryMergeManager
 
 	internal void OnMergeComplete(object sender, RunWorkerCompletedEventArgs e)
 	{
+		KDiff3Guide.EndRun();
+
 		// An exception inside the merge worker ends the run and arrives here, not as a crash. Unreported, the merge
 		// just stops: files after that point are silently not merged. Merges finished before it stay as they are.
 		if (e.Error != null)
@@ -401,6 +420,19 @@ internal class InventoryMergeManager
 				}
 #pragma warning restore CA1031 // Do not catch general exception types
 			});
+
+			// And the folder itself: left empty, it was taken for old merges at the next start or merge.
+			if (Directory.Exists(mergeModPath) && !Directory.EnumerateFileSystemEntries(mergeModPath).Any())
+			{
+				try
+				{
+					Directory.Delete(mergeModPath);
+				}
+				catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+				{
+					_ = uiThreadManager.ShowError(errorMsg);
+				}
+			}
 		}
 	}
 

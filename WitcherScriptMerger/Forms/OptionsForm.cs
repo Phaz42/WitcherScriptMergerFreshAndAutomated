@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using Microsoft.Win32;
 
 using WitcherScriptMerger.Theming;
+using WitcherScriptMerger.UI;
 
 #pragma warning disable CS8981
 using def = WitcherScriptMerger.Utilities.DefaultSettings;
@@ -73,7 +74,7 @@ internal partial class OptionsForm : BaseForm
 
 		Settings.Set("ReviewEachMerge", chkReviewEachMerge.Checked);
 		Settings.Set("CheckDuplicatePrios", chkCheckDuplicatePrios.Checked);
-		Settings.Set("PlayCompletionSounds", chkCompletionSounds.Checked);
+		KDiff3Guide.SetGuidesOn(chkShowKDiff3Guide.Checked);
 		Settings.Set("ReportAfterMerge", chkMergeReport.Checked);
 		Settings.Set("ReportAfterPack", chkPackReport.Checked);
 
@@ -221,7 +222,7 @@ internal partial class OptionsForm : BaseForm
 		chkPromptPrioritize.Checked = LoadSetting("ValidateCustomLoadOrder", useDef, def.ValidateCustomLoadOrder);
 		chkReviewEachMerge.Checked = LoadSetting("ReviewEachMerge", useDef, def.ReviewEachMerge);
 		chkCheckDuplicatePrios.Checked = LoadSetting("CheckDuplicatePrios", useDef, def.CheckDuplicatePrios);
-		chkCompletionSounds.Checked = LoadSetting("PlayCompletionSounds", useDef, def.PlayCompletionSounds);
+		chkShowKDiff3Guide.Checked = useDef ? def.ShowKDiff3Guide : KDiff3Guide.GuidesOn;
 		chkMergeReport.Checked = LoadSetting("ReportAfterMerge", useDef, def.ReportAfterMerge);
 		chkPackReport.Checked = LoadSetting("ReportAfterPack", useDef, def.ReportAfterPack);
 		chkAutoCreateScriptMerges.Checked = LoadSetting("AutoCreateScriptMerges", useDef, def.AutoCreateScriptMerges);

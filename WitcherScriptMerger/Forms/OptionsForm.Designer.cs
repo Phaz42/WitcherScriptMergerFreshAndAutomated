@@ -48,7 +48,7 @@ namespace WitcherScriptMerger.Forms
 			chkPromptOutdatedMerge = new CheckBox();
 			chkPackReport = new CheckBox();
 			chkReviewEachMerge = new CheckBox();
-			chkCompletionSounds = new CheckBox();
+			chkShowKDiff3Guide = new CheckBox();
 			chkMergeReport = new CheckBox();
 			chkCollapseCustomLoadOrder = new CheckBox();
 			chkCollapseNotMergeable = new CheckBox();
@@ -145,20 +145,20 @@ namespace WitcherScriptMerger.Forms
 			chkReviewEachMerge.Name = "chkReviewEachMerge";
 			chkReviewEachMerge.Size = new System.Drawing.Size(553, 45);
 			chkReviewEachMerge.TabIndex = 3;
-			chkReviewEachMerge.Text = "Review each succesful merge in KDiff3";
+			chkReviewEachMerge.Text = "Review each successful merge in KDiff3";
 			chkReviewEachMerge.UseVisualStyleBackColor = true;
 			// 
-			// chkCompletionSounds
+			// chkShowKDiff3Guide
 			// 
-			chkCompletionSounds.AutoSize = true;
-			chkCompletionSounds.Font = new System.Drawing.Font("Segoe UI", 11F);
-			chkCompletionSounds.Location = new System.Drawing.Point(36, 157);
-			chkCompletionSounds.Margin = new Padding(11, 11, 11, 11);
-			chkCompletionSounds.Name = "chkCompletionSounds";
-			chkCompletionSounds.Size = new System.Drawing.Size(367, 45);
-			chkCompletionSounds.TabIndex = 4;
-			chkCompletionSounds.Text = "Play completion sounds";
-			chkCompletionSounds.UseVisualStyleBackColor = true;
+			chkShowKDiff3Guide.AutoSize = true;
+			chkShowKDiff3Guide.Font = new System.Drawing.Font("Segoe UI", 11F);
+			chkShowKDiff3Guide.Location = new System.Drawing.Point(36, 157);
+			chkShowKDiff3Guide.Margin = new Padding(11, 11, 11, 11);
+			chkShowKDiff3Guide.Name = "chkShowKDiff3Guide";
+			chkShowKDiff3Guide.Size = new System.Drawing.Size(367, 45);
+			chkShowKDiff3Guide.TabIndex = 4;
+			chkShowKDiff3Guide.Text = "Show KDiff3 guide";
+			chkShowKDiff3Guide.UseVisualStyleBackColor = true;
 			// 
 			// chkMergeReport
 			// 
@@ -484,7 +484,7 @@ namespace WitcherScriptMerger.Forms
 			pnlMerging.Controls.Add(chkReviewEachMerge);
 			pnlMerging.Controls.Add(chkPackReport);
 			pnlMerging.Controls.Add(chkPromptOutdatedMerge);
-			pnlMerging.Controls.Add(chkCompletionSounds);
+			pnlMerging.Controls.Add(chkShowKDiff3Guide);
 			pnlMerging.Controls.Add(chkMergeReport);
 			pnlMerging.Location = new System.Drawing.Point(31, 522);
 			pnlMerging.Margin = new Padding(16, 32, 32, 8);
@@ -738,7 +738,7 @@ namespace WitcherScriptMerger.Forms
 		private CheckBox chkPromptOutdatedMerge;
 		private CheckBox chkPackReport;
 		private CheckBox chkMergeReport;
-		private CheckBox chkCompletionSounds;
+		private CheckBox chkShowKDiff3Guide;
 		private CheckBox chkReviewEachMerge;
 		private CheckBox chkCollapseCustomLoadOrder;
 		private CheckBox chkCollapseNotMergeable;
