@@ -89,6 +89,9 @@ internal partial class FileMerger : IDisposable
 	// bundles with QuickBMS until it is found - on 5.x a full pass over the 31 bundles takes about 12 seconds - and that
 	// search runs for every bundled file merged. Vanilla does not change during a run.
 	private readonly Dictionary<string, string[]> _vanillaBundleContents = new(StringComparer.OrdinalIgnoreCase);
+
+	// Bundled files that failed to unpack in this merge run (UnpackFile), so each failure is reported once.
+	private readonly HashSet<string> _failedUnpacks = new(StringComparer.OrdinalIgnoreCase);
 	private readonly BackgroundWorker _bgWorker;
 
 	#endregion
@@ -502,7 +505,7 @@ internal partial class FileMerger : IDisposable
 		if (_vanillaFile != null)
 		{
 			ProgressInfo.CurrentAction = "Unpacking vanilla bundle content file";
-			string vanillaContentPath = UnpackFile(_vanillaFile.FullName, contentRelativePath, "Vanilla");
+			string vanillaContentPath = UnpackFile(_vanillaFile.FullName, contentRelativePath, null);
 
 			// The file is in a vanilla bundle but could not be extracted (the error has been shown). Merging without
 			// vanilla's copy would merge against no base at all, so this merge is skipped; and _vanillaFile, which
@@ -519,15 +522,28 @@ internal partial class FileMerger : IDisposable
 		return true;
 	}
 
-	private static string UnpackFile(string bundlePath, string contentRelativePath, string outputDirName)
+	/// <summary>
+	/// Unpacks a bundled file from a mod's bundle, or from vanilla's when <paramref name="modName"/> is null. Null when
+	/// it could not be unpacked; the error is shown once per bundle and file in a merge run.
+	/// </summary>
+	private string UnpackFile(string bundlePath, string contentRelativePath, string modName)
 	{
-		string outputDir = Path.Combine(Paths.TempBundleContent, outputDirName);
+		// On 5.x a mod's copy is unpacked before its merges and, when that failed, asked for again by each merge; the
+		// same failure would show the same error again, so a failed unpack is remembered for the rest of the run.
+		string unpackKey = bundlePath + "|" + contentRelativePath;
+		if (_failedUnpacks.Contains(unpackKey))
+			return null;
 
-		int exitCode = QuickBms.UnpackFile(bundlePath, contentRelativePath, outputDir);
+		string outputDir = Path.Combine(Paths.TempBundleContent, modName ?? "Vanilla");
 
-		return exitCode == 0
-			? Path.Combine(outputDir, contentRelativePath)
-			: null;
+		int exitCode = QuickBms.UnpackFile(bundlePath, contentRelativePath, outputDir, modName);
+		if (exitCode != 0)
+		{
+			_ = _failedUnpacks.Add(unpackKey);
+			return null;
+		}
+
+		return Path.Combine(outputDir, contentRelativePath);
 	}
 
 	internal void RepackBundleAsync(string bundlePath)

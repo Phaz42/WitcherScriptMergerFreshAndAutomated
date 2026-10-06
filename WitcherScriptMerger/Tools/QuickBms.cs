@@ -14,7 +14,11 @@ internal static class QuickBms
 	internal static string ExePath = Settings.Get("QuickBmsPath");
 	internal static string PluginPath = Settings.Get("QuickBmsPluginPath");
 
-	internal static int UnpackFile(string bundlePath, string contentRelativePath, string outputDir)
+	/// <summary>
+	/// Unpacks one file from a bundle. <paramref name="modName"/> is the mod the bundle belongs to, or null for the
+	/// game's own bundle; it only changes what the error message tells the user to do.
+	/// </summary>
+	internal static int UnpackFile(string bundlePath, string contentRelativePath, string outputDir, string modName)
 	{
 		if (!ValidateResources(bundlePath))
 			return 1;
@@ -41,15 +45,23 @@ internal static class QuickBms
 			|| bmsProc.ExitCode != 0
 			|| !File.Exists(unpackedFile))
 		{
-			string errorMsg = $"Error unpacking bundle content file using QuickBMS (exit code {bmsProc.ExitCode}).\nIts output is below.";
+			// What a user can act on comes first; QuickBMS's own output, which only helps someone diagnosing it, is
+			// collapsed under the details. Whether the game's bundle or a mod's failed decides what the user should do.
+			string details = $"QuickBMS exit code {bmsProc.ExitCode}.";
 			int outputStart = output.IndexOf("- filter string", StringComparison.OrdinalIgnoreCase);
 			if (outputStart != -1)
-			{
-				output = output[outputStart..];
-				errorMsg += "\n\n" + output;
-			}
+				details += "\n\n" + output[outputStart..].Trim();
 
-			_ = MainFrm.uiThreadManager.ShowError(errorMsg);
+			string bundleName = Path.GetFileName(bundlePath);
+			string text = modName == null
+				? $"SM-FAE couldn't unpack {contentRelativePath} from the game's files ({bundleName}).\n\n" +
+					"Without the game's own copy, this file can't be merged. Nothing has been changed.\n\n" +
+					"Your game's files may be damaged or incomplete. Verify the game files in Steam, GOG Galaxy or Epic, then try again."
+				: $"SM-FAE couldn't unpack {contentRelativePath} from the mod {modName} ({bundleName}).\n\n" +
+					"Without this mod's copy, its changes to this file can't be merged. Nothing has been changed.\n\n" +
+					"The mod's bundle may be damaged. Try reinstalling the mod, or ask its author.";
+
+			MainFrm.uiThreadManager.ShowErrorWithDetails("Couldn't unpack a file", text, details, "Couldn't Unpack File");
 			return 1;
 		}
 

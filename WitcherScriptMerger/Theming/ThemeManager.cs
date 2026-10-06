@@ -60,7 +60,7 @@ internal class ThemeManager
 
 			TreeViewBackColor = Color.White,
 
-			NoConflictsImage = Properties.Resources.thumbsuplight
+			IsDark = false
 		};
 
 		DarkTheme = new()
@@ -93,7 +93,7 @@ internal class ThemeManager
 
 			TreeViewBackColor = GetColorByHex("2d2d2d"),
 
-			NoConflictsImage = Properties.Resources.thumbsupdark
+			IsDark = true
 		};
 
 		SetCurrentTheme();

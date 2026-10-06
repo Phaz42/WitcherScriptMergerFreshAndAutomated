@@ -33,5 +33,6 @@ internal class Theme
 
 	internal Color TreeViewBackColor;
 
-	internal Bitmap NoConflictsImage;
+	// Picks the "no conflicts" image for the theme (NoConflictsImage), a file beside SM-FAE.
+	internal bool IsDark;
 }

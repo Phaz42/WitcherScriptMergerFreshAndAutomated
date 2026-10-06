@@ -36,6 +36,65 @@ internal class UIThreadManager
 	internal DialogResult ShowError(string text, string title = "Error") => ShowMessage(text, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
 
 	/// <summary>
+	/// Shows an error whose technical details are collapsed under "Show technical details", so the user first reads what
+	/// happened and what to do; "Copy details" puts all of it on the clipboard. Where the native task dialog is
+	/// unavailable, a plain message box shows everything, the details last (Ctrl+C copies a message box's text).
+	/// </summary>
+	internal void ShowErrorWithDetails(string heading, string text, string details, string title = "Error")
+	{
+		ActivateSafely();
+
+		void Show()
+		{
+			// Copies the whole error - what a user pastes into a forum post or bug report - and leaves the dialog open.
+			TaskDialogButton copyButton = new("Copy details") { AllowCloseDialog = false };
+			copyButton.Click += (sender, e) =>
+			{
+				string all = $"{title}\n\n{heading}\n\n{text}\n\n{details}".Replace("\r\n", "\n", StringComparison.Ordinal);
+				try
+				{
+					Clipboard.SetText(all.Replace("\n", "\r\n", StringComparison.Ordinal));
+				}
+				catch (System.Runtime.InteropServices.ExternalException)
+				{
+					// Another program holds the clipboard; the details stay readable in the dialog.
+				}
+			};
+
+			TaskDialogPage page = new()
+			{
+				Caption = title,
+				Heading = heading,
+				Text = text,
+				Icon = TaskDialogIcon.Error,
+				Buttons = { copyButton, TaskDialogButton.OK },
+				DefaultButton = TaskDialogButton.OK,
+				Expander = new TaskDialogExpander(details)
+				{
+					CollapsedButtonText = "Show technical details",
+					ExpandedButtonText = "Hide technical details",
+					Position = TaskDialogExpanderPosition.AfterFootnote
+				}
+			};
+
+			try
+			{
+				_ = TaskDialog.ShowDialog(mainForm, page);
+			}
+			catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception or EntryPointNotFoundException)
+			{
+				// The task dialog needs comctl32 6 (visual styles); a compatibility layer may lack it or part of it.
+				_ = MessageBox.Show(mainForm, $"{heading}\n\n{text}\n\nTechnical details:\n{details}", title, MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
+		}
+
+		if (mainForm.InvokeRequired)
+			_ = mainForm.Invoke((MethodInvoker)Show);
+		else
+			Show();
+	}
+
+	/// <summary>
 	/// Shows a modal form on the main form, ensuring it's invoked on the UI thread if necessary.
 	/// Applies theming to specific form types.
 	/// </summary>
@@ -100,12 +159,21 @@ internal class UIThreadManager
 	/// </summary>
 	internal void ShowHideNoConflictsWitcher()
 	{
+		// The image is a file the user may replace or remove (NoConflictsImage); with none to show, the empty tree stays.
+		// NoConflictsImage owns the image and disposes the previous one when it loads another, so the picture box lets go of
+		// it first - an animated GIF is still playing there - and never keeps one it is not given now, even when hidden.
+		mainForm.pbNoConflicts.Image = null;
+		System.Drawing.Image image = null;
 		if (mainForm.treConflicts.IsEmpty() && Settings.Get<bool>("NoConflictsWitcher"))
+			image = NoConflictsImage.Get(ThemeManager.CurrentTheme.IsDark);
+
+		mainForm.pbNoConflicts.Image = image;
+
+		if (image != null)
 		{
 			// Show "no conflicts" image
 			mainForm.tlpMain.Controls.Remove(mainForm.treConflicts);
 			mainForm.pbNoConflicts.BackColor = ThemeManager.CurrentTheme.StandardButtonBackColor;
-			mainForm.pbNoConflicts.Image = ThemeManager.CurrentTheme.NoConflictsImage;
 			mainForm.pbNoConflicts.Dock = DockStyle.Fill;
 			mainForm.pbNoConflicts.SizeMode = PictureBoxSizeMode.Zoom;
 			mainForm.pbNoConflicts.Margin = new Padding(0);

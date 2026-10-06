@@ -18,9 +18,6 @@
     <Resource Include="app.config" CopyToOutputDirectory="Never" />
   </ItemGroup>
   <ItemGroup>
-    <None Remove="Properties\Resources\thumbsuplight.png" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Update="Controls\ConflictTree.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -64,8 +61,11 @@
     <Content Include="WolfMedallion.ico" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Properties\Resources\thumbsupdark.png" />
-    <EmbeddedResource Include="Properties\Resources\thumbsuplight.png" />
+    <!-- The "no conflicts" images ship as files, never as resources, so a user can replace them: their own go in
+         Images\Custom, where a release puts only its README (Theming\NoConflictsImage.cs). -->
+    <None Update="Images\Default\No-Conflicts-Dark.png" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Images\Default\No-Conflicts-Light.png" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Images\Custom\README.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
