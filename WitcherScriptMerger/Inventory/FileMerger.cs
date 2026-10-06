@@ -204,6 +204,15 @@ internal partial class FileMerger : IDisposable
 		_bgWorker.RunWorkerAsync();
 	}
 
+	// The mods whose copies the user chose to leave out (GameVersionCheck.Ask) are not merged, as if unticked: the merge
+	// is made from the others, and the conflict stays listed with those mods. The merges they would have had count as done.
+	private TreeNode[] LeaveOut(TreeNode[] checkedModNodes, IReadOnlySet<string> modNames)
+	{
+		TreeNode[] kept = checkedModNodes.Where(node => !modNames.Contains(node.Text)).ToArray();
+		ProgressInfo.CurrentMergeNum += checkedModNodes.Length - kept.Length;
+		return kept;
+	}
+
 	private void MergeFlatFileNode(TreeNode fileNode, TreeNode[] checkedModNodes, Merge merge, bool isNew)
 	{
 		Controls.SMTree.NodeMetadata metadata1 = checkedModNodes[0].GetMetadata();
@@ -221,13 +230,22 @@ internal partial class FileMerger : IDisposable
 		_vanillaFile = new FileInfo(fileNode.GetMetadata().FilePath);
 
 		// Asked once per file, over the mods' own copies, before anything is merged (GameVersionCheck says why).
-		IEnumerable<(string, FileInfo)> modCopies = checkedModNodes
+		List<(string, FileInfo)> modCopies = checkedModNodes
 			.Select(node => MergeSource.FromFlatFile(new FileInfo(node.GetMetadata().FilePath), null))
-			.Select(source => (source.Name, source.TextFile));
-		if (!GameVersionCheck.Confirm(merge.RelativePath, _vanillaFile, modCopies))
+			.Select(source => (source.Name, source.TextFile))
+			.ToList();
+		GameVersionCheck.Decision decision = GameVersionCheck.Ask(merge.RelativePath, _vanillaFile, modCopies);
+		if (!decision.Merge)
 		{
 			ProgressInfo.CurrentMergeNum += checkedModNodes.Length - 1;
 			return;
+		}
+
+		if (decision.LeaveOut.Count > 0)
+		{
+			checkedModNodes = LeaveOut(checkedModNodes, decision.LeaveOut);
+			metadata1 = checkedModNodes[0].GetMetadata();
+			source1 = MergeSource.FromFlatFile(new FileInfo(metadata1.FilePath), metadata1.FileHash);
 		}
 
 		for (int i = 1; i < checkedModNodes.Length; ++i)
@@ -287,11 +305,19 @@ internal partial class FileMerger : IDisposable
 				unpackedCopies[source.Name] = unpacked != null ? new FileInfo(unpacked) : null;
 			}
 
-			IEnumerable<(string, FileInfo)> modCopies = unpackedCopies.Select(copy => (copy.Key, copy.Value));
-			if (!GameVersionCheck.Confirm(fileNode.Text, _vanillaFile, modCopies))
+			List<(string, FileInfo)> modCopies = unpackedCopies.Select(copy => (copy.Key, copy.Value)).ToList();
+			GameVersionCheck.Decision decision = GameVersionCheck.Ask(fileNode.Text, _vanillaFile, modCopies);
+			if (!decision.Merge)
 			{
 				ProgressInfo.CurrentMergeNum += checkedModNodes.Length - 1;
 				return;
+			}
+
+			if (decision.LeaveOut.Count > 0)
+			{
+				checkedModNodes = LeaveOut(checkedModNodes, decision.LeaveOut);
+				metadata1 = checkedModNodes[0].GetMetadata();
+				source1 = MergeSource.FromBundle(new FileInfo(metadata1.FilePath), metadata1.FileHash);
 			}
 
 			source1.TextFile = unpackedCopies.GetValueOrDefault(source1.Name);

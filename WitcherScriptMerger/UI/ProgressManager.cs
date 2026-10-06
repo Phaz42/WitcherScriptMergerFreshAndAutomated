@@ -6,6 +6,7 @@ using System.Windows.Forms;
 
 using WitcherScriptMerger.FileIndex;
 using WitcherScriptMerger.Forms;
+using WitcherScriptMerger.Theming;
 
 namespace WitcherScriptMerger.UI;
 
@@ -106,6 +107,21 @@ internal class ProgressManager
 				lblStatusLeft2.Text = $"{conflictNodes.Count - solvableCount} not mergeable";
 				lblStatusLeft2.Visible = true;
 			}
+		}
+
+		// Mods with problems (ModHealth): a link to the report, shown only when there are any.
+		ModHealth health = modFileIndex?.Health;
+		ToolStripStatusLabel healthLabel = mainForm.lblStatusHealth;
+		if (health != null && health.HasProblems)
+		{
+			int mods = health.ModCount;
+			healthLabel.Text = $"\u26A0 {mods} mod{mods.GetPluralS()} with problems";
+			healthLabel.LinkColor = healthLabel.ActiveLinkColor = healthLabel.VisitedLinkColor = ThemeManager.CurrentTheme.WarningColor;
+			healthLabel.Visible = true;
+		}
+		else if (modFileIndex != null)
+		{
+			healthLabel.Visible = false;
 		}
 
 		// Update merge status

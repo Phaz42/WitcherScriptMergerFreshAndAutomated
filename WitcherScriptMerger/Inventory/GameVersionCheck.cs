@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -29,53 +30,130 @@ internal static class GameVersionCheck
 	private const int SomeLines = 10;
 	private const double LargeShare = 0.10;
 
+	/// <summary>What to do with a file some of whose copies look made for another game version.</summary>
+	/// <param name="Merge">False: skip the file.</param>
+	/// <param name="LeaveOut">The mods whose copies are left out of the merge; empty to merge every copy.</param>
+	internal sealed record Decision(bool Merge, IReadOnlySet<string> LeaveOut);
+
+	private static readonly Decision MergeAll = new(true, new HashSet<string>());
+
 	/// <summary>
-	/// Asks before a merge when any of the mods' copies looks made for another game version. True to go on: nothing
-	/// looked out of place, or the user chose to merge anyway. Only on 5.x, so 4.x merges behave exactly as before.
+	/// Asks before a merge when any of the mods' copies looks made for another game version: leave those copies out and
+	/// merge the others, merge anyway, or skip the file. Only on 5.x, so 4.x merges behave exactly as before.
 	/// </summary>
-	internal static bool Confirm(string relativePath, FileInfo vanillaFile, IEnumerable<(string ModName, FileInfo Copy)> modCopies)
+	internal static Decision Ask(string relativePath, FileInfo vanillaFile, IReadOnlyCollection<(string ModName, FileInfo Copy)> modCopies)
 	{
 		if (vanillaFile == null || !vanillaFile.Exists || !Paths.HasRemasterScripts())
-			return true;
-
-		HashSet<string> vanillaLines = MeaningfulLines(vanillaFile.FullName);
-		if (vanillaLines.Count == 0)
-			return true;
+			return MergeAll;
 
 		List<string> suspects = [];
+		HashSet<string> outdated = new(StringComparer.OrdinalIgnoreCase);
 		foreach ((string modName, FileInfo copy) in modCopies)
 		{
 			if (copy == null || !copy.Exists)
 				continue;  // the merge itself reports a missing copy
 
-			HashSet<string> modLines = MeaningfulLines(copy.FullName);
-			int missing = vanillaLines.Count(line => !modLines.Contains(line));
-			if (missing >= ManyLines || (missing >= SomeLines && missing >= LargeShare * vanillaLines.Count))
+			if (Compare(vanillaFile.FullName, copy.FullName) is { IsOutdated: true } result)
 			{
-				suspects.Add(string.Format(CultureInfo.InvariantCulture,
-					"{0} is missing {1:N0} of the game's {2:N0} lines", modName, missing, vanillaLines.Count));
+				suspects.Add($"{modName} is missing {result.Describe()}");
+				_ = outdated.Add(modName);
 			}
 		}
 
 		if (suspects.Count == 0)
-			return true;
+			return MergeAll;
+
+		// Leaving them out helps only when two or more mods remain: their merge is then loaded instead of every mod's
+		// own copy. With one left there is no merge, and the outdated copy may still be the one the load order picks.
+		bool one = suspects.Count == 1;
+		string them = one ? modCopies.First(copy => outdated.Contains(copy.ModName)).ModName : "these mods";
+		bool canLeaveOut = modCopies.Count - outdated.Count >= 2;
 
 		// On 5.x a mismatched copy is nearly always made for 4.04, hence "older".
-		// No is the default: proceeding is the choice that can break the game, so it must be made deliberately.
-		bool one = suspects.Count == 1;
-		return DialogResult.Yes == MainFrm.uiThreadManager.ShowMessage(
-			(one ? "This mod contains" : "These mods contain")
-			+ $" a copy of {relativePath} made for an older version of the game:\n\n  "
+		string text = (one ? "This mod's copy" : "These mods' copies") + $" of {relativePath} "
+			+ (one ? "was" : "were") + " made for an older game version:\n\n  "
 			+ string.Join("\n  ", suspects)
-			+ "\n\nMerging would remove those lines and will likely cause problems, such as compilation errors when the game "
-			+ "starts, or things quietly going wrong in-game.\n\n"
-			+ "It's recommended not to proceed, and to get "
-			+ (one ? "a version of the mod that has" : "versions of these mods that have")
-			+ " been updated for The Witcher 3 Remastered.\n\nMerge anyway?",
-			"Made for an Older Game Version",
-			MessageBoxButtons.YesNo,
-			MessageBoxIcon.Warning,
-			MessageBoxDefaultButton.Button2);
+			+ "\n\nMerging " + (one ? "it" : "them") + " removes those lines, which can cause script compilation errors or "
+			+ "problems in-game. " + (one ? "A version" : "Versions") + " updated for The Witcher 3 Remastered "
+			+ (one ? "is" : "are") + " recommended.";
+
+		TaskDialogCommandLinkButton leaveOut = new(
+			$"Leave out {them} and merge the others",
+			"Keeps the Remastered code. " + (one ? $"{them}'s" : "Their") + " changes to this file are not used.");
+		TaskDialogCommandLinkButton mergeAnyway = new("Merge anyway", "Not recommended: removes the Remastered changes to this file.");
+		TaskDialogCommandLinkButton skip = new("Don't merge this file", "Other files are still merged.");
+
+		TaskDialogPage page = new()
+		{
+			Caption = "Made for an Older Game Version",
+			Heading = "Made for an older game version",
+			Text = text,
+			Icon = TaskDialogIcon.Warning,
+			AllowCancel = true
+		};
+		if (canLeaveOut)
+			page.Buttons.Add(leaveOut);
+		page.Buttons.Add(mergeAnyway);
+		page.Buttons.Add(skip);
+
+		// The default is never the choice that can break the game.
+		page.DefaultButton = canLeaveOut ? leaveOut : skip;
+
+		TaskDialogButton choice = MainFrm.uiThreadManager.ShowTaskDialog(page, () =>
+			// Where the task dialog is unavailable, the question as before 1.0: merge anyway, or skip the file.
+			DialogResult.Yes == MainFrm.uiThreadManager.ShowMessage(
+				text + "\n\nMerge anyway?",
+				"Made for an Older Game Version",
+				MessageBoxButtons.YesNo,
+				MessageBoxIcon.Warning,
+				MessageBoxDefaultButton.Button2) ? mergeAnyway : skip);
+
+		return choice == leaveOut ? new Decision(true, outdated)
+			: choice == mergeAnyway ? MergeAll
+			: new Decision(false, outdated);
+	}
+
+	/// <summary>How many of the installed game file's meaningful lines a mod's copy lacks, and whether that marks it as made for another game version.</summary>
+	internal readonly record struct Result(int Missing, int GameLines)
+	{
+		internal bool IsOutdated => Missing >= ManyLines || (Missing >= SomeLines && Missing >= LargeShare * GameLines);
+
+		internal string Describe() => string.Format(CultureInfo.InvariantCulture, "{0:N0} of the game's {1:N0} lines", Missing, GameLines);
+	}
+
+	// A file's meaningful lines, read once per run of SM-FAE while its length and last write time are unchanged: the mod
+	// check (ModHealth) compares every script of every mod at each refresh, and most of them have not changed.
+	private static readonly ConcurrentDictionary<(string Path, long Length, DateTime LastWriteUtc), HashSet<string>> LinesCache = new();
+
+	/// <summary>
+	/// Compares a mod's copy with the installed game file. Null when the game file has no meaningful lines, or when either
+	/// file cannot be read - then there is nothing to say about the copy.
+	/// </summary>
+	internal static Result? Compare(string gameFile, string modCopy)
+	{
+		try
+		{
+			HashSet<string> gameLines = CachedMeaningfulLines(gameFile);
+			if (gameLines.Count == 0)
+				return null;
+
+			HashSet<string> modLines = CachedMeaningfulLines(modCopy);
+			return new Result(gameLines.Count(line => !modLines.Contains(line)), gameLines.Count);
+		}
+		catch (IOException)
+		{
+			return null;
+		}
+		catch (UnauthorizedAccessException)
+		{
+			return null;
+		}
+	}
+
+	private static HashSet<string> CachedMeaningfulLines(string path)
+	{
+		FileInfo file = new(path);
+		return LinesCache.GetOrAdd((file.FullName.ToUpperInvariant(), file.Length, file.LastWriteTimeUtc), key => MeaningfulLines(file.FullName));
 	}
 
 	// The lines that carry meaning: trimmed, and neither blank, a comment, an XML declaration, nor only punctuation

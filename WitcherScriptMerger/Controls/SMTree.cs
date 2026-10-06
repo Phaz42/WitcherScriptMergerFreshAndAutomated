@@ -89,6 +89,7 @@ internal abstract partial class SMTree : TreeView, IDisposable
 		internal ModFile ModFile;
 		internal Color ForeColor = ThemeManager.CurrentTheme.ForeDimmedColor;
 		internal string ModName = string.Empty;
+		internal bool IsOutdated;  // this mod's copy was made for an older game version (ModHealth)
 	}
 
 	#endregion
@@ -124,20 +125,8 @@ internal abstract partial class SMTree : TreeView, IDisposable
 		base.OnHandleCreated(e);
 	}
 
-	// The scrollbars are Windows' own, and Windows Forms has no setting for their colours. Windows' Explorer look has a
-	// dark variant (Windows 10 1809 and later) with dark scrollbars; SetWindowTheme gives it to this control. It is not
-	// documented, but File Explorer and many applications rely on it. Where it does not exist - older Windows, Wine - the
-	// control keeps its usual look. The light theme takes the light Explorer look, so both themes draw the expand arrows
-	// and checkboxes the same way.
-	[LibraryImport("uxtheme.dll", StringMarshalling = StringMarshalling.Utf16)]
-	private static partial int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string pszSubIdList);
-
 	/// <summary>Gives the control the Windows look of the current theme: dark scrollbars in the dark theme.</summary>
-	internal void ApplyWindowTheme()
-	{
-		if (IsHandleCreated)
-			_ = SetWindowTheme(Handle, ThemeManager.CurrentTheme.IsDark ? "DarkMode_Explorer" : "Explorer", null);
-	}
+	internal void ApplyWindowTheme() => ThemeUtils.ApplyWindowTheme(this);
 
 	#endregion
 

@@ -36,6 +36,9 @@ internal partial class MainForm : BaseForm
 
 	// The search above each tree (TreeManager applies it), and a short pause after typing before it searches.
 	internal TextBox txtConflictsSearch, txtMergesSearch;
+
+	// The status bar's link to the mod check's report (ModHealth); shown when it found problems.
+	internal ToolStripStatusLabel lblStatusHealth;
 	internal Label lblConflictsSearchCount, lblMergesSearchCount;
 	private ToolTip _searchToolTip;
 	private System.Windows.Forms.Timer _conflictsSearchDelay, _mergesSearchDelay;
@@ -60,6 +63,7 @@ internal partial class MainForm : BaseForm
 				treMerges?.Dispose();
 				pbNoConflicts?.Dispose();
 				_searchToolTip?.Dispose();
+				lblStatusHealth?.Dispose();
 				txtConflictsSearch?.Dispose();
 				txtMergesSearch?.Dispose();
 				lblConflictsSearchCount?.Dispose();
@@ -128,6 +132,30 @@ internal partial class MainForm : BaseForm
 		pbNoConflicts = new();
 
 		InitializeSearch();
+
+		lblStatusHealth = new ToolStripStatusLabel
+		{
+			BorderSides = ToolStripStatusLabelBorderSides.Left,
+			DisplayStyle = ToolStripItemDisplayStyle.Text,
+			Font = new Font("Segoe UI", 10.2F),
+			IsLink = true,
+			LinkBehavior = LinkBehavior.HoverUnderline,
+			Padding = new Padding(5, 0, 5, 0),
+			ToolTipText = "Show the mods with problems",
+			Visible = false
+		};
+		lblStatusHealth.Click += (sender, e) => ShowModHealthReport();
+		statusStrip.Items.Insert(statusStrip.Items.IndexOf(lblStatusSpring), lblStatusHealth);
+	}
+
+	private void ShowModHealthReport()
+	{
+		if (treeManager?.ModIndex?.Health is not { HasProblems: true } health)
+			return;
+
+		using ModHealthForm form = new(health);
+		ThemeMngr.ApplyThemeOnForm(form);
+		_ = form.ShowDialog(this);
 	}
 
 	private const string SearchHelp =
@@ -151,13 +179,13 @@ internal partial class MainForm : BaseForm
 
 		_searchToolTip = new ToolTip { AutoPopDelay = 30000, InitialDelay = 600, ReshowDelay = 200 };
 
-		txtConflictsSearch = CreateSearchRow(tlpConflictsHeader, searchRowHeight, out lblConflictsSearchCount);
-		txtMergesSearch = CreateSearchRow(tlpMergesHeader, searchRowHeight, out lblMergesSearchCount);
+		txtConflictsSearch = CreateSearchRow(tlpConflictsHeader, searchRowHeight, () => treConflicts, out lblConflictsSearchCount);
+		txtMergesSearch = CreateSearchRow(tlpMergesHeader, searchRowHeight, () => treMerges, out lblMergesSearchCount);
 		_conflictsSearchDelay = CreateSearchDelay(txtConflictsSearch, () => treConflicts);
 		_mergesSearchDelay = CreateSearchDelay(txtMergesSearch, () => treMerges);
 	}
 
-	private TextBox CreateSearchRow(TableLayoutPanel header, float height, out Label count)
+	private TextBox CreateSearchRow(TableLayoutPanel header, float height, Func<SMTree> tree, out Label count)
 	{
 		header.RowCount = 2;
 		header.RowStyles[0] = new RowStyle(SizeType.Percent, 100F);
@@ -175,6 +203,12 @@ internal partial class MainForm : BaseForm
 		_searchToolTip.SetToolTip(box, SearchHelp);
 		SearchBox frame = new(box) { Dock = DockStyle.Fill, Margin = new Padding(0) };
 		_searchToolTip.SetToolTip(frame, SearchHelp);
+		// The cross does what Esc twice does: clears the search, at once rather than after the typing delay, and returns to the list.
+		frame.Cleared += (sender, e) =>
+		{
+			treeManager?.SetSearchText(tree(), string.Empty);
+			_ = tree().Focus();
+		};
 
 		count = new Label
 		{

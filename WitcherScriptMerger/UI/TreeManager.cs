@@ -330,6 +330,8 @@ internal class TreeManager
 
 			ProgressManager.progressBar.Value = 100;
 
+			MarkOutdatedMergeMods();
+
 			// This runs queued, possibly after the progress screen was hidden: the search is applied to the new nodes.
 			ApplySearch(MergesTree);
 		}));
@@ -468,6 +470,7 @@ internal class TreeManager
 
 		// Finalize and update UI
 		ConflictsTree.ApplyDefaultExpansion();
+		MarkOutdatedMergeMods();  // the merges tree was built before this scan found which copies are outdated
 		ConflictsTree.EndUpdate();
 		ConflictsTree.ScrollToTop();
 		ProgressManager.UpdateStatusText(ModIndex);
@@ -704,6 +707,7 @@ internal class TreeManager
 	{
 		TreeNode node = tv.GetNodeAt(e.Location);
 		bool isBundledNode = node?.Parent?.Parent?.Tag is ModFileCategory tag && tag.IsBundled == true;
+		bool isOutdated = node?.Tag is NodeMetadata { IsOutdated: true };
 
 		// Determine if tooltips are allowed based on settings
 		bool ToolTipsAllowed = false;
@@ -724,6 +728,9 @@ internal class TreeManager
 				break;
 		}
 
+		// Why a mod stands out is shown whatever the priority tooltip setting.
+		ToolTipsAllowed |= isOutdated;
+
 		// Show or hide tooltip based on conditions
 		if (node != null && node != _prevToolTipNode && !string.IsNullOrEmpty(node.ToolTipText) && ToolTipsAllowed)
 		{
@@ -740,6 +747,29 @@ internal class TreeManager
 		}
 
 		_prevToolTipNode = node;
+	}
+
+	/// <summary>
+	/// Marks the mods in the merges tree whose copy was made for an older game version, as the conflicts tree does: merged,
+	/// such a copy has already removed what the Remastered version changed in that file. Hidden merges too.
+	/// </summary>
+	private void MarkOutdatedMergeMods()
+	{
+		ModHealth health = ModIndex?.Health;
+		foreach (TreeNode fileNode in MergesTree.AllFileNodes)
+		{
+			foreach (TreeNode modNode in fileNode.GetTreeNodes())
+			{
+				if (modNode.Tag is not NodeMetadata metadata)
+					continue;
+
+				GameVersionCheck.Result outdated = default;
+				metadata.IsOutdated = health != null && health.IsOutdated(fileNode.Text, modNode.Text, out outdated);
+				metadata.ForeColor = metadata.IsOutdated ? ThemeManager.CurrentTheme.WarningColor : ThemeManager.CurrentTheme.ForeDimmedColor;
+				modNode.ForeColor = metadata.ForeColor;
+				modNode.ToolTipText = metadata.IsOutdated ? $"Made for an older game version: missing {outdated.Describe()}" : null;
+			}
+		}
 	}
 
 	// Mod nodes fade - nodes with no nodes below them, as before; categories and files do not.

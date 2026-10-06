@@ -59,6 +59,7 @@ internal class ThemeManager
 			MenuSelectedForeColor = DefaultAccentColor,
 
 			TreeViewBackColor = Color.White,
+			WarningColor = GetColorByHex("B45309"),
 
 			IsDark = false
 		};
@@ -92,6 +93,7 @@ internal class ThemeManager
 			MenuSelectedForeColor = DefaultAccentColor,
 
 			TreeViewBackColor = GetColorByHex("2d2d2d"),
+			WarningColor = GetColorByHex("F0A040"),
 
 			IsDark = true
 		};

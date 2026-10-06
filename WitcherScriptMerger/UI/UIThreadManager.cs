@@ -36,6 +36,29 @@ internal class UIThreadManager
 	internal DialogResult ShowError(string text, string title = "Error") => ShowMessage(text, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
 
 	/// <summary>
+	/// Shows a task dialog on the main form, on the UI thread, and returns the button chosen. Where the native task dialog
+	/// is unavailable (comctl32 6, which a compatibility layer may lack), <paramref name="fallback"/> asks instead.
+	/// </summary>
+	internal TaskDialogButton ShowTaskDialog(TaskDialogPage page, Func<TaskDialogButton> fallback)
+	{
+		ActivateSafely();
+
+		TaskDialogButton Show()
+		{
+			try
+			{
+				return TaskDialog.ShowDialog(mainForm, page);
+			}
+			catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception or EntryPointNotFoundException)
+			{
+				return fallback();
+			}
+		}
+
+		return mainForm.InvokeRequired ? (TaskDialogButton)mainForm.Invoke(new Func<TaskDialogButton>(Show)) : Show();
+	}
+
+	/// <summary>
 	/// Shows an error whose technical details are collapsed under "Show technical details", so the user first reads what
 	/// happened and what to do; "Copy details" puts all of it on the clipboard. Where the native task dialog is
 	/// unavailable, a plain message box shows everything, the details last (Ctrl+C copies a message box's text).

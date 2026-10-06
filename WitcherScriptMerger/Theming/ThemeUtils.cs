@@ -8,6 +8,20 @@ namespace WitcherScriptMerger.Theming;
 
 internal static partial class ThemeUtils
 {
+	// A control's scrollbars are Windows' own, and Windows Forms has no setting for their colours. Windows' Explorer look
+	// has a dark variant (Windows 10 1809 and later) with dark scrollbars; SetWindowTheme gives it to a control. It is not
+	// documented, but File Explorer and many applications rely on it. Where it does not exist - older Windows, Wine - the
+	// control keeps its usual look. The light theme takes the light Explorer look, so both themes draw alike.
+	[LibraryImport("uxtheme.dll", StringMarshalling = StringMarshalling.Utf16)]
+	private static partial int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string pszSubIdList);
+
+	/// <summary>Gives a control the Windows look of the current theme: dark scrollbars in the dark theme.</summary>
+	internal static void ApplyWindowTheme(Control control)
+	{
+		if (control != null && control.IsHandleCreated)
+			_ = SetWindowTheme(control.Handle, ThemeManager.CurrentTheme.IsDark ? "DarkMode_Explorer" : "Explorer", null);
+	}
+
 	[LibraryImport("User32.dll", EntryPoint = "GetDC")]
 	private static partial IntPtr GetDC(IntPtr hWnd);
 

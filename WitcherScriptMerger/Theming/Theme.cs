@@ -33,6 +33,9 @@ internal class Theme
 
 	internal Color TreeViewBackColor;
 
+	// A mod with a problem the mod check found (ModHealth): readable on the list's background in each theme.
+	internal Color WarningColor;
+
 	// Picks the "no conflicts" image for the theme (NoConflictsImage), a file beside SM-FAE.
 	internal bool IsDark;
 }

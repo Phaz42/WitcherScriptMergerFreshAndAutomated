@@ -27,6 +27,9 @@ internal class ModFileIndex
 
 	internal int BundleCount { get; private set; }
 
+	/// <summary>Problems found with the mods at the end of the scan: outdated scripts, mods installed wrongly.</summary>
+	internal ModHealth Health { get; private set; } = new();
+
 	internal ModFileIndex() => Files = [];
 
 	internal void BuildAsync(
@@ -45,6 +48,13 @@ internal class ModFileIndex
 			return;
 
 		ModCount = modDirPaths.Count;
+
+		// For the problem check, read here on the UI thread: which files are the merged mod's, and what each merge holds.
+		List<Merge> merges = Program.Inventory?.Merges.ToList() ?? [];
+		HashSet<string> mergedModNames = new(merges.Select(merge => merge.MergedModName).Where(name => !string.IsNullOrWhiteSpace(name)), StringComparer.OrdinalIgnoreCase);
+		string mergedModSetting = Settings.Get("MergedModName");
+		if (!string.IsNullOrWhiteSpace(mergedModSetting))
+			_ = mergedModNames.Add(mergedModSetting.Trim());
 		if (ModCount == 0)
 		{
 			_ = MainFrm.uiThreadManager.ShowMessage("There are no mods in the Mods directory, nothing to do...");
@@ -62,8 +72,17 @@ internal class ModFileIndex
 			foreach (string modDirPath in modDirPaths)
 			{
 				string modName = Path.GetFileName(modDirPath);
-				string[] filePaths = Directory.GetFiles(modDirPath, "*", SearchOption.AllDirectories);
-				IEnumerable<string> scriptPaths = filePaths.Where(path => ModFile.IsScript(path));
+
+				// Only what the game loads: a mod's files in its content folder, its scripts in content\scripts. A mod
+				// installed a folder too deep (Mods\modX\modX\content) or with a Mods folder of its own has its files
+				// elsewhere; the game ignores them, and ModFile.GetModFile, which builds the path from these two folders,
+				// could not find them to merge. The mod check (ModHealth) reports such a mod instead.
+				string contentDir = Path.Combine(modDirPath, Paths.BundleBase);
+				string scriptDir = Path.Combine(modDirPath, Paths.ModScriptBase) + Path.DirectorySeparatorChar;
+				string[] filePaths = Directory.Exists(contentDir)
+					? Directory.GetFiles(contentDir, "*", SearchOption.AllDirectories)
+					: [];
+				IEnumerable<string> scriptPaths = filePaths.Where(path => ModFile.IsScript(path) && path.StartsWithIgnoreCase(scriptDir));
 				IEnumerable<string> xmlPaths = filePaths.Where(path => ModFile.IsXml(path));
 				IEnumerable<string> bundlePaths = filePaths.Where(path => ModFile.IsBundle(path));
 
@@ -93,6 +112,9 @@ internal class ModFileIndex
 				int progressPct = (int)(++i * 100f / modDirPaths.Count);
 				bgWorker.ReportProgress(progressPct, modName);
 			}
+
+			bgWorker.ReportProgress(100, "Checking mods for problems");
+			Health = ModHealth.Check(modDirPaths, Files, Paths.HasRemasterScripts(), merges, mergedModNames);
 
 			if (checkBundles)
 				System.Threading.Thread.Sleep(500);  // Wait for progress bar to fill completely

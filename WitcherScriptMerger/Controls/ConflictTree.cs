@@ -6,6 +6,7 @@ using System.Windows.Forms;
 
 using WitcherScriptMerger.FileIndex;
 using WitcherScriptMerger.Forms;
+using WitcherScriptMerger.Inventory;
 using WitcherScriptMerger.Theming;
 
 using static WitcherScriptMerger.Program;
@@ -231,6 +232,7 @@ internal partial class ConflictTree : SMTree
 
 	internal void SetStylesForCustomLoadOrder()
 	{
+		ModHealth health = MainFrm.treeManager?.ModIndex?.Health;
 		foreach (TreeNode fileNode in FileNodes)
 		{
 			IEnumerable<string> modNames = fileNode.GetTreeNodes().Select(modNode => modNode.Text);
@@ -270,6 +272,16 @@ internal partial class ConflictTree : SMTree
 					modNode.NodeFont = null;
 					if ((fileNode.Parent.Tag as ModFileCategory).IsSupported)
 						modNode.SetIsCheckBoxVisible(true);
+				}
+
+				// A copy made for an older game version stands out, whatever its priority; the tooltip says why.
+				NodeMetadata metadata = (NodeMetadata)modNode.Tag;
+				GameVersionCheck.Result outdated = default;
+				metadata.IsOutdated = health != null && health.IsOutdated(fileNode.Text, modNode.Text, out outdated);
+				if (metadata.IsOutdated)
+				{
+					modNode.ForeColor = metadata.ForeColor = ThemeManager.CurrentTheme.WarningColor;
+					modNode.ToolTipText = $"Made for an older game version: missing {outdated.Describe()}\n{modNode.ToolTipText}";
 				}
 			}
 		}
