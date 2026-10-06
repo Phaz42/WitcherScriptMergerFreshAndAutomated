@@ -359,9 +359,9 @@ namespace WitcherScriptMerger.Forms
 			tlpMain.Margin = new Padding(0);
 			tlpMain.Name = "tlpMain";
 			tlpMain.RowCount = 3;
-			tlpMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 74F));
+			tlpMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 68F));
 			tlpMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-			tlpMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 90F));
+			tlpMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 84F));
 			tlpMain.Size = new Size(960, 978);
 			tlpMain.TabIndex = 4;
 			// 

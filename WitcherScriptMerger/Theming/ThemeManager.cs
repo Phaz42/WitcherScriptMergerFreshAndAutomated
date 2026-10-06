@@ -216,28 +216,6 @@ internal class ThemeManager
 		}
 	}
 
-	internal static void AttachColorFaderToTreeNodes(TreeView treeView, out List<TreeNodeColorFader> treeNodeColorFaders)
-	{
-		List<TreeNodeColorFader> treeNodeColorFadersLocal = [];
-
-		void TraverseTreeNodes(TreeNodeCollection nodes)
-		{
-			foreach (TreeNode node in nodes)
-			{
-				if (node.Nodes.Count == 0)
-				{
-					TreeNodeColorFader treeNodeColorFader = new(node, "ForeColor");
-					treeNodeColorFadersLocal.Add(treeNodeColorFader);
-				}
-
-				TraverseTreeNodes(node.Nodes);
-			}
-		}
-
-		TraverseTreeNodes(treeView.Nodes);
-		treeNodeColorFaders = treeNodeColorFadersLocal;
-	}
-
 #pragma warning disable CA1822 // Mark members as static
 	internal void ApplyThemeOnForm(Form form)
 #pragma warning restore CA1822 // Mark members as static
@@ -324,6 +302,7 @@ internal class ThemeManager
 			{
 				tv.ForeColor = CurrentTheme.ForeDimmedColor;
 				tv.BackColor = CurrentTheme.TreeViewBackColor;
+				(tv as Controls.SMTree)?.ApplyWindowTheme();  // its scrollbars follow the theme
 
 				float dpiScalingFactor = GetDpiScalingFactor(form.Handle);
 				int baseItemHeight = 25;
@@ -335,6 +314,12 @@ internal class ThemeManager
 				strip.ForeColor = CurrentTheme.ForeDimmedColor;
 				strip.BackColor = CurrentTheme.BackColor;
 
+			}
+			else if (control is TextBox searchBox && searchBox.Tag?.ToString() == "SearchBox")
+			{
+				// The search boxes sit directly above the lists, so they take the lists' colours.
+				searchBox.BackColor = CurrentTheme.TreeViewBackColor;
+				searchBox.ForeColor = CurrentTheme.ForeColor;
 			}
 			else if (control.Parent.Parent is DependencyForm && control is TextBox tb)
 			{

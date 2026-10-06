@@ -207,7 +207,17 @@ internal class InventoryMergeManager
 		}
 	}
 
+	/// <summary>
+	/// Merges the selected conflicts - also those a search hides: a search changes what is shown, never what is merged.
+	/// </summary>
 	internal void MergeFiles()
+	{
+		treeManager.SuspendSearch();
+		MergeSelectedFiles();
+		treeManager.ResumeSearch();  // Only when no merge started; a merge's own end applies the search.
+	}
+
+	private void MergeSelectedFiles()
 	{
 		if (!IsValidMergeSelection())
 			return;
@@ -273,6 +283,9 @@ internal class InventoryMergeManager
 		if (_autoMergeStarted && !manual)
 			return;
 		_autoMergeStarted = true;
+
+		// All script conflicts, also those a search hides.
+		treeManager.SuspendSearch();
 		TreeNode scriptCatNode = treeManager.ConflictsTree.GetCategoryNode(Categories.Script);
 
 		if (scriptCatNode != null
@@ -282,21 +295,29 @@ internal class InventoryMergeManager
 			uiThreadManager.SetMergeButtonTextIfValidSelection();
 			MergeFiles();
 		}
+
+		treeManager.ResumeSearch();
 	}
 
 	internal void ManualDeleteMerges()
 	{
-		if (!IsValidUnMergeSelection())
-			return;
+		// The selected merges, also those a search hides; likewise "all" below means all.
+		treeManager.SuspendSearch();
+		if (IsValidUnMergeSelection())
+		{
+			IEnumerable<TreeNode> fileNodes = treeManager.MergesTree.FileNodes.Where(node => node.Checked);
+			DeleteMerges(fileNodes);
+		}
 
-		IEnumerable<TreeNode> fileNodes = treeManager.MergesTree.FileNodes.Where(node => node.Checked);
-		DeleteMerges(fileNodes);
+		treeManager.ResumeSearch();
 	}
 
 	internal void ManualDeleteAllMerges()
 	{
+		treeManager.SuspendSearch();
 		List<TreeNode> fileNodes = treeManager.MergesTree.FileNodes;
 		DeleteMerges(fileNodes);
+		treeManager.ResumeSearch();
 	}
 
 	internal async Task ManualMergesRefresh()

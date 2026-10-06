@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
@@ -48,6 +49,9 @@ internal class ProgressManager
 	/// </summary>
 	internal void InitializeProgressScreen(string progressOf, ProgressBarStyle style = ProgressBarStyle.Marquee)
 	{
+		// Every merge, deletion and scan shows this screen, and each needs every conflict and merge in the trees.
+		mainForm.treeManager?.SuspendSearch();
+
 		progressBar.Value = 0;
 		lblProgressCurrentPhase.Text = progressOf;
 		lblProgressCurrentAction.Text = string.Empty;
@@ -75,6 +79,7 @@ internal class ProgressManager
 	{
 		pnlProgress.Visible = false;
 		mainForm.treMerges.Select();
+		mainForm.treeManager?.ResumeSearch();
 
 		TaskbarProgress.SetState(Handle, TaskbarProgress.TaskbarStates.NoProgress);
 	}
@@ -84,19 +89,21 @@ internal class ProgressManager
 	/// </summary>
 	internal void UpdateStatusText(ModFileIndex modFileIndex)
 	{
-		int solvableCount = mainForm.treConflicts.FileNodes.Count(node => ModFile.IsTextFile(node.Text));
+		// Every conflict and merge counts, also those a search hides.
+		List<TreeNode> conflictNodes = mainForm.treConflicts.AllFileNodes;
+		int solvableCount = conflictNodes.Count(node => ModFile.IsTextFile(node.Text));
 
 		// Update conflict status
-		if (mainForm.treConflicts.IsEmpty())
+		if (mainForm.treConflicts.HasNoFileNodes)
 		{
 			lblStatusLeft1.Text = "0 conflicts";
 		}
 		else
 		{
 			lblStatusLeft1.Text = $"{solvableCount} mergeable";
-			if (solvableCount < mainForm.treConflicts.FileNodes.Count)
+			if (solvableCount < conflictNodes.Count)
 			{
-				lblStatusLeft2.Text = $"{mainForm.treConflicts.FileNodes.Count - solvableCount} not mergeable";
+				lblStatusLeft2.Text = $"{conflictNodes.Count - solvableCount} not mergeable";
 				lblStatusLeft2.Visible = true;
 			}
 		}
@@ -105,8 +112,8 @@ internal class ProgressManager
 		lblStatusLeft3.Text = string.Format(
 			CultureInfo.InvariantCulture,
 			"{0} merge{1}",
-			mainForm.treMerges.FileNodes.Count,
-			mainForm.treMerges.FileNodes.Count.GetPluralS()
+			mainForm.treMerges.AllFileNodes.Count,
+			mainForm.treMerges.AllFileNodes.Count.GetPluralS()
 		);
 		lblStatusLeft3.Visible = true;
 

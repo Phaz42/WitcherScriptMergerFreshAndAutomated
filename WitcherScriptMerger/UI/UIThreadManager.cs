@@ -143,7 +143,7 @@ internal class UIThreadManager
 	/// </summary>
 	internal void ExitIfNoMoreConflicts()
 	{
-		if (mainForm.treConflicts.GetCategoryNode(Categories.Script) != null)
+		if (mainForm.treConflicts.HasCategory(Categories.Script))
 			return;
 
 		mainForm.progressManager.InitializeProgressScreen("Merging complete, auto closing in 2 seconds...");
@@ -164,7 +164,8 @@ internal class UIThreadManager
 		// it first - an animated GIF is still playing there - and never keeps one it is not given now, even when hidden.
 		mainForm.pbNoConflicts.Image = null;
 		System.Drawing.Image image = null;
-		if (mainForm.treConflicts.IsEmpty() && Settings.Get<bool>("NoConflictsWitcher"))
+		// No conflicts at all - a search that shows none is not the same.
+		if (mainForm.treConflicts.HasNoFileNodes && Settings.Get<bool>("NoConflictsWitcher"))
 			image = NoConflictsImage.Get(ThemeManager.CurrentTheme.IsDark);
 
 		mainForm.pbNoConflicts.Image = image;
@@ -196,7 +197,8 @@ internal class UIThreadManager
 	/// </summary>
 	internal void SetMergeButtonTextIfValidSelection()
 	{
-		int validFileNodeCount = mainForm.treConflicts.FileNodes.Count(node => node.GetTreeNodes().Count(modNode => modNode.Checked) > 1);
+		// Selected conflicts a search hides are merged too, so they count.
+		int validFileNodeCount = mainForm.treConflicts.AllFileNodes.Count(node => node.GetTreeNodes().Count(modNode => modNode.Checked) > 1);
 		mainForm.btnCreateMerges.Text = validFileNodeCount > 1
 			? "&Create " + validFileNodeCount + " Merges"
 			: "&Create Selected Merges";
@@ -207,7 +209,7 @@ internal class UIThreadManager
 	/// </summary>
 	internal void SetUnmergeButtonTextIfValidSelection()
 	{
-		int selectedCount = mainForm.treMerges.FileNodes.Count(node => node.Checked);
+		int selectedCount = mainForm.treMerges.AllFileNodes.Count(node => node.Checked);
 		mainForm.btnDeleteMerges.Text = selectedCount > 1
 			? "&Delete " + selectedCount + " Merges"
 			: "&Delete Selected Merges";

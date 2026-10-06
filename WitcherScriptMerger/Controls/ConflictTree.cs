@@ -22,6 +22,7 @@ internal partial class ConflictTree : SMTree
 	internal readonly ToolStripMenuItem _contextPrioritizeMod = new();
 	internal readonly ToolStripMenuItem _contextToggleMod = new();
 	internal readonly ToolStripMenuItem _contextRemoveFromCustomLoadOrder = new();
+	internal readonly ToolStripMenuItem _contextShowOnlyMod = new();
 #pragma warning restore CA2213 // Disposable fields should be disposed
 
 	#endregion
@@ -33,7 +34,8 @@ internal partial class ConflictTree : SMTree
 			_contextCustomLoadOrderSeparator,
 			_contextPrioritizeMod,
 			_contextToggleMod,
-			_contextRemoveFromCustomLoadOrder
+			_contextRemoveFromCustomLoadOrder,
+			_contextShowOnlyMod
 		]);
 		BuildContextMenu();
 
@@ -60,6 +62,12 @@ internal partial class ConflictTree : SMTree
 		_contextRemoveFromCustomLoadOrder.ToolTipText = "Removes this mod's custom load order settings";
 		_contextRemoveFromCustomLoadOrder.Click += ContextRemoveFromCustomLoadOrder;
 
+		// contextShowOnlyMod
+		_contextShowOnlyMod.Name = "contextShowOnlyMod";
+		_contextShowOnlyMod.Size = new Size(225, 22);
+		_contextShowOnlyMod.Text = "Show Only This Mod's Conflicts";
+		_contextShowOnlyMod.ToolTipText = "Searches the conflicts for this mod";
+		_contextShowOnlyMod.Click += (sender, e) => MainFrm.treeManager.SearchForMod(this, RightClickedNode.Text);
 	}
 
 	protected override void HandleCheckedChange()
@@ -148,6 +156,10 @@ internal partial class ConflictTree : SMTree
 					: "Disable Mod in Load Order";
 
 				_contextRemoveFromCustomLoadOrder.Available = Program.LoadOrder.ContainsMod(ClickedNode.Text);
+
+				// Not a load order setting, so not disabled with them when the load order is invalid.
+				_contextShowOnlyMod.Available = true;
+				_contextShowOnlyMod.Enabled = true;
 				_contextRemoveFromCustomLoadOrder.Text =
 					isDisabled
 					? "Clear Set Load Order && Disabled State"
@@ -261,6 +273,52 @@ internal partial class ConflictTree : SMTree
 				}
 			}
 		}
+	}
+
+	internal override void RestyleAfterSearch(bool searching)
+	{
+		// Non-mergeable categories show no checkboxes; disabled mods are struck through and unchecked (load order styles).
+		foreach (TreeNode catNode in CategoryNodes)
+		{
+			if (!(catNode.Tag as ModFileCategory).IsSupported)
+				catNode.SetIsCheckBoxVisible(false, true);
+		}
+
+		SetStylesForCustomLoadOrder();
+
+		// A category is checked when all its shown files are.
+		foreach (TreeNode catNode in CategoryNodes)
+		{
+			if ((catNode.Tag as ModFileCategory).IsSupported)
+				catNode.Checked = catNode.AreAllVisibleCheckboxesChecked();
+		}
+
+		if (searching)
+			ExpandAll();
+		else
+			ApplyDefaultExpansion();
+	}
+
+	/// <summary>
+	/// Expands the tree as a refresh leaves it: all expanded, except what the options collapse - non-mergeable files,
+	/// files with a custom load order, and identical conflicts.
+	/// </summary>
+	internal void ApplyDefaultExpansion()
+	{
+		ExpandAll();
+		foreach (TreeNode catNode in CategoryNodes)
+		{
+			if (!(catNode.Tag as ModFileCategory).IsSupported && Settings.Get<bool>("CollapseNotMergeable"))
+				catNode.Collapse();
+		}
+
+		if (Settings.Get<bool>("CollapseCustomLoadOrder"))
+		{
+			foreach (TreeNode fileNode in FileNodes)
+				fileNode.Collapse();
+		}
+
+		_ = CollapseIdenticalScriptNodesInTreeView();
 	}
 
 	internal int CollapseIdenticalScriptNodesInTreeView()

@@ -45,6 +45,7 @@ internal abstract partial class SMTree : TreeView, IDisposable
 					conflictTree._contextPrioritizeMod.Dispose();
 					conflictTree._contextToggleMod.Dispose();
 					conflictTree._contextRemoveFromCustomLoadOrder.Dispose();
+					conflictTree._contextShowOnlyMod.Dispose();
 				}
 
 				// Dispose MergeTree-specific resources
@@ -55,6 +56,7 @@ internal abstract partial class SMTree : TreeView, IDisposable
 					mergeTree._contextDeleteAssociatedMerges.Dispose();
 					mergeTree._contextDeleteMerge.Dispose();
 					mergeTree._contextDeleteSeparator.Dispose();
+					mergeTree._contextShowOnlyMod.Dispose();
 				}
 			}
 
@@ -118,7 +120,23 @@ internal abstract partial class SMTree : TreeView, IDisposable
 	protected override void OnHandleCreated(EventArgs e)
 	{
 		_ = SendMessage(Handle, TVM_SETEXTENDEDSTYLE, TVS_EX_DOUBLEBUFFER, TVS_EX_DOUBLEBUFFER);
+		ApplyWindowTheme();
 		base.OnHandleCreated(e);
+	}
+
+	// The scrollbars are Windows' own, and Windows Forms has no setting for their colours. Windows' Explorer look has a
+	// dark variant (Windows 10 1809 and later) with dark scrollbars; SetWindowTheme gives it to this control. It is not
+	// documented, but File Explorer and many applications rely on it. Where it does not exist - older Windows, Wine - the
+	// control keeps its usual look. The light theme takes the light Explorer look, so both themes draw the expand arrows
+	// and checkboxes the same way.
+	[LibraryImport("uxtheme.dll", StringMarshalling = StringMarshalling.Utf16)]
+	private static partial int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string pszSubIdList);
+
+	/// <summary>Gives the control the Windows look of the current theme: dark scrollbars in the dark theme.</summary>
+	internal void ApplyWindowTheme()
+	{
+		if (IsHandleCreated)
+			_ = SetWindowTheme(Handle, ThemeManager.CurrentTheme.IsDark ? "DarkMode_Explorer" : "Explorer", null);
 	}
 
 	#endregion
@@ -167,6 +185,79 @@ internal abstract partial class SMTree : TreeView, IDisposable
 		return CategoryNodes.FirstOrDefault(node =>
 			category == (ModFileCategory)node.Tag);
 	}
+
+	#region Search
+
+	// Windows' tree control cannot hide a node, so a file node a search does not match is taken out of the tree and kept
+	// here, with the category node it came from; a category left empty goes too. Only nodes in the tree are shown,
+	// clicked and checked - FileNodes and CategoryNodes are those. Whatever must see every conflict or merge counts with
+	// AllFileNodes, or runs while every node is back in the tree: TreeManager puts them back before any merge, deletion
+	// or scan, because those read nodes' parents and checkbox states, which a node out of the tree does not have.
+	private readonly List<(TreeNode Category, TreeNode File)> _hiddenFileNodes = [];
+	private readonly List<TreeNode> _hiddenCategoryNodes = [];
+
+	/// <summary>Every file node, shown or hidden by a search.</summary>
+	internal List<TreeNode> AllFileNodes => [.. FileNodes, .. _hiddenFileNodes.Select(hidden => hidden.File)];
+
+	/// <summary>The file nodes a search hides.</summary>
+	internal IEnumerable<TreeNode> HiddenFileNodes => _hiddenFileNodes.Select(hidden => hidden.File);
+
+	/// <summary>Whether the tree has no file node at all, shown or hidden.</summary>
+	internal bool HasNoFileNodes => this.IsEmpty() && _hiddenFileNodes.Count == 0;
+
+	/// <summary>Whether a category has any file node, shown or hidden.</summary>
+	internal bool HasCategory(ModFileCategory category) =>
+		GetCategoryNode(category) != null || _hiddenFileNodes.Any(hidden => category == (ModFileCategory)hidden.Category.Tag);
+
+	/// <summary>Takes every file node not shown out of the tree, and every category node left empty.</summary>
+	internal void HideFileNodes(Func<TreeNode, bool> isShown)
+	{
+		foreach (TreeNode categoryNode in Nodes.Cast<TreeNode>().ToList())
+		{
+			foreach (TreeNode fileNode in categoryNode.GetTreeNodes().ToList())
+			{
+				if (isShown(fileNode))
+					continue;
+
+				fileNode.Remove();
+				_hiddenFileNodes.Add((categoryNode, fileNode));
+			}
+
+			if (categoryNode.Nodes.Count == 0)
+			{
+				categoryNode.Remove();
+				_hiddenCategoryNodes.Add(categoryNode);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Puts every hidden node back where it was. The tree is sorted, so each goes back to its sorted place. A node put
+	/// back has lost its expanded state and its checkbox visibility, which live in Windows' control, not in the node;
+	/// its checked state is kept. False when nothing was hidden.
+	/// </summary>
+	internal bool ShowAllNodes()
+	{
+		if (_hiddenFileNodes.Count == 0 && _hiddenCategoryNodes.Count == 0)
+			return false;
+
+		foreach (TreeNode categoryNode in _hiddenCategoryNodes)
+			_ = Nodes.Add(categoryNode);
+		foreach ((TreeNode categoryNode, TreeNode fileNode) in _hiddenFileNodes)
+			_ = categoryNode.Nodes.Add(fileNode);
+
+		_hiddenCategoryNodes.Clear();
+		_hiddenFileNodes.Clear();
+		return true;
+	}
+
+	/// <summary>
+	/// Restores what a node put back (ShowAllNodes) or a search lost: checkbox visibility, styles and the expanded
+	/// state - all expanded while a search is shown, otherwise as after a refresh.
+	/// </summary>
+	internal abstract void RestyleAfterSearch(bool searching);
+
+	#endregion
 
 	protected override void OnKeyDown(KeyEventArgs e)
 	{

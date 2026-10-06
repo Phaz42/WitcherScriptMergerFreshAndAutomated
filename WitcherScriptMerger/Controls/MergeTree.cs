@@ -22,6 +22,7 @@ internal partial class MergeTree : SMTree
 	internal readonly ToolStripMenuItem _contextDeleteAssociatedMerges = new();
 	internal readonly ToolStripMenuItem _contextDeleteMerge = new();
 	internal readonly ToolStripSeparator _contextDeleteSeparator = new();
+	internal readonly ToolStripMenuItem _contextShowOnlyMod = new();
 #pragma warning restore CA2213 // Disposable fields should be disposed
 
 	#endregion
@@ -30,7 +31,7 @@ internal partial class MergeTree : SMTree
 	{
 
 		ContextOpenRegion.Items.AddRange([_contextOpenMergedFile, _contextOpenMergedFileDir]);
-		ContextNodeRegion.Items.AddRange([_contextDeleteSeparator, _contextDeleteMerge, _contextDeleteAssociatedMerges]);
+		ContextNodeRegion.Items.AddRange([_contextDeleteSeparator, _contextDeleteMerge, _contextDeleteAssociatedMerges, _contextShowOnlyMod]);
 		BuildContextMenu();
 
 		// contextOpenMergedFile
@@ -64,6 +65,13 @@ internal partial class MergeTree : SMTree
 		_contextDeleteAssociatedMerges.Text = "Delete All {0} Merges";
 		_contextDeleteAssociatedMerges.ToolTipText = "Deletes all merges that contain this mod's files";
 		_contextDeleteAssociatedMerges.Click += ContextDeleteAssociatedMerges_Click;
+
+		// contextShowOnlyMod
+		_contextShowOnlyMod.Name = "contextShowOnlyMod";
+		_contextShowOnlyMod.Size = new Size(225, 22);
+		_contextShowOnlyMod.Text = "Show Only This Mod's Merges";
+		_contextShowOnlyMod.ToolTipText = "Searches the merges for this mod";
+		_contextShowOnlyMod.Click += (sender, e) => MainFrm.treeManager.SearchForMod(this, RightClickedNode.Text);
 	}
 
 	protected override void HandleCheckedChange()
@@ -102,6 +110,21 @@ internal partial class MergeTree : SMTree
 		MainFrm.uiThreadManager.SetUnmergeButtonTextIfValidSelection();
 	}
 
+	internal override void RestyleAfterSearch(bool searching)
+	{
+		// Merges are selected by file; their mods show no checkboxes.
+		foreach (TreeNode modNode in ModNodes)
+		{
+			modNode.NodeFont = null;
+			modNode.SetIsCheckBoxVisible(false);
+		}
+
+		foreach (TreeNode catNode in CategoryNodes)
+			catNode.Checked = catNode.GetTreeNodes().All(node => node.Checked);
+
+		ExpandAll();
+	}
+
 	private void ContextDeleteMerge_Click(object sender, EventArgs e)
 	{
 		if (RightClickedNode == null)
@@ -118,12 +141,16 @@ internal partial class MergeTree : SMTree
 		if (RightClickedNode == null || !IsModNode(RightClickedNode))
 			return;
 
+		// All of this mod's merges, including those a search hides: every node is put back first, because deleting reads them.
+		MainFrm.treeManager.SuspendSearch();
+
 		// Find all file nodes that contain a node matching the clicked node
 		System.Collections.Generic.IEnumerable<TreeNode> fileNodes = FileNodes.Where(node =>
 			node.GetTreeNodes().Any(modNode =>
 				modNode.Text == RightClickedNode.Text));
 
 		MainFrm.inventoryMergeManager.DeleteMerges(fileNodes);
+		MainFrm.treeManager.ResumeSearch();
 	}
 
 	protected override void SetContextItemAvailability()
@@ -144,6 +171,7 @@ internal partial class MergeTree : SMTree
 				{
 					_contextDeleteAssociatedMerges.Available = true;
 					_contextDeleteAssociatedMerges.Text = $"Delete All {ClickedNode.Text} Merges";
+					_contextShowOnlyMod.Available = true;
 				}
 			}
 		}

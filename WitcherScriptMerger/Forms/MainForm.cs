@@ -34,6 +34,12 @@ internal partial class MainForm : BaseForm
 	internal ProgressManager progressManager;
 	internal InventoryMergeManager inventoryMergeManager;
 
+	// The search above each tree (TreeManager applies it), and a short pause after typing before it searches.
+	internal TextBox txtConflictsSearch, txtMergesSearch;
+	internal Label lblConflictsSearchCount, lblMergesSearchCount;
+	private ToolTip _searchToolTip;
+	private System.Windows.Forms.Timer _conflictsSearchDelay, _mergesSearchDelay;
+
 	#endregion
 
 
@@ -53,6 +59,13 @@ internal partial class MainForm : BaseForm
 				treConflicts?.Dispose();
 				treMerges?.Dispose();
 				pbNoConflicts?.Dispose();
+				_searchToolTip?.Dispose();
+				txtConflictsSearch?.Dispose();
+				txtMergesSearch?.Dispose();
+				lblConflictsSearchCount?.Dispose();
+				lblMergesSearchCount?.Dispose();
+				_conflictsSearchDelay?.Dispose();
+				_mergesSearchDelay?.Dispose();
 			}
 
 			// Dispose unmanaged resources (if any)
@@ -113,6 +126,99 @@ internal partial class MainForm : BaseForm
 
 		// Initialize the NoConflicts PictureBox control
 		pbNoConflicts = new();
+
+		InitializeSearch();
+	}
+
+	private const string SearchHelp =
+		"Searches mod names and file paths. Upper/lower case doesn't matter.\n\n" +
+		"lights  -  mods or files with \"lights\" in the name\n" +
+		"mod:lights  -  mod names only\n" +
+		"file:input  -  file paths only\n" +
+		"file:*Input.ws  -  * is any text, ? is one character\n" +
+		"mod:\"modLights\"  -  exactly this name\n\n" +
+		"Ctrl+F: search    Esc: clear\n" +
+		"Merging and deleting always include selected items the search hides.";
+
+	/// <summary>
+	/// Adds a search box above each tree, as a second row in its header: the header row of the main layout grows by that
+	/// row's height. Row heights here are at 125% scaling, like the designer's; the theme scales them (ApplyThemeToControls).
+	/// </summary>
+	private void InitializeSearch()
+	{
+		const float searchRowHeight = 50F;
+		tlpMain.RowStyles[0].Height += searchRowHeight;
+
+		_searchToolTip = new ToolTip { AutoPopDelay = 30000, InitialDelay = 600, ReshowDelay = 200 };
+
+		txtConflictsSearch = CreateSearchRow(tlpConflictsHeader, searchRowHeight, out lblConflictsSearchCount);
+		txtMergesSearch = CreateSearchRow(tlpMergesHeader, searchRowHeight, out lblMergesSearchCount);
+		_conflictsSearchDelay = CreateSearchDelay(txtConflictsSearch, () => treConflicts);
+		_mergesSearchDelay = CreateSearchDelay(txtMergesSearch, () => treMerges);
+	}
+
+	private TextBox CreateSearchRow(TableLayoutPanel header, float height, out Label count)
+	{
+		header.RowCount = 2;
+		header.RowStyles[0] = new RowStyle(SizeType.Percent, 100F);
+		header.RowStyles[1] = new RowStyle(SizeType.Absolute, height);
+
+		// SearchBox draws the rounded frame and places the text box inside it.
+		TextBox box = new()
+		{
+			Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point),
+			Margin = new Padding(0),
+			PlaceholderText = "Search mods and files  (Ctrl+F)",
+			Tag = "SearchBox",
+			TabStop = false
+		};
+		_searchToolTip.SetToolTip(box, SearchHelp);
+		SearchBox frame = new(box) { Dock = DockStyle.Fill, Margin = new Padding(0) };
+		_searchToolTip.SetToolTip(frame, SearchHelp);
+
+		count = new Label
+		{
+			Anchor = AnchorStyles.Right,
+			AutoSize = true,
+			Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point),
+			Margin = new Padding(8, 0, 0, 0),
+			Tag = "DimmedLabel"
+		};
+
+		TableLayoutPanel row = new()
+		{
+			ColumnCount = 2,
+			Dock = DockStyle.Fill,
+			// Wider than the Menu button's 25, so the box stays clear of a scrollbar on either side.
+			Margin = new Padding(63, 0, 63, 6),
+			RowCount = 1
+		};
+		_ = row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+		_ = row.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+		_ = row.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+		row.Controls.Add(frame, 0, 0);
+		row.Controls.Add(count, 1, 0);
+
+		header.Controls.Add(row, 0, 1);
+		header.SetColumnSpan(row, header.ColumnCount);
+		return box;
+	}
+
+	// Searching on every keystroke would rebuild the tree for each letter of a word.
+	private System.Windows.Forms.Timer CreateSearchDelay(TextBox box, Func<SMTree> tree)
+	{
+		System.Windows.Forms.Timer delay = new() { Interval = 250 };
+		delay.Tick += (sender, e) =>
+		{
+			delay.Stop();
+			treeManager?.SetSearchText(tree(), box.Text);
+		};
+		box.TextChanged += (sender, e) =>
+		{
+			delay.Stop();
+			delay.Start();
+		};
+		return delay;
 	}
 
 	internal MainForm()
@@ -136,6 +242,7 @@ internal partial class MainForm : BaseForm
 		progressManager = new ProgressManager(this);
 		treeManager = new TreeManager(treConflicts, treMerges, uiThreadManager, progressManager, treConflictsToolTip);
 		treeManager.InvokeRequired += OnTreeManagerInvokeRequired;
+		treeManager.SetSearchControls(txtConflictsSearch, lblConflictsSearchCount, txtMergesSearch, lblMergesSearchCount);
 		inventoryMergeManager = new InventoryMergeManager(uiThreadManager, progressManager, treeManager);
 
 		// Assign delegates for tree manager actions
@@ -258,6 +365,40 @@ internal partial class MainForm : BaseForm
 	/// </summary>
 	private void MainForm_KeyDown(object sender, KeyEventArgs e)
 	{
+		// In a search box, keys are text: never the one-key shortcuts below, which would act on every letter typed - E
+		// alone deletes all merges. Esc clears the search instead of closing SM-FAE; on an empty search it returns to the
+		// list below. Enter searches at once.
+		TextBox searchBox = txtConflictsSearch.Focused ? txtConflictsSearch : txtMergesSearch.Focused ? txtMergesSearch : null;
+		if (searchBox != null)
+		{
+			if (e.KeyCode == Keys.Escape)
+			{
+				if (searchBox.TextLength > 0)
+					searchBox.Clear();
+				else
+					_ = (searchBox == txtConflictsSearch ? (Control)treConflicts : treMerges).Focus();
+				e.Handled = e.SuppressKeyPress = true;
+			}
+			else if (e.KeyCode == Keys.Enter)
+			{
+				treeManager.SetSearchText(searchBox == txtConflictsSearch ? treConflicts : treMerges, searchBox.Text);
+				e.Handled = e.SuppressKeyPress = true;
+			}
+
+			if (e.KeyCode is not (Keys.F5 or Keys.F6))
+				return;
+		}
+
+		// Ctrl+F searches the list in focus: the merges when that tree has it, otherwise the conflicts.
+		if (e.Control && e.KeyCode == Keys.F)
+		{
+			TextBox box = treMerges.Focused ? txtMergesSearch : txtConflictsSearch;
+			_ = box.Focus();
+			box.SelectAll();
+			e.Handled = e.SuppressKeyPress = true;
+			return;
+		}
+
 		// Trigger button clicks based on key presses
 		if (e.KeyCode == Keys.F5) BtnRefreshConflicts_Click(null, null);
 		if (e.KeyCode == Keys.F6) BtnRefreshMerged_Click(null, null);
@@ -398,7 +539,13 @@ internal partial class MainForm : BaseForm
 		return mainMenu;
 	}
 
-	private void MnExportConflicts_Click(object sender, EventArgs e) => GenerateConflictsCsv(treConflicts);
+	private void MnExportConflicts_Click(object sender, EventArgs e)
+	{
+		// Every conflict, also those a search hides.
+		treeManager.SuspendSearch();
+		GenerateConflictsCsv(treConflicts);
+		treeManager.ResumeSearch();
+	}
 
 	private void MainMenu_Closing(object sender, ToolStripDropDownClosingEventArgs e)
 	{

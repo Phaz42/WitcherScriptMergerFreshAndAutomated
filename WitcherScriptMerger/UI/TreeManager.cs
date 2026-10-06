@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -33,10 +34,20 @@ internal class TreeManager
 	private TreeNode _treConflictsPrevNode, _treMergesPrevNode;
 	private TreeNode _prevToolTipNode;
 
-	private List<TreeNodeColorFader> _treConflictsColorFaders = [];
-	private List<TreeNodeColorFader> _treMergesColorFaders = [];
+	// A mod node's hover fader is made the first time it is hovered, and goes with its node. A list attached when a tree
+	// was built missed nodes: the merges tree is built in queued steps that ran after the list was made (so no fader
+	// worked after a merge was created or deleted), and a search can hide nodes as a refresh ends.
+	private readonly ConditionalWeakTable<TreeNode, TreeNodeColorFader> _colorFaders = new();
 
 	private readonly ToolTip treConflictsToolTip;
+
+	// The search above each tree (TreeSearch), its text box and its "12 of 340" count. Null: nothing searched.
+	private TreeSearch _conflictsSearch, _mergesSearch;
+	private string _conflictsSearchText = string.Empty, _mergesSearchText = string.Empty;
+	private TextBox _conflictsSearchBox, _mergesSearchBox;
+	private Label _conflictsSearchCount, _mergesSearchCount;
+	private bool _applyingSearch;
+	private Font _foundModFont, _foundDisabledModFont;
 
 	internal Action<bool> CreateAllScriptMergesDelegate { get; set; }
 	internal Func<Task<bool>> RefreshMergeInventoryDelegate { get; set; }
@@ -160,6 +171,8 @@ internal class TreeManager
 		InvokeRequired?.Invoke(this, new InvokeRequiredEventArgs(delegate
 		{
 			ConflictsTree.BeginUpdate();
+			// Every merge node is rebuilt below; any a search hid would otherwise come back beside the new ones.
+			_ = MergesTree.ShowAllNodes();
 			MergesTree.Nodes.Clear();
 		}));
 
@@ -259,12 +272,7 @@ internal class TreeManager
 				TreeNode categoryNode = MergesTree.GetCategoryNode(merge.Category);
 				if (categoryNode == null)
 				{
-					categoryNode = new TreeNode
-					{
-						Text = merge.Category.DisplayName,
-						ToolTipText = merge.Category.ToolTipText,
-						Tag = merge.Category
-					};
+					categoryNode = CreateCategoryNode(merge.Category);
 					_ = MergesTree.Nodes.Add(categoryNode);
 				}
 
@@ -287,8 +295,6 @@ internal class TreeManager
 				}
 			}));
 		}
-
-		ThemeManager.AttachColorFaderToTreeNodes(MergesTree, out _treMergesColorFaders);
 
 		// Sort and expand merge tree nodes
 		InvokeRequired?.Invoke(this, new InvokeRequiredEventArgs(delegate
@@ -323,6 +329,9 @@ internal class TreeManager
 			UIThreadManager.SetUnmergeButtonTextIfValidSelection();
 
 			ProgressManager.progressBar.Value = 100;
+
+			// This runs queued, possibly after the progress screen was hidden: the search is applied to the new nodes.
+			ApplySearch(MergesTree);
 		}));
 
 		return false;
@@ -410,17 +419,7 @@ internal class TreeManager
 					TreeNode categoryNode = ConflictsTree.GetCategoryNode(conflict.Category);
 					if (categoryNode == null)
 					{
-						Color foreColor = Settings.Get<bool>("AccentColor")
-							? ThemeManager.CurrentTheme.AcceptButtonBackColor
-							: ThemeManager.DefaultAccentColor;
-						categoryNode = new TreeNode
-						{
-							Text = conflict.Category.DisplayName,
-							ToolTipText = conflict.Category.ToolTipText,
-							NodeFont = new Font("Segoe UI", 14.0F, FontStyle.Bold),
-							ForeColor = foreColor,
-							Tag = conflict.Category
-						};
+						categoryNode = CreateCategoryNode(conflict.Category);
 						_ = ConflictsTree.Nodes.Add(categoryNode);
 					}
 
@@ -457,36 +456,23 @@ internal class TreeManager
 
 			// Configure conflict tree nodes
 			ConflictsTree.Sort();
-			ConflictsTree.ExpandAll();
 			ConflictsTree.Select();
 			foreach (TreeNode catNode in ConflictsTree.CategoryNodes)
 			{
 				if (!(catNode.Tag as ModFileCategory).IsSupported)
-				{
 					catNode.SetIsCheckBoxVisible(false, true);
-					if (Settings.Get<bool>("CollapseNotMergeable"))
-						catNode.Collapse();
-				}
 			}
 
 			ConflictsTree.SetStylesForCustomLoadOrder();
-
-			foreach (TreeNode fileNode in ConflictsTree.FileNodes)
-			{
-				if (Settings.Get<bool>("CollapseCustomLoadOrder"))
-					fileNode.Collapse();
-			}
 		}
 
 		// Finalize and update UI
-		_ = ConflictsTree.CollapseIdenticalScriptNodesInTreeView();
+		ConflictsTree.ApplyDefaultExpansion();
 		ConflictsTree.EndUpdate();
 		ConflictsTree.ScrollToTop();
 		ProgressManager.UpdateStatusText(ModIndex);
 		ProgressManager.HideProgressScreen();
 		UIThreadManager.SetMergeButtonTextIfValidSelection();
-
-		ThemeManager.AttachColorFaderToTreeNodes(ConflictsTree, out _treConflictsColorFaders);
 
 		// Auto Create Merges
 		if (Settings.Get<bool>("AutoCreateScriptMerges") && !scanFailed)
@@ -502,6 +488,152 @@ internal class TreeManager
 				UIThreadManager.ExitIfNoMoreConflicts();
 		}
 	}
+
+	#region Search
+
+	/// <summary>The search boxes and their counts, from the main form.</summary>
+	internal void SetSearchControls(TextBox conflictsBox, Label conflictsCount, TextBox mergesBox, Label mergesCount)
+	{
+		_conflictsSearchBox = conflictsBox;
+		_conflictsSearchCount = conflictsCount;
+		_mergesSearchBox = mergesBox;
+		_mergesSearchCount = mergesCount;
+	}
+
+	/// <summary>Searches a tree for what was typed above it.</summary>
+	internal void SetSearchText(SMTree tree, string text)
+	{
+		text ??= string.Empty;
+		if (tree == ConflictsTree)
+		{
+			if (text == _conflictsSearchText)
+				return;
+			_conflictsSearchText = text;
+			_conflictsSearch = TreeSearch.Parse(text);
+		}
+		else
+		{
+			if (text == _mergesSearchText)
+				return;
+			_mergesSearchText = text;
+			_mergesSearch = TreeSearch.Parse(text);
+		}
+
+		ApplySearch(tree);
+	}
+
+	/// <summary>Shows only the conflicts or merges with this mod: "Show Only This Mod's ..." in the context menu.</summary>
+	internal void SearchForMod(SMTree tree, string modName)
+	{
+		string text = $"mod:\"{modName}\"";
+		TextBox box = tree == ConflictsTree ? _conflictsSearchBox : _mergesSearchBox;
+		if (box != null)
+			box.Text = text;
+		SetSearchText(tree, text);
+	}
+
+	/// <summary>
+	/// Puts every node a search hides back into both trees, for whatever must act on every conflict or merge: merging,
+	/// deleting, scanning, exporting. It is called when the progress screen is shown, which every merge and refresh does,
+	/// and before the actions that read the trees without it. ResumeSearch, or the progress screen being hidden, applies
+	/// the search again.
+	/// </summary>
+	internal void SuspendSearch()
+	{
+		foreach (SMTree tree in new SMTree[] { ConflictsTree, MergesTree })
+		{
+			if (!tree.ShowAllNodes())
+				continue;
+
+			tree.BeginUpdate();
+			tree.RestyleAfterSearch(false);
+			tree.EndUpdate();
+		}
+	}
+
+	/// <summary>Applies the searches again, unless an operation is still running; its end applies them.</summary>
+	internal void ResumeSearch()
+	{
+		ApplySearch(ConflictsTree);
+		ApplySearch(MergesTree);
+	}
+
+	private void ApplySearch(SMTree tree)
+	{
+		// While the progress screen is shown, a merge, deletion or scan is using the trees and needs every node in them.
+		if (_applyingSearch || ProgressManager.pnlProgress.Visible)
+			return;
+
+		_applyingSearch = true;
+		try
+		{
+			TreeSearch search = tree == ConflictsTree ? _conflictsSearch : _mergesSearch;
+
+			tree.BeginUpdate();
+			bool changed = tree.ShowAllNodes();
+			if (search != null)
+			{
+				tree.HideFileNodes(search.MatchesFileNode);
+				changed = true;
+			}
+
+			if (changed)
+			{
+				tree.RestyleAfterSearch(search != null);
+				if (search != null)
+					MarkFoundMods(tree, search);
+			}
+
+			tree.EndUpdate();
+			ShowSearchCount(tree, search);
+		}
+		finally
+		{
+			_applyingSearch = false;
+		}
+	}
+
+	// The mods a search found are bold among the other mods of their conflict or merge. A struck-through (disabled) mod
+	// stays struck through. The text is set again because Windows' control otherwise keeps the width it measured with
+	// the regular font, and cuts off the bold text.
+	private void MarkFoundMods(SMTree tree, TreeSearch search)
+	{
+		_foundModFont ??= new Font(tree.Font, FontStyle.Bold);
+		_foundDisabledModFont ??= new Font(tree.Font, FontStyle.Bold | FontStyle.Strikeout);
+
+		foreach (TreeNode modNode in tree.ModNodes)
+		{
+			if (!search.MatchesModName(modNode.Text))
+				continue;
+
+			bool disabled = modNode.NodeFont != null && modNode.NodeFont.Strikeout;
+			modNode.NodeFont = disabled ? _foundDisabledModFont : _foundModFont;
+			modNode.Text = modNode.Text;
+		}
+	}
+
+	// "12 of 340", and how many selected ones the search hides: they are still merged or deleted with the selection.
+	private void ShowSearchCount(SMTree tree, TreeSearch search)
+	{
+		Label count = tree == ConflictsTree ? _conflictsSearchCount : _mergesSearchCount;
+		if (count == null)
+			return;
+
+		if (search == null)
+		{
+			count.Text = string.Empty;
+			return;
+		}
+
+		int hiddenSelected = tree == ConflictsTree
+			? tree.HiddenFileNodes.Count(node => node.GetTreeNodes().Count(modNode => modNode.Checked) > 1)
+			: tree.HiddenFileNodes.Count(node => node.Checked);
+
+		count.Text = $"{tree.FileNodes.Count} of {tree.AllFileNodes.Count}"
+			+ (hiddenSelected > 0 ? $" \u00B7 {hiddenSelected} selected not shown" : string.Empty);
+	}
+
+	#endregion
 
 	/// <summary>
 	/// Recursively checks if the specified node or any of its sub-nodes are visible and checkable.
@@ -554,13 +686,13 @@ internal class TreeManager
 
 		if (tv == ConflictsTree)
 		{
-			_treConflictsPrevNode = HandleTreeViewMouseMoves(tv, _treConflictsColorFaders, _treConflictsPrevNode, e);
+			_treConflictsPrevNode = HandleTreeViewMouseMoves(tv, GetColorFader, _treConflictsPrevNode, e);
 			ShowConflictsToolTip(tv, e);
 		}
 		else
 		{
 			_treMergesPrevNode = tv == MergesTree
-				? HandleTreeViewMouseMoves(tv, _treMergesColorFaders, _treMergesPrevNode, e)
+				? HandleTreeViewMouseMoves(tv, GetColorFader, _treMergesPrevNode, e)
 				: throw new NotImplementedException($"Unknown Treeview: {tv.Name}");
 		}
 	}
@@ -610,19 +742,40 @@ internal class TreeManager
 		_prevToolTipNode = node;
 	}
 
+	// Mod nodes fade - nodes with no nodes below them, as before; categories and files do not.
+	private TreeNodeColorFader GetColorFader(TreeNode node) =>
+		node == null || node.Nodes.Count > 0 ? null : _colorFaders.GetValue(node, mod => new TreeNodeColorFader(mod, "ForeColor"));
+
+	/// <summary>
+	/// A category node, as both trees show it: large, bold, in the accent colour.
+	/// </summary>
+	internal static TreeNode CreateCategoryNode(ModFileCategory category)
+	{
+		return new TreeNode
+		{
+			Text = category.DisplayName,
+			ToolTipText = category.ToolTipText,
+			NodeFont = new Font("Segoe UI", 14.0F, FontStyle.Bold),
+			ForeColor = Settings.Get<bool>("AccentColor")
+				? ThemeManager.CurrentTheme.AcceptButtonBackColor
+				: ThemeManager.DefaultAccentColor,
+			Tag = category
+		};
+	}
+
 	/// <summary>
 	/// Handles mouse movements over a TreeView by highlighting the hovered node and restoring 
 	/// the previous node's color.
 	/// </summary>
 	private static TreeNode HandleTreeViewMouseMoves(
 		TreeView tv,
-		List<TreeNodeColorFader> colorFaders,
+		Func<TreeNode, TreeNodeColorFader> colorFader,
 		TreeNode previousNode,
 		MouseEventArgs e)
 	{
 		TreeNode hoveredNode = tv.GetNodeAt(e.Location);
-		TreeNodeColorFader previousHoveredColorFader = colorFaders.Find(f => f.OutputNode == previousNode);
-		TreeNodeColorFader currentHoveredColorFader = colorFaders.Find(f => f.OutputNode == hoveredNode);
+		TreeNodeColorFader previousHoveredColorFader = colorFader(previousNode);
+		TreeNodeColorFader currentHoveredColorFader = colorFader(hoveredNode);
 
 		if (hoveredNode != previousNode)
 		{
