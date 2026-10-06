@@ -41,19 +41,32 @@ internal static class GameVersionCheck
 	/// Asks before a merge when any of the mods' copies looks made for another game version: leave those copies out and
 	/// merge the others, merge anyway, or skip the file. Only on 5.x, so 4.x merges behave exactly as before.
 	/// </summary>
-	internal static Decision Ask(string relativePath, FileInfo vanillaFile, IReadOnlyCollection<(string ModName, FileInfo Copy)> modCopies)
+	/// <param name="mergedModName">The merged mod. Its copy is the existing merge, which the new one continues: it is
+	/// reported when outdated, but never left out - leaving it out would overwrite the merge while the inventory still
+	/// lists its mods as merged.</param>
+	internal static Decision Ask(string relativePath, FileInfo vanillaFile, IReadOnlyCollection<(string ModName, FileInfo Copy)> modCopies,
+		string mergedModName)
 	{
 		if (vanillaFile == null || !vanillaFile.Exists || !Paths.HasRemasterScripts())
 			return MergeAll;
 
 		List<string> suspects = [];
 		HashSet<string> outdated = new(StringComparer.OrdinalIgnoreCase);
+		bool oldMerge = false;
 		foreach ((string modName, FileInfo copy) in modCopies)
 		{
 			if (copy == null || !copy.Exists)
 				continue;  // the merge itself reports a missing copy
 
-			if (Compare(vanillaFile.FullName, copy.FullName) is { IsOutdated: true } result)
+			if (Compare(vanillaFile.FullName, copy.FullName) is not { IsOutdated: true } result)
+				continue;
+
+			if (modName.EqualsIgnoreCase(mergedModName))
+			{
+				suspects.Add($"{modName} (the existing merge) is missing {result.Describe()}");
+				oldMerge = true;
+			}
+			else
 			{
 				suspects.Add($"{modName} is missing {result.Describe()}");
 				_ = outdated.Add(modName);
@@ -63,11 +76,11 @@ internal static class GameVersionCheck
 		if (suspects.Count == 0)
 			return MergeAll;
 
-		// Leaving them out helps only when two or more mods remain: their merge is then loaded instead of every mod's
+		// Leaving them out helps only when two or more copies remain: their merge is then loaded instead of every mod's
 		// own copy. With one left there is no merge, and the outdated copy may still be the one the load order picks.
 		bool one = suspects.Count == 1;
-		string them = one ? modCopies.First(copy => outdated.Contains(copy.ModName)).ModName : "these mods";
-		bool canLeaveOut = modCopies.Count - outdated.Count >= 2;
+		string them = outdated.Count == 1 ? modCopies.First(copy => outdated.Contains(copy.ModName)).ModName : "these mods";
+		bool canLeaveOut = outdated.Count > 0 && modCopies.Count - outdated.Count >= 2;
 
 		// On 5.x a mismatched copy is nearly always made for 4.04, hence "older".
 		string text = (one ? "This mod's copy" : "These mods' copies") + $" of {relativePath} "
@@ -75,11 +88,12 @@ internal static class GameVersionCheck
 			+ string.Join("\n  ", suspects)
 			+ "\n\nMerging " + (one ? "it" : "them") + " removes those lines, which can cause script compilation errors or "
 			+ "problems in-game. " + (one ? "A version" : "Versions") + " updated for The Witcher 3 Remastered "
-			+ (one ? "is" : "are") + " recommended.";
+			+ (one ? "is" : "are") + " recommended."
+			+ (oldMerge ? "\n\nThe existing merge was made for an older game version, or includes a copy merged anyway: delete it and merge again." : string.Empty);
 
 		TaskDialogCommandLinkButton leaveOut = new(
 			$"Leave out {them} and merge the others",
-			"Keeps the Remastered code. " + (one ? $"{them}'s" : "Their") + " changes to this file are not used.");
+			"Keeps the Remastered code. " + (outdated.Count == 1 ? $"{them}'s" : "Their") + " changes to this file are not used.");
 		TaskDialogCommandLinkButton mergeAnyway = new("Merge anyway", "Not recommended: removes the Remastered changes to this file.");
 		TaskDialogCommandLinkButton skip = new("Don't merge this file", "Other files are still merged.");
 
@@ -121,9 +135,21 @@ internal static class GameVersionCheck
 		internal string Describe() => string.Format(CultureInfo.InvariantCulture, "{0:N0} of the game's {1:N0} lines", Missing, GameLines);
 	}
 
-	// A file's meaningful lines, read once per run of SM-FAE while its length and last write time are unchanged: the mod
-	// check (ModHealth) compares every script of every mod at each refresh, and most of them have not changed.
-	private static readonly ConcurrentDictionary<(string Path, long Length, DateTime LastWriteUtc), HashSet<string>> LinesCache = new();
+	// Read once per run of SM-FAE while a file's length and last write time are unchanged: the mod check (ModHealth)
+	// compares every script of every mod at each refresh, and most of them have not changed. Kept: the game files' lines,
+	// each compared with every mod's copy, and the result of each comparison. A mod's copy is read only to be compared -
+	// keeping its lines would hold every mod script in memory for the whole run.
+	private static readonly ConcurrentDictionary<FileStamp, HashSet<string>> GameLinesCache = new();
+	private static readonly ConcurrentDictionary<(FileStamp Game, FileStamp Mod), Result?> ResultCache = new();
+
+	private readonly record struct FileStamp(string Path, long Length, DateTime LastWriteUtc)
+	{
+		internal static FileStamp Of(string path)
+		{
+			FileInfo file = new(path);
+			return new FileStamp(file.FullName.ToUpperInvariant(), file.Length, file.LastWriteTimeUtc);
+		}
+	}
 
 	/// <summary>
 	/// Compares a mod's copy with the installed game file. Null when the game file has no meaningful lines, or when either
@@ -133,12 +159,17 @@ internal static class GameVersionCheck
 	{
 		try
 		{
-			HashSet<string> gameLines = CachedMeaningfulLines(gameFile);
-			if (gameLines.Count == 0)
-				return null;
+			FileStamp game = FileStamp.Of(gameFile);
+			FileStamp mod = FileStamp.Of(modCopy);
+			return ResultCache.GetOrAdd((game, mod), _ =>
+			{
+				HashSet<string> gameLines = GameLinesCache.GetOrAdd(game, __ => MeaningfulLines(gameFile));
+				if (gameLines.Count == 0)
+					return null;
 
-			HashSet<string> modLines = CachedMeaningfulLines(modCopy);
-			return new Result(gameLines.Count(line => !modLines.Contains(line)), gameLines.Count);
+				HashSet<string> modLines = MeaningfulLines(modCopy);
+				return new Result(gameLines.Count(line => !modLines.Contains(line)), gameLines.Count);
+			});
 		}
 		catch (IOException)
 		{
@@ -148,12 +179,6 @@ internal static class GameVersionCheck
 		{
 			return null;
 		}
-	}
-
-	private static HashSet<string> CachedMeaningfulLines(string path)
-	{
-		FileInfo file = new(path);
-		return LinesCache.GetOrAdd((file.FullName.ToUpperInvariant(), file.Length, file.LastWriteTimeUtc), key => MeaningfulLines(file.FullName));
 	}
 
 	// The lines that carry meaning: trimmed, and neither blank, a comment, an XML declaration, nor only punctuation

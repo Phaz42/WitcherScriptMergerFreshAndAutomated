@@ -37,17 +37,19 @@ internal class InventoryMergeManager
 
 		// An empty merged mod folder with no merges registered holds no old merges - it is what deleting merges can leave
 		// behind - so it is removed without asking.
-		if (mergedModDirExists && mergeCount == 0
-			&& !Directory.EnumerateFiles(mergedModDir, "*", SearchOption.AllDirectories).Any())
+		if (mergedModDirExists && mergeCount == 0)
 		{
 			try
 			{
-				Directory.Delete(mergedModDir, true);
-				mergedModDirExists = false;
+				if (!Directory.EnumerateFiles(mergedModDir, "*", SearchOption.AllDirectories).Any())
+				{
+					Directory.Delete(mergedModDir, true);
+					mergedModDirExists = false;
+				}
 			}
 			catch (Exception e) when (e is IOException or UnauthorizedAccessException)
 			{
-				// Left in place, it is asked about below, as before.
+				// Unreadable or locked: left in place, and asked about below, as before.
 			}
 		}
 
@@ -231,9 +233,9 @@ internal class InventoryMergeManager
 	/// </summary>
 	internal void MergeFiles()
 	{
-		treeManager.SuspendSearch();
-		MergeSelectedFiles();
-		treeManager.ResumeSearch();  // Only when no merge started; a merge's own end applies the search.
+		// The scope's end applies the search again only when no merge started; a merge's own end applies it.
+		using (treeManager.SearchSuspended())
+			MergeSelectedFiles();
 	}
 
 	private void MergeSelectedFiles()
@@ -304,39 +306,40 @@ internal class InventoryMergeManager
 		_autoMergeStarted = true;
 
 		// All script conflicts, also those a search hides.
-		treeManager.SuspendSearch();
-		TreeNode scriptCatNode = treeManager.ConflictsTree.GetCategoryNode(Categories.Script);
-
-		if (scriptCatNode != null
-			&& TreeManager.CheckSubNodesIfVisible(scriptCatNode)
-			&& scriptCatNode.AreAllVisibleCheckboxesChecked())
+		using (treeManager.SearchSuspended())
 		{
-			uiThreadManager.SetMergeButtonTextIfValidSelection();
-			MergeFiles();
-		}
+			TreeNode scriptCatNode = treeManager.ConflictsTree.GetCategoryNode(Categories.Script);
 
-		treeManager.ResumeSearch();
+			if (scriptCatNode != null
+				&& TreeManager.CheckSubNodesIfVisible(scriptCatNode)
+				&& scriptCatNode.AreAllVisibleCheckboxesChecked())
+			{
+				uiThreadManager.SetMergeButtonTextIfValidSelection();
+				MergeFiles();
+			}
+		}
 	}
 
 	internal void ManualDeleteMerges()
 	{
 		// The selected merges, also those a search hides; likewise "all" below means all.
-		treeManager.SuspendSearch();
-		if (IsValidUnMergeSelection())
+		using (treeManager.SearchSuspended())
 		{
-			IEnumerable<TreeNode> fileNodes = treeManager.MergesTree.FileNodes.Where(node => node.Checked);
-			DeleteMerges(fileNodes);
+			if (IsValidUnMergeSelection())
+			{
+				IEnumerable<TreeNode> fileNodes = treeManager.MergesTree.FileNodes.Where(node => node.Checked);
+				DeleteMerges(fileNodes);
+			}
 		}
-
-		treeManager.ResumeSearch();
 	}
 
 	internal void ManualDeleteAllMerges()
 	{
-		treeManager.SuspendSearch();
-		List<TreeNode> fileNodes = treeManager.MergesTree.FileNodes;
-		DeleteMerges(fileNodes);
-		treeManager.ResumeSearch();
+		using (treeManager.SearchSuspended())
+		{
+			List<TreeNode> fileNodes = treeManager.MergesTree.FileNodes;
+			DeleteMerges(fileNodes);
+		}
 	}
 
 	internal async Task ManualMergesRefresh()

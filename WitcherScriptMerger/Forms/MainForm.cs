@@ -581,9 +581,8 @@ internal partial class MainForm : BaseForm
 	private void MnExportConflicts_Click(object sender, EventArgs e)
 	{
 		// Every conflict, also those a search hides.
-		treeManager.SuspendSearch();
-		GenerateConflictsCsv(treConflicts);
-		treeManager.ResumeSearch();
+		using (treeManager.SearchSuspended())
+			GenerateConflictsCsv(treConflicts);
 	}
 
 	private void MainMenu_Closing(object sender, ToolStripDropDownClosingEventArgs e)

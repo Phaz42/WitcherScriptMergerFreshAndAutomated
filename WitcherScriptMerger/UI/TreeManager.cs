@@ -47,6 +47,8 @@ internal class TreeManager
 	private TextBox _conflictsSearchBox, _mergesSearchBox;
 	private Label _conflictsSearchCount, _mergesSearchCount;
 	private bool _applyingSearch;
+	private int _searchSuspensions;
+	private readonly HashSet<SMTree> _searchApplied = [];
 	private Font _foundModFont, _foundDisabledModFont;
 
 	internal Action<bool> CreateAllScriptMergesDelegate { get; set; }
@@ -554,6 +556,33 @@ internal class TreeManager
 		}
 	}
 
+	/// <summary>
+	/// Every node in both trees while the returned scope lasts, for an action that reads them all; the search is applied
+	/// again when it ends, also when the action throws. Scopes nest, and while one lasts nothing re-applies the search -
+	/// not the typing delay's timer, nor a click handled meanwhile.
+	/// </summary>
+	internal IDisposable SearchSuspended()
+	{
+		++_searchSuspensions;
+		SuspendSearch();
+		return new SearchScope(this);
+	}
+
+	private sealed class SearchScope(TreeManager owner) : IDisposable
+	{
+		private bool _ended;
+
+		public void Dispose()
+		{
+			if (_ended)
+				return;
+			_ended = true;
+
+			if (--owner._searchSuspensions == 0)
+				owner.ResumeSearch();
+		}
+	}
+
 	/// <summary>Applies the searches again, unless an operation is still running; its end applies them.</summary>
 	internal void ResumeSearch()
 	{
@@ -563,8 +592,9 @@ internal class TreeManager
 
 	private void ApplySearch(SMTree tree)
 	{
-		// While the progress screen is shown, a merge, deletion or scan is using the trees and needs every node in them.
-		if (_applyingSearch || ProgressManager.pnlProgress.Visible)
+		// While the progress screen is shown, or an action holds the search suspended, a merge, deletion or scan is using
+		// the trees and needs every node in them.
+		if (_applyingSearch || _searchSuspensions > 0 || ProgressManager.pnlProgress.Visible)
 			return;
 
 		_applyingSearch = true;
@@ -572,11 +602,14 @@ internal class TreeManager
 		{
 			TreeSearch search = tree == ConflictsTree ? _conflictsSearch : _mergesSearch;
 
+			// A search that hid nothing still made the found mods bold and expanded the tree, so clearing it restyles too.
 			tree.BeginUpdate();
-			bool changed = tree.ShowAllNodes();
+			bool wasSearched = _searchApplied.Remove(tree);
+			bool changed = tree.ShowAllNodes() | wasSearched;
 			if (search != null)
 			{
 				tree.HideFileNodes(search.MatchesFileNode);
+				_ = _searchApplied.Add(tree);
 				changed = true;
 			}
 
@@ -758,6 +791,18 @@ internal class TreeManager
 		ModHealth health = ModIndex?.Health;
 		foreach (TreeNode fileNode in MergesTree.AllFileNodes)
 		{
+			// An old merge has no outdated mod in it to colour, so its file stands out instead.
+			if (health != null && health.IsOldMerge(fileNode.Text, out _, out GameVersionCheck.Result oldMerge))
+			{
+				fileNode.ForeColor = ThemeManager.CurrentTheme.WarningColor;
+				fileNode.ToolTipText = $"An old merge, made against an older game version (missing {oldMerge.Describe()}): delete it and merge again.";
+			}
+			else
+			{
+				fileNode.ForeColor = ThemeManager.CurrentTheme.ForeBrightColor;
+				fileNode.ToolTipText = null;
+			}
+
 			foreach (TreeNode modNode in fileNode.GetTreeNodes())
 			{
 				if (modNode.Tag is not NodeMetadata metadata)

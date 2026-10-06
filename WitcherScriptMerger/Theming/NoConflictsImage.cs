@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace WitcherScriptMerger.Theming;
 
@@ -89,9 +90,10 @@ internal static class NoConflictsImage
 			{
 				return Image.FromStream(stream);
 			}
-			catch (ArgumentException)
+			catch (Exception e) when (e is ArgumentException or OutOfMemoryException or ExternalException)
 			{
-				// Not an image GDI+ can read, whatever its extension says.
+				// Not an image GDI+ can read, whatever its extension says. A damaged image of a known format is reported as
+				// out of memory (or a generic GDI+ error), not as an invalid argument.
 				stream.Dispose();
 				return null;
 			}

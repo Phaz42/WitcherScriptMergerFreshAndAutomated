@@ -283,6 +283,14 @@ internal partial class ConflictTree : SMTree
 					modNode.ForeColor = metadata.ForeColor = ThemeManager.CurrentTheme.WarningColor;
 					modNode.ToolTipText = $"Made for an older game version: missing {outdated.Describe()}\n{modNode.ToolTipText}";
 				}
+				else if (health != null && health.IsOldMerge(fileNode.Text, out string mergedModName, out outdated)
+					&& modNode.Text.EqualsIgnoreCase(mergedModName))
+				{
+					// The existing merge, listed here because another mod now conflicts with it.
+					metadata.IsOutdated = true;
+					modNode.ForeColor = metadata.ForeColor = ThemeManager.CurrentTheme.WarningColor;
+					modNode.ToolTipText = $"An old merge, made against an older game version (missing {outdated.Describe()}): delete it and merge again.\n{modNode.ToolTipText}";
+				}
 			}
 		}
 	}
@@ -338,7 +346,9 @@ internal partial class ConflictTree : SMTree
 		if (!Settings.Get<bool>("CollapseIdenticalConflicts"))
 			return 0;
 
-		Application.DoEvents();
+		// No Application.DoEvents() here: this also runs when an action puts a search's hidden nodes back before reading
+		// the trees (TreeManager.SearchSuspended), and handling queued input then - a second click, the search's timer -
+		// could run another action, or hide nodes again, before the first reads them.
 		int totalCollapsedCount = 0;
 
 		foreach (TreeNode rootLevelNode in Nodes)

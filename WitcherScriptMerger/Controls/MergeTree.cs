@@ -142,7 +142,7 @@ internal partial class MergeTree : SMTree
 			return;
 
 		// All of this mod's merges, including those a search hides: every node is put back first, because deleting reads them.
-		MainFrm.treeManager.SuspendSearch();
+		using IDisposable searchSuspended = MainFrm.treeManager.SearchSuspended();
 
 		// Find all file nodes that contain a node matching the clicked node
 		System.Collections.Generic.IEnumerable<TreeNode> fileNodes = FileNodes.Where(node =>
@@ -150,7 +150,6 @@ internal partial class MergeTree : SMTree
 				modNode.Text == RightClickedNode.Text));
 
 		MainFrm.inventoryMergeManager.DeleteMerges(fileNodes);
-		MainFrm.treeManager.ResumeSearch();
 	}
 
 	protected override void SetContextItemAvailability()

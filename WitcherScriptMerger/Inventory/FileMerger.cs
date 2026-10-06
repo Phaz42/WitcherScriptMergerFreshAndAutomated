@@ -201,9 +201,10 @@ internal partial class FileMerger : IDisposable
 
 	// The mods whose copies the user chose to leave out (GameVersionCheck.Ask) are not merged, as if unticked: the merge
 	// is made from the others, and the conflict stays listed with those mods. The merges they would have had count as done.
+	// The merged mod - the existing merge, continued - is never left out: Ask does not offer it, and this holds it too.
 	private TreeNode[] LeaveOut(TreeNode[] checkedModNodes, IReadOnlySet<string> modNames)
 	{
-		TreeNode[] kept = checkedModNodes.Where(node => !modNames.Contains(node.Text)).ToArray();
+		TreeNode[] kept = checkedModNodes.Where(node => !modNames.Contains(node.Text) || node.Text.EqualsIgnoreCase(_mergedModName)).ToArray();
 		ProgressInfo.CurrentMergeNum += checkedModNodes.Length - kept.Length;
 		return kept;
 	}
@@ -229,7 +230,7 @@ internal partial class FileMerger : IDisposable
 			.Select(node => MergeSource.FromFlatFile(new FileInfo(node.GetMetadata().FilePath), null))
 			.Select(source => (source.Name, source.TextFile))
 			.ToList();
-		GameVersionCheck.Decision decision = GameVersionCheck.Ask(merge.RelativePath, _vanillaFile, modCopies);
+		GameVersionCheck.Decision decision = GameVersionCheck.Ask(merge.RelativePath, _vanillaFile, modCopies, _mergedModName);
 		if (!decision.Merge)
 		{
 			ProgressInfo.CurrentMergeNum += checkedModNodes.Length - 1;
@@ -301,7 +302,7 @@ internal partial class FileMerger : IDisposable
 			}
 
 			List<(string, FileInfo)> modCopies = unpackedCopies.Select(copy => (copy.Key, copy.Value)).ToList();
-			GameVersionCheck.Decision decision = GameVersionCheck.Ask(fileNode.Text, _vanillaFile, modCopies);
+			GameVersionCheck.Decision decision = GameVersionCheck.Ask(fileNode.Text, _vanillaFile, modCopies, _mergedModName);
 			if (!decision.Merge)
 			{
 				ProgressInfo.CurrentMergeNum += checkedModNodes.Length - 1;

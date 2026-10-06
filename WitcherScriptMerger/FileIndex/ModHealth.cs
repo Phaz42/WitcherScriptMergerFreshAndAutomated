@@ -26,6 +26,9 @@ internal sealed class ModHealth
 
 	private readonly Dictionary<(string RelativePath, string ModName), GameVersionCheck.Result> _outdatedByFile = [];
 
+	// Old merges by relative path (upper case): the merged mod that holds each, and how far it differs.
+	private readonly Dictionary<string, (string MergedModName, GameVersionCheck.Result Result)> _oldMerges = [];
+
 	internal List<OutdatedScript> OutdatedScripts { get; } = [];
 
 	internal List<InstallProblem> InstallProblems { get; } = [];
@@ -40,6 +43,18 @@ internal sealed class ModHealth
 	/// <summary>Whether a mod's copy of a script was found made for an older game version - and how far it differs.</summary>
 	internal bool IsOutdated(string relativePath, string modName, out GameVersionCheck.Result result) =>
 		_outdatedByFile.TryGetValue(Key(relativePath, modName), out result);
+
+	/// <summary>
+	/// Whether the merged file of this path is an old merge - made against an older game version, with no outdated mod's
+	/// copy in it to blame - and which merged mod holds it. The trees colour it as they colour an outdated copy.
+	/// </summary>
+	internal bool IsOldMerge(string relativePath, out string mergedModName, out GameVersionCheck.Result result)
+	{
+		bool found = _oldMerges.TryGetValue(relativePath.ToUpperInvariant(), out (string MergedModName, GameVersionCheck.Result Result) oldMerge);
+		mergedModName = oldMerge.MergedModName;
+		result = oldMerge.Result;
+		return found;
+	}
 
 	private static (string, string) Key(string relativePath, string modName) => (relativePath.ToUpperInvariant(), modName.ToUpperInvariant());
 
@@ -94,7 +109,10 @@ internal sealed class ModHealth
 					.Where(name => health._outdatedByFile.ContainsKey(Key(script.RelativePath, name))).ToList() ?? [];
 
 				if (causes.Count == 0)
+				{
 					health.OutdatedScripts.Add(new OutdatedScript(mergedModName, script.RelativePath, result, false, true));
+					health._oldMerges[script.RelativePath.ToUpperInvariant()] = (mergedModName, result);
+				}
 				foreach (string cause in causes)
 					_ = mergedAnyway.Add(Key(script.RelativePath, cause));
 			}
@@ -127,13 +145,17 @@ internal sealed class ModHealth
 			if (!modDir.EnumerateFileSystemInfos("*", SearchOption.AllDirectories).Any(info => info is FileInfo))
 				return "Empty folder: the game loads nothing from it.";
 
+			// With a content folder, the game loads the mod; anything beside it - such as an optional add-on's own Mods
+			// folder, shipped inside the mod - the game ignores, and it is not a problem.
+			if (modDir.EnumerateDirectories().Any(dir => dir.Name.Equals("content", StringComparison.OrdinalIgnoreCase)))
+				return null;
+
 			// A mod unpacked with its own Mods folder: Mods\modX\Mods\modX\content.
 			if (modDir.EnumerateDirectories().Any(dir => dir.Name.Equals("Mods", StringComparison.OrdinalIgnoreCase)))
 				return $"Contains its own Mods folder: installed one level too deep. Move the folders in Mods\\{modName}\\Mods into the game's Mods folder.";
 
 			// A mod unpacked into a folder of the same name: Mods\modX\modX\content - or something that is no mod at all.
-			if (!modDir.EnumerateDirectories().Any(dir => dir.Name.Equals("content", StringComparison.OrdinalIgnoreCase)))
-				return $"No content folder, so the game loads nothing from it. Probably installed one folder too deep: the content folder belongs directly in Mods\\{modName}.";
+			return $"No content folder, so the game loads nothing from it. Probably installed one folder too deep: the content folder belongs directly in Mods\\{modName}.";
 		}
 		catch (IOException)
 		{
@@ -143,8 +165,6 @@ internal sealed class ModHealth
 		{
 			return null;
 		}
-
-		return null;
 	}
 
 	/// <summary>How a line of the report is shown: the report window sets headings, the opening line and mod names in bold, details indented.</summary>
