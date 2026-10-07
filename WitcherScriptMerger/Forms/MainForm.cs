@@ -433,7 +433,11 @@ internal partial class MainForm : BaseForm
 			return;
 		}
 
-		// Trigger button clicks based on key presses
+		// Trigger button clicks based on key presses. A key used here goes no further: the list in focus would take it as
+		// typing - a jump to an item starting with that letter - and beep when there is none, as it always does for Esc.
+		if (e.KeyCode is Keys.F5 or Keys.F6 or Keys.C or Keys.A or Keys.D or Keys.E or Keys.Escape)
+			e.Handled = e.SuppressKeyPress = true;
+
 		if (e.KeyCode == Keys.F5) BtnRefreshConflicts_Click(null, null);
 		if (e.KeyCode == Keys.F6) BtnRefreshMerged_Click(null, null);
 		if (e.KeyCode == Keys.C) BtnMergeFiles_Click(null, null);
