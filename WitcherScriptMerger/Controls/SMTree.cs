@@ -90,6 +90,11 @@ internal abstract partial class SMTree : TreeView, IDisposable
 		internal Color ForeColor = ThemeManager.CurrentTheme.ForeDimmedColor;
 		internal string ModName = string.Empty;
 		internal bool IsOutdated;  // this mod's copy was made for an older game version (ModHealth)
+
+		// Non-mergeable conflicts only (ConflictTree): the mod's number in the load order, shown before its name - its
+		// priority in mods.settings, or, when it has none, the number it effectively has (IsEffectiveLoadOrderNumber).
+		internal int? LoadOrderNumber;
+		internal bool IsEffectiveLoadOrderNumber;
 	}
 
 	#endregion

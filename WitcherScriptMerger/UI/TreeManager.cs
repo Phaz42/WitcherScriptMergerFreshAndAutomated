@@ -33,6 +33,7 @@ internal class TreeManager
 
 	private TreeNode _treConflictsPrevNode, _treMergesPrevNode;
 	private TreeNode _prevToolTipNode;
+	private TreeNode _prevNumberToolTipNode;
 
 	// A mod node's hover fader is made the first time it is hovered, and goes with its node. A list attached when a tree
 	// was built missed nodes: the merges tree is built in queued steps that ran after the list was made (so no fader
@@ -739,6 +740,27 @@ internal class TreeManager
 	private void ShowConflictsToolTip(TreeView tv, MouseEventArgs e)
 	{
 		TreeNode node = tv.GetNodeAt(e.Location);
+
+		// A load order number explains itself, whatever the tooltip setting.
+		string numberToolTip = (tv as ConflictTree)?.LoadOrderNumberToolTip(node, e.Location);
+		if (numberToolTip != null)
+		{
+			if (node != _prevNumberToolTipNode)
+			{
+				treConflictsToolTip.Show(numberToolTip, tv, new Point(e.X + 16, node.Bounds.Top + 3));
+				_prevNumberToolTipNode = node;
+			}
+
+			_prevToolTipNode = null;  // the name's own tooltip shows again when the mouse moves on to it
+			return;
+		}
+
+		if (_prevNumberToolTipNode != null)
+		{
+			treConflictsToolTip.Hide(tv);
+			_prevNumberToolTipNode = null;
+		}
+
 		bool isBundledNode = node?.Parent?.Parent?.Tag is ModFileCategory tag && tag.IsBundled == true;
 		bool isOutdated = node?.Tag is NodeMetadata { IsOutdated: true };
 

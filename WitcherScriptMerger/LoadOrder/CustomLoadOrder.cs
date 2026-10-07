@@ -294,6 +294,47 @@ internal partial class CustomLoadOrder : IDisposable
 
 	internal ModLoadSetting GetModLoadSettingByName(string modName) => Mods.FirstOrDefault(setting => setting.ModName.EqualsIgnoreCase(modName));
 
+	/// <summary>
+	/// Compares two mods by the load order, the winner of a conflict first, as GetTopPriorityEnabledMod picks it: enabled
+	/// mods with a priority, the lowest first; then mods with none, which load after them; disabled mods, which do not
+	/// load, last. Within each group, and between equal priorities, by name.
+	/// </summary>
+	internal int CompareByLoadOrder(string x, string y)
+	{
+		(int Group, int Priority) Rank(string modName)
+		{
+			ModLoadSetting setting = GetModLoadSettingByName(modName);
+			return setting == null || (setting.IsEnabled == true && !setting.Priority.HasValue) ? (1, 0)
+				: setting.IsEnabled != true ? (2, 0)
+				: (0, setting.Priority.Value);
+		}
+
+		int byRank = Rank(x).CompareTo(Rank(y));
+		return byRank != 0 ? byRank : new LoadOrderComparer().Compare(x, y);
+	}
+
+	/// <summary>
+	/// The number each enabled mod shows in a non-mergeable conflict: its priority in this file, gaps and all; for a mod
+	/// with none, the number it effectively has - counting on from the file's highest priority, in name order among the
+	/// installed mods with none. Disabled mods have none: they do not load.
+	/// </summary>
+	internal Dictionary<string, (int Number, bool Effective)> GetLoadOrderNumbers(IEnumerable<string> installedMods)
+	{
+		Dictionary<string, (int Number, bool Effective)> numbers = new(StringComparer.OrdinalIgnoreCase);
+		foreach (ModLoadSetting setting in Mods.Where(setting => setting.IsEnabled == true && setting.Priority.HasValue))
+			numbers[setting.ModName] = (setting.Priority.Value, false);
+
+		int number = Mods.Where(setting => setting.Priority.HasValue).Select(setting => setting.Priority.Value).DefaultIfEmpty(TopPriority).Max();
+		foreach (string modName in installedMods
+			.Where(modName => GetModLoadSettingByName(modName) is not { } setting || (setting.IsEnabled == true && !setting.Priority.HasValue))
+			.OrderBy(modName => modName, new LoadOrderComparer()))
+		{
+			numbers[modName] = (++number, true);
+		}
+
+		return numbers;
+	}
+
 	internal bool IsModDisabledByName(string modName)
 	{
 		ModLoadSetting mod = GetModLoadSettingByName(modName);

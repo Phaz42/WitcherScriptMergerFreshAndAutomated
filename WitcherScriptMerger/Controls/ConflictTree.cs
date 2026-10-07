@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -30,6 +32,7 @@ internal partial class ConflictTree : SMTree
 
 	internal ConflictTree(Theme theme) : base(theme)
 	{
+
 		ContextNodeRegion.Items.AddRange(
 		[
 			_contextCustomLoadOrderSeparator,
@@ -233,14 +236,25 @@ internal partial class ConflictTree : SMTree
 	internal void SetStylesForCustomLoadOrder()
 	{
 		ModHealth health = MainFrm.treeManager?.ModIndex?.Health;
+		Dictionary<string, (int Number, bool Effective)> loadOrderNumbers = Program.LoadOrder.GetLoadOrderNumbers(InstalledModNames());
 		foreach (TreeNode fileNode in FileNodes)
 		{
 			IEnumerable<string> modNames = fileNode.GetTreeNodes().Select(modNode => modNode.Text);
 			bool isResolved = Program.LoadOrder.HasResolvedConflict(modNames);
 			string topPriorityMod = isResolved ? Program.LoadOrder.GetTopPriorityEnabledMod(modNames) : null;
+			bool isMergeable = (fileNode.Parent.Tag as ModFileCategory).IsSupported;
 
 			foreach (TreeNode modNode in fileNode.GetTreeNodes())
 			{
+				// The number before the mod's name, in non-mergeable conflicts only (OnDrawNode).
+				NodeMetadata numbered = (NodeMetadata)modNode.Tag;
+				numbered.LoadOrderNumber = null;
+				if (!isMergeable && loadOrderNumbers.TryGetValue(modNode.Text, out (int Number, bool Effective) loadOrder))
+				{
+					numbered.LoadOrderNumber = loadOrder.Number;
+					numbered.IsEffectiveLoadOrderNumber = loadOrder.Effective;
+				}
+
 				modNode.ToolTipText = "";
 				int priority = Program.LoadOrder.GetPriorityByName(modNode.Text);
 
@@ -292,8 +306,132 @@ internal partial class ConflictTree : SMTree
 					modNode.ToolTipText = $"An old merge, made against an older game version (missing {outdated.Describe()}): delete it and merge again.\n{modNode.ToolTipText}";
 				}
 			}
+
+			if (!isMergeable)
+				ReorderByLoadOrder(fileNode);
+		}
+
+		Invalidate();  // the numbers
+	}
+
+	// A changed priority can change a non-mergeable conflict's winner, and with it the order its mods are listed in: the
+	// mods are added again, which puts each in its sorted place. They show no checkboxes, and adding loses that state.
+	private void ReorderByLoadOrder(TreeNode fileNode)
+	{
+		TreeNode[] mods = fileNode.GetTreeNodes().ToArray();
+		if (mods.Zip(mods.Skip(1)).All(pair => Program.LoadOrder.CompareByLoadOrder(pair.First.Text, pair.Second.Text) <= 0))
+			return;
+
+		BeginUpdate();
+		foreach (TreeNode modNode in mods)
+			modNode.Remove();
+		foreach (TreeNode modNode in mods)
+		{
+			_ = fileNode.Nodes.Add(modNode);
+			modNode.SetIsCheckBoxVisible(false);
+		}
+
+		EndUpdate();
+	}
+
+	private static IEnumerable<string> InstalledModNames()
+	{
+		try
+		{
+			return Directory.Exists(Paths.ModsDirectory)
+				? Directory.GetDirectories(Paths.ModsDirectory, "mod*", SearchOption.TopDirectoryOnly).Select(Path.GetFileName).ToArray()
+				: [];
+		}
+		catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+		{
+			return [];
 		}
 	}
+
+	#region Load order numbers
+
+	private readonly Font _numberFont = new("Segoe UI", 10F, FontStyle.Bold);
+	private readonly Font _effectiveNumberFont = new("Segoe UI", 10F, FontStyle.Bold | FontStyle.Italic);
+
+	// The number sits in the empty indent before a mod's name, right-aligned against it, on the name's baseline: Windows
+	// centres the name in its row, and the number's own font is a different size.
+	private Rectangle NumberBounds(TreeNode modNode, NodeMetadata metadata)
+	{
+		Font font = metadata.IsEffectiveLoadOrderNumber ? _effectiveNumberFont : _numberFont;
+		Font nameFont = modNode.NodeFont ?? Font;
+		Size size = TextRenderer.MeasureText(metadata.LoadOrderNumber.Value.ToString(CultureInfo.InvariantCulture), font,
+			Size.Empty, TextFormatFlags.NoPadding);
+		Rectangle text = modNode.Bounds;
+		int nameTop = text.Top + ((text.Height - TextRenderer.MeasureText("Ag", nameFont, Size.Empty, TextFormatFlags.NoPadding).Height) / 2);
+		int top = nameTop + (int)Math.Round(AscentPixels(nameFont) - AscentPixels(font));
+		int gap = LogicalToDeviceUnits(6);
+		return new Rectangle(text.Left - gap - size.Width, top, size.Width, size.Height);
+	}
+
+	// The numbers are painted after Windows paints the tree, not by owner drawing: with owner-drawn text, WinForms draws
+	// each node's text itself, clipped to the width Windows measured with the tree's font - cutting off the larger
+	// category names - and fills a background that overlaps the checkboxes. Painted afterwards, the tree looks exactly as
+	// before. Each number's box is filled with the background first, so painting it twice changes nothing.
+	protected override void WndProc(ref Message m)
+	{
+		base.WndProc(ref m);
+		if (m.Msg == WmPaint && IsHandleCreated)
+			PaintLoadOrderNumbers();
+	}
+
+	private const int WmPaint = 0x000F;
+
+	private void PaintLoadOrderNumbers()
+	{
+		Theme theme = ThemeManager.CurrentTheme;
+		using Graphics g = CreateGraphics();
+		using SolidBrush background = new(BackColor);
+
+		for (TreeNode node = TopNode; node != null && node.Bounds.Top < ClientSize.Height; node = node.NextVisibleNode)
+		{
+			if (node.Tag is not NodeMetadata { LoadOrderNumber: int number } metadata)
+				continue;
+
+			// A number the file does not hold is set apart: italic, and fainter.
+			Color color = metadata.IsEffectiveLoadOrderNumber
+				? Color.FromArgb((theme.ForeDimmedColor.R + theme.TreeViewBackColor.R) / 2, (theme.ForeDimmedColor.G + theme.TreeViewBackColor.G) / 2,
+					(theme.ForeDimmedColor.B + theme.TreeViewBackColor.B) / 2)
+				: theme.ForeDimmedColor;
+			Rectangle box = NumberBounds(node, metadata);
+			g.FillRectangle(background, box);
+			TextRenderer.DrawText(g, number.ToString(CultureInfo.InvariantCulture),
+				metadata.IsEffectiveLoadOrderNumber ? _effectiveNumberFont : _numberFont, box, color,
+				TextFormatFlags.Right | TextFormatFlags.Top | TextFormatFlags.NoPadding);
+		}
+	}
+
+	// A font's ascent in pixels: the distance from the top of its line to the baseline.
+	private float AscentPixels(Font font) =>
+		font.SizeInPoints * DeviceDpi / 72f * font.FontFamily.GetCellAscent(font.Style) / font.FontFamily.GetEmHeight(font.Style);
+
+	/// <summary>The tooltip of the load order number under the mouse, if it points at one; it explains the number.</summary>
+	internal string LoadOrderNumberToolTip(TreeNode node, Point location)
+	{
+		if (node?.Tag is not NodeMetadata { LoadOrderNumber: int number } metadata || !NumberBounds(node, metadata).Contains(location))
+			return null;
+
+		return metadata.IsEffectiveLoadOrderNumber
+			? $"Load order {number}: this mod has no priority in mods.settings, so it loads after every mod that has one, in name order. {number} is the number it effectively has."
+			: $"Load order {number}: this mod's priority in mods.settings. The lowest number wins.";
+	}
+
+	protected override void Dispose(bool disposing)
+	{
+		if (disposing)
+		{
+			_numberFont.Dispose();
+			_effectiveNumberFont.Dispose();
+		}
+
+		base.Dispose(disposing);
+	}
+
+	#endregion
 
 	internal override void RestyleAfterSearch(bool searching)
 	{
