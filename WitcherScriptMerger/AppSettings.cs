@@ -42,6 +42,40 @@ internal class AppSettings
 
 		if (!HasConfigFile)
 			CreateDefaultAppConfig();
+
+		TranslateNeverCheckBundles();
+	}
+
+	/// <summary>
+	/// Whether conflict scans look inside bundles at all.
+	/// </summary>
+	internal bool ScanBundles => Get("ScanBundles", DefaultSettings.ScanBundles);
+
+	/// <summary>
+	/// Whether every scan looks inside bundles, not only a manual refresh.
+	/// </summary>
+	internal bool ScanBundlesOnEveryScan => ScanBundles && Get<int>("CheckBundles") == 0;
+
+	/// <summary>
+	/// Before 1.0, not checking bundles was a third choice of CheckBundles, 2 ("Never"). It is now ScanBundles, off,
+	/// with CheckBundles left at "Only on Manual Refresh" for when it is turned back on. Translated once and saved.
+	/// </summary>
+	private void TranslateNeverCheckBundles()
+	{
+		if (Get<int>("CheckBundles") != 2)
+			return;
+
+		Set("ScanBundles", false);
+		Set("CheckBundles", 1);
+		try
+		{
+			CachedConfig.Save(ConfigurationSaveMode.Minimal);
+		}
+		catch (ConfigurationErrorsException)
+		{
+			// Not saved: the translation is made again at the next start. Save() can't report it here, before the
+			// main window exists.
+		}
 	}
 
 	/// <summary>
@@ -59,6 +93,7 @@ internal class AppSettings
 					new XElement("add", new XAttribute("key", "ModsDirectory"), new XAttribute("value", "")),
 					new XElement("add", new XAttribute("key", "CheckScripts"), new XAttribute("value", DefaultSettings.CheckScripts.ToString().ToUpperInvariant())),
 					new XElement("add", new XAttribute("key", "CheckXmlFiles"), new XAttribute("value", DefaultSettings.CheckXmlFiles.ToString().ToUpperInvariant())),
+					new XElement("add", new XAttribute("key", "ScanBundles"), new XAttribute("value", DefaultSettings.ScanBundles.ToString().ToUpperInvariant())),
 					new XElement("add", new XAttribute("key", "CheckBundles"), new XAttribute("value", DefaultSettings.CheckBundles)),
 					new XElement("add", new XAttribute("key", "IgnoreModNames"), new XAttribute("value", DefaultSettings.IgnoreModNames)),
 					new XElement("add", new XAttribute("key", "CollapseIdenticalConflicts"), new XAttribute("value", DefaultSettings.CollapseIdenticalConflicts.ToString().ToUpperInvariant())),

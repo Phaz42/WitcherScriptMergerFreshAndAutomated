@@ -24,6 +24,38 @@ internal static partial class Program
 	private static readonly TimeSpan PipeTimeout = TimeSpan.FromSeconds(5); // Connection timeout for the pipe
 	private static NamedPipeServerStream server;
 
+	// A restart starts the new instance as this one closes, with this argument. The new instance then waits for the
+	// mutex instead of handing over to an instance that is going away.
+	private const string RestartArgument = "--restart";
+	private static readonly TimeSpan RestartMutexTimeout = TimeSpan.FromSeconds(30);
+	private static bool restartRequested;
+
+	/// <summary>
+	/// Takes the single-instance mutex, waiting up to the timeout.
+	/// </summary>
+	private static bool AcquireMutex(TimeSpan timeout)
+	{
+		try
+		{
+			return mutex.WaitOne(timeout, true);
+		}
+		catch (AbandonedMutexException)
+		{
+			// The instance before this one exited still holding it, which a restart meets: it is now this one's.
+			return true;
+		}
+	}
+
+	/// <summary>
+	/// Closes SM-FAE and starts it again, for settings applied only at start, such as the theme.
+	/// </summary>
+	internal static void Restart()
+	{
+		System.ComponentModel.CancelEventArgs closing = new();
+		Application.Exit(closing);
+		restartRequested = !closing.Cancel;
+	}
+
 	[LibraryImport("user32.dll")]
 	[return: MarshalAs(UnmanagedType.Bool)]
 	private static partial bool SetForegroundWindow(IntPtr hWnd);
@@ -148,8 +180,9 @@ internal static partial class Program
 
 		try
 		{
-			// Attempt to acquire the mutex immediately.
-			if (mutex.WaitOne(TimeSpan.Zero, true))
+			// Attempt to acquire the mutex immediately, or after the previous instance has closed for a restart.
+			bool restarted = Array.IndexOf(Environment.GetCommandLineArgs(), RestartArgument) > 0;
+			if (AcquireMutex(restarted ? RestartMutexTimeout : TimeSpan.Zero))
 			{
 				// If acquired, start the named pipe listener thread.
 				Thread listenThread = new(ListenForSignal) { IsBackground = true };
@@ -157,6 +190,10 @@ internal static partial class Program
 
 				RunApplication();
 				mutex.ReleaseMutex();
+
+				// Started only now, so that the settings this instance saved while closing are the ones it reads.
+				if (restartRequested)
+					Process.Start(Environment.ProcessPath, RestartArgument)?.Dispose();
 			}
 			else
 			{

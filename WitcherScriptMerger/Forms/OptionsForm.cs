@@ -24,6 +24,9 @@ internal partial class OptionsForm : BaseForm
 
 	internal bool BundleScanOptionChanged;
 
+	// The theme and accent colour last declined in the restart question, so the same choice is not asked about again.
+	private (int ColorTheme, bool AccentColor)? declinedRestart;
+
 	private List<ColorFader> colorFaders;
 
 	private void SetGameDirectory(string path)
@@ -61,8 +64,10 @@ internal partial class OptionsForm : BaseForm
 			chkCheckScripts);
 		Tip("Looks for loose XML files, outside bundles, that more than one mod changes. They hold game data such as items, skills and settings.",
 			chkCheckXmlFiles);
-		Tip("Also looks inside mods' bundles, the packed files in their content folders: on every scan, only when you click Refresh, or never. Checking bundles takes longer, because every bundle has to be read; only on Refresh keeps SM-FAE's start fast.",
-			lblCheckBundles, cbCheckBundles);
+		Tip("Also looks inside mods' bundles, the packed files in their content folders. This takes longer, because every bundle has to be read.",
+			chkScanBundles);
+		Tip("When bundles are checked: on every scan, or only when you click Refresh. Only on Refresh keeps SM-FAE's start fast.",
+			cbCheckBundles);
 		Tip("Collapses a conflict when the same mods conflict in the file listed just above it, which is common for mods that change many files. Scripts are never collapsed this way.",
 			chkCollapseIdenticalConflicts);
 		Tip("Collapses the not-mergeable sections, so the conflicts you can merge come first.",
@@ -93,7 +98,7 @@ internal partial class OptionsForm : BaseForm
 			chkAutoSkipKDiff3InfoDialogs);
 		Tip("Closes SM-FAE when merging is done and no conflicts remain.",
 			chkAutoExit);
-		Tip("Light, dark, or the same as Windows. A change takes effect after SM-FAE restarts.",
+		Tip("Light, dark, or the same as Windows. A change takes effect after a restart, which SM-FAE offers.",
 			lblColorTheme, cbColorTheme);
 		Tip("Uses your Windows accent colour for highlights, such as the winning mod and the main buttons, instead of SM-FAE's blue.",
 			chkAccentColor);
@@ -123,6 +128,7 @@ internal partial class OptionsForm : BaseForm
 
 		Settings.Set("CheckScripts", chkCheckScripts.Checked);
 		Settings.Set("CheckXmlFiles", chkCheckXmlFiles.Checked);
+		Settings.Set("ScanBundles", chkScanBundles.Checked);
 		Settings.Set("CheckBundles", cbCheckBundles.SelectedIndex);
 
 		Settings.Set("CollapseIdenticalConflicts", chkCollapseIdenticalConflicts.Checked);
@@ -156,6 +162,7 @@ internal partial class OptionsForm : BaseForm
 		Save();
 		MainFrm.uiThreadManager.ShowHideNoConflictsWitcher();
 		DialogResult = DialogResult.OK;
+		OfferRestartForTheme();
 	}
 
 	private void BtnCancel_Click(object sender, EventArgs e) => DialogResult = DialogResult.Cancel;
@@ -165,6 +172,29 @@ internal partial class OptionsForm : BaseForm
 		Save();
 		MainFrm.uiThreadManager.ShowHideNoConflictsWitcher();
 		DialogResult = DialogResult.None;
+		OfferRestartForTheme();
+	}
+
+	/// <summary>
+	/// Offers a restart when the saved theme or accent colour differs from the running one: both are applied only at
+	/// start. A choice declined once is not asked about again.
+	/// </summary>
+	private void OfferRestartForTheme()
+	{
+		(int ColorTheme, bool AccentColor) choice = (cbColorTheme.SelectedIndex, chkAccentColor.Checked);
+		bool themeDiffers = ThemeManager.DiffersFromCurrentTheme(choice.ColorTheme);
+		bool accentDiffers = choice.AccentColor != ThemeManager.AccentColorAtStart;
+		if ((!themeDiffers && !accentDiffers) || choice == declinedRestart)
+			return;
+
+		string what = themeDiffers ? "The new theme" : "The new accent colour setting";
+		// Owned by this window, which is topmost: owned by the main window, it could open behind it.
+		if (DialogResult.Yes == MessageBox.Show(this,
+			$"{what} takes effect after a restart. Restart SM-FAE now?",
+			"Restart SM-FAE", MessageBoxButtons.YesNo, MessageBoxIcon.Question))
+			Program.Restart();
+		else
+			declinedRestart = choice;
 	}
 
 	private void BtnSelectGameDirectory_Click(object sender, EventArgs e) => SelectGameDirectory();
@@ -263,16 +293,24 @@ internal partial class OptionsForm : BaseForm
 	{
 		LoadSettings(true);
 		Save();
+		OfferRestartForTheme();
 	}
 
 	private void CbCheckBundles_SelectionChangeCommitted(object sender, EventArgs e) => BundleScanOptionChanged = true;
+
+	private void ChkScanBundles_Click(object sender, EventArgs e) => BundleScanOptionChanged = true;
+
+	// When bundles are not checked, when to check them does not apply.
+	private void ChkScanBundles_CheckedChanged(object sender, EventArgs e) => cbCheckBundles.Enabled = chkScanBundles.Checked;
 
 	private void LoadSettings(bool useDefaults = false)
 	{
 		bool useDef = useDefaults;
 		chkCheckScripts.Checked = LoadSetting("CheckScripts", useDef, def.CheckScripts);
 		chkCheckXmlFiles.Checked = LoadSetting("CheckXmlFiles", useDef, def.CheckXmlFiles);
+		chkScanBundles.Checked = LoadSetting("ScanBundles", useDef, def.ScanBundles);
 		cbCheckBundles.SelectedIndex = LoadSetting("CheckBundles", useDef, def.CheckBundles);
+		ChkScanBundles_CheckedChanged(null, EventArgs.Empty); // CheckedChanged fires only when the value changes
 		chkCollapseIdenticalConflicts.Checked = LoadSetting("CollapseIdenticalConflicts", useDef, def.CollapseIdenticalConflicts);
 		chkCollapseNotMergeable.Checked = LoadSetting("CollapseNotMergeable", useDef, def.CollapseNotMergeable);
 		chkCollapseCustomLoadOrder.Checked = LoadSetting("CollapseCustomLoadOrder", useDef, def.CollapseCustomLoadOrder);

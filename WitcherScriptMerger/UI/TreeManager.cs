@@ -101,7 +101,7 @@ internal class TreeManager
 		checkBundles = false; // Force checkBundles to be false in debug mode
 #endif
 
-		if (Settings.Get<int>("CheckBundles") == 0 || (Settings.Get<int>("CheckBundles") == 1 && checkBundles))
+		if (Settings.ScanBundlesOnEveryScan || (Settings.ScanBundles && checkBundles))
 			ProgressManager.lblBundleScanInfo.Visible = true;
 
 		ProgressManager.InitializeProgressScreen("Detecting Conflicts", ProgressBarStyle.Continuous);
@@ -359,7 +359,7 @@ internal class TreeManager
 		_manualConflictsRefreshRunning = true;
 
 		// Refresh trees with or without bundle checking based on settings
-		if (Settings.Get<int>("CheckBundles") < 2)
+		if (Settings.ScanBundles)
 			RefreshTrees(true);
 		else
 			RefreshTrees(false);

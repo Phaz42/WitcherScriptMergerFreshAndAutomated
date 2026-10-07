@@ -195,7 +195,7 @@ internal class InventoryMergeManager
 		if (Program.Inventory.HasChanged)
 		{
 			Program.Inventory.Save();
-			if (Settings.Get<int>("CheckBundles") < 2)
+			if (Settings.ScanBundles)
 				treeManager.RefreshTrees(Program.Inventory.BundleChanged);
 			else
 				treeManager.RefreshTrees(false);
@@ -494,7 +494,7 @@ internal class InventoryMergeManager
 			// If mod index is null, we haven't refreshed it for the 1st time yet. Don't do it here.
 			if (treeManager.ModIndex != null)
 			{
-				if (Settings.Get<int>("CheckBundles") == 0)
+				if (Settings.ScanBundlesOnEveryScan)
 					treeManager.RefreshTrees(Program.Inventory.BundleChanged);
 				else
 					treeManager.RefreshTrees(false);

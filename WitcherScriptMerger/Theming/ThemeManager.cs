@@ -27,6 +27,11 @@ internal class ThemeManager
 	internal static Theme CurrentTheme;
 	internal static Color DefaultAccentColor = GetColorByHex("0078D7");
 
+	/// <summary>
+	/// The accent colour setting the running theme was built with. Like the theme, it changes only at the next start.
+	/// </summary>
+	internal static bool AccentColorAtStart { get; private set; }
+
 	internal ThemeManager()
 	{
 		LightTheme = new()
@@ -98,38 +103,36 @@ internal class ThemeManager
 			IsDark = true
 		};
 
-		SetCurrentTheme();
+		CurrentTheme = IsDarkTheme(Settings.Get<int>("ColorTheme")) ? DarkTheme : LightTheme;
+		AccentColorAtStart = Settings.Get<bool>("AccentColor");
 		UpdateThemeWithAccentColor();
 	}
 
-	private void SetCurrentTheme()
+	/// <summary>
+	/// Whether a ColorTheme choice would give a different theme from the running one. Follow Windows is compared by
+	/// what Windows uses now.
+	/// </summary>
+	internal static bool DiffersFromCurrentTheme(int colorTheme) => IsDarkTheme(colorTheme) != CurrentTheme.IsDark;
+
+	// ColorTheme: 0 follows Windows, 1 is light, 2 is dark.
+	private static bool IsDarkTheme(int colorTheme) => colorTheme switch
 	{
-		switch (Settings.Get<int>("ColorTheme"))
+		1 => false,
+		2 => true,
+		_ => !WindowsAppsUseLightTheme(),
+	};
+
+	// Dark when Windows' setting can't be read, as before.
+	private static bool WindowsAppsUseLightTheme()
+	{
+		try
 		{
-			default:
-			case 0:
-				// Follow Windows
-				CurrentTheme = DarkTheme;
-				try
-				{
-					bool isUsingLightTheme = (int)Registry.GetValue(
-					"HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
-					"AppsUseLightTheme", false) == 1;
-					CurrentTheme = isUsingLightTheme ? LightTheme : DarkTheme;
-				}
-				catch (Exception) { }
-
-				break;
-
-			case 1:
-				// Light Theme
-				CurrentTheme = LightTheme;
-				break;
-
-			case 2:
-				// Dark Theme
-				CurrentTheme = DarkTheme;
-				break;
+			return Registry.GetValue("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+				"AppsUseLightTheme", null) is int value && value == 1;
+		}
+		catch (Exception ex) when (ex is System.Security.SecurityException or System.IO.IOException or UnauthorizedAccessException)
+		{
+			return false;
 		}
 	}
 

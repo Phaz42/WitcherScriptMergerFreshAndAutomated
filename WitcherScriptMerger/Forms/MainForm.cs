@@ -326,7 +326,7 @@ internal partial class MainForm : BaseForm
 			return;
 
 		// Refresh conflicts tree based on settings
-		treeManager.RefreshConflictsTree(Settings.Get<int>("CheckBundles") == 0);
+		treeManager.RefreshConflictsTree(Settings.ScanBundlesOnEveryScan);
 	}
 
 	/// <summary>

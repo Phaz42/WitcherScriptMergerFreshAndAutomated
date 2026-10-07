@@ -4,6 +4,7 @@ internal class DefaultSettings
 {
 	internal const bool CheckScripts = true;
 	internal const bool CheckXmlFiles = true;
+	internal const bool ScanBundles = true;
 	internal const int CheckBundles = 1;
 	internal const string IgnoreModNames = "";
 	internal const bool CollapseIdenticalConflicts = true;

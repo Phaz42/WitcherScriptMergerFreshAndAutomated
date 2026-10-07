@@ -68,7 +68,7 @@ namespace WitcherScriptMerger.Forms
 			chkCheckScripts = new CheckBox();
 			pnlConflicts = new Panel();
 			cbCheckBundles = new ComboBox();
-			lblCheckBundles = new Label();
+			chkScanBundles = new CheckBox();
 			lblConflicts = new Label();
 			lblCollapse = new Label();
 			pnlCollapse = new Panel();
@@ -376,7 +376,7 @@ namespace WitcherScriptMerger.Forms
 			// pnlConflicts
 			// 
 			pnlConflicts.Controls.Add(cbCheckBundles);
-			pnlConflicts.Controls.Add(lblCheckBundles);
+			pnlConflicts.Controls.Add(chkScanBundles);
 			pnlConflicts.Controls.Add(lblConflicts);
 			pnlConflicts.Controls.Add(chkCheckScripts);
 			pnlConflicts.Controls.Add(chkCheckXmlFiles);
@@ -393,26 +393,28 @@ namespace WitcherScriptMerger.Forms
 			cbCheckBundles.DropDownStyle = ComboBoxStyle.DropDownList;
 			cbCheckBundles.Font = new System.Drawing.Font("Segoe UI", 10.8F);
 			cbCheckBundles.FormattingEnabled = true;
-			cbCheckBundles.Items.AddRange(new object[] { "On Every Scan", "Only on Manual Refresh", "Never" });
-			cbCheckBundles.Location = new System.Drawing.Point(379, 219);
+			cbCheckBundles.Items.AddRange(new object[] { "On Every Scan", "Only on Manual Refresh" });
+			cbCheckBundles.Location = new System.Drawing.Point(345, 219);
 			cbCheckBundles.Margin = new Padding(11, 11, 11, 11);
-			cbCheckBundles.MaxDropDownItems = 3;
+			cbCheckBundles.MaxDropDownItems = 2;
 			cbCheckBundles.Name = "cbCheckBundles";
-			cbCheckBundles.Size = new System.Drawing.Size(336, 48);
+			cbCheckBundles.Size = new System.Drawing.Size(370, 48);
 			cbCheckBundles.TabIndex = 29;
 			cbCheckBundles.SelectionChangeCommitted += CbCheckBundles_SelectionChangeCommitted;
 			// 
-			// lblCheckBundles
+			// chkScanBundles
 			// 
-			lblCheckBundles.AutoSize = true;
-			lblCheckBundles.Font = new System.Drawing.Font("Segoe UI", 11F);
-			lblCheckBundles.Location = new System.Drawing.Point(68, 226);
-			lblCheckBundles.Margin = new Padding(11, 11, 11, 11);
-			lblCheckBundles.Name = "lblCheckBundles";
-			lblCheckBundles.Size = new System.Drawing.Size(201, 41);
-			lblCheckBundles.TabIndex = 29;
-			lblCheckBundles.Tag = "DimmedLabel";
-			lblCheckBundles.Text = "Bundled Files:";
+			chkScanBundles.AutoSize = true;
+			chkScanBundles.Font = new System.Drawing.Font("Segoe UI", 11F);
+			chkScanBundles.Location = new System.Drawing.Point(36, 226);
+			chkScanBundles.Margin = new Padding(11, 11, 11, 11);
+			chkScanBundles.Name = "chkScanBundles";
+			chkScanBundles.Size = new System.Drawing.Size(220, 45);
+			chkScanBundles.TabIndex = 2;
+			chkScanBundles.Text = "Bundled files";
+			chkScanBundles.UseVisualStyleBackColor = true;
+			chkScanBundles.CheckedChanged += ChkScanBundles_CheckedChanged;
+			chkScanBundles.Click += ChkScanBundles_Click;
 			// 
 			// lblConflicts
 			// 
@@ -604,11 +606,11 @@ namespace WitcherScriptMerger.Forms
 			cbColorTheme.Font = new System.Drawing.Font("Segoe UI", 10.8F);
 			cbColorTheme.FormattingEnabled = true;
 			cbColorTheme.Items.AddRange(new object[] { "Follow Windows", "Light Theme", "Dark Theme" });
-			cbColorTheme.Location = new System.Drawing.Point(395, 88);
+			cbColorTheme.Location = new System.Drawing.Point(361, 88);
 			cbColorTheme.Margin = new Padding(11, 11, 11, 11);
 			cbColorTheme.MaxDropDownItems = 3;
 			cbColorTheme.Name = "cbColorTheme";
-			cbColorTheme.Size = new System.Drawing.Size(336, 48);
+			cbColorTheme.Size = new System.Drawing.Size(370, 48);
 			cbColorTheme.TabIndex = 25;
 			// 
 			// lblTheming
@@ -621,7 +623,7 @@ namespace WitcherScriptMerger.Forms
 			lblTheming.Name = "lblTheming";
 			lblTheming.Size = new System.Drawing.Size(793, 37);
 			lblTheming.TabIndex = 24;
-			lblTheming.Text = "User Interface 🡆 Restart application to apply theme change!";
+			lblTheming.Text = "User Interface";
 			// 
 			// chkAccentColor
 			// 
@@ -730,7 +732,7 @@ namespace WitcherScriptMerger.Forms
 		private CheckBox chkCollapseIdenticalConflicts;
 		private Panel pnlOptionsMain;
 		internal ComboBox cbCheckBundles;
-		private Label lblCheckBundles;
+		private CheckBox chkScanBundles;
 		private CheckBox chkCheckDuplicatePrios;
 		private CheckBox chkNoConflictsWitcher;
 	}
