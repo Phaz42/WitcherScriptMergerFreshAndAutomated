@@ -255,6 +255,7 @@ internal partial class ConflictTree : SMTree
 					numbered.IsEffectiveLoadOrderNumber = loadOrder.Effective;
 				}
 
+				// The load order shows in the numbers and the winner's colour; only what the colour means is said in words.
 				modNode.ToolTipText = "";
 				int priority = Program.LoadOrder.GetPriorityByName(modNode.Text);
 
@@ -262,20 +263,21 @@ internal partial class ConflictTree : SMTree
 				{
 					if (priority > -1)
 					{
-						modNode.ToolTipText += $"Top priority in this conflict. Prio: {priority}";
+						modNode.ToolTipText = isMergeable
+							? "Wins this conflict while it isn't merged: without a merge, the game uses only this mod's copy."
+							: "Wins this conflict: the game uses this mod's copy.";
 						modNode.ForeColor = ((NodeMetadata)modNode.Tag).ForeColor = Settings.Get<bool>("AccentColor") ? ThemeManager.CurrentTheme.AcceptButtonBackColor : ThemeManager.DefaultAccentColor;
 					}
 				}
 				else
 				{
-					modNode.ToolTipText += $"Prio: {priority}";
 					modNode.ForeColor = ((NodeMetadata)modNode.Tag).ForeColor = ThemeManager.CurrentTheme.ForeDimmedColor;
 				}
 
 				if (Program.LoadOrder.IsModDisabledByName(modNode.Text))
 				{
 					// Add underline
-					modNode.ToolTipText = "This mod is disabled in your custom load order";
+					modNode.ToolTipText = "Disabled in your load order: the game doesn't load this mod.";
 					modNode.SetFontStyle(FontStyle.Strikeout);
 					modNode.Checked = false;
 					modNode.SetIsCheckBoxVisible(false);
@@ -295,7 +297,7 @@ internal partial class ConflictTree : SMTree
 				if (metadata.IsOutdated)
 				{
 					modNode.ForeColor = metadata.ForeColor = ThemeManager.CurrentTheme.WarningColor;
-					modNode.ToolTipText = $"Made for an older game version: missing {outdated.Describe()}\n{modNode.ToolTipText}";
+					modNode.ToolTipText = WithLine($"Made for an older game version: missing {outdated.Describe()}", modNode.ToolTipText);
 				}
 				else if (health != null && health.IsOldMerge(fileNode.Text, out string mergedModName, out outdated)
 					&& modNode.Text.EqualsIgnoreCase(mergedModName))
@@ -303,7 +305,7 @@ internal partial class ConflictTree : SMTree
 					// The existing merge, listed here because another mod now conflicts with it.
 					metadata.IsOutdated = true;
 					modNode.ForeColor = metadata.ForeColor = ThemeManager.CurrentTheme.WarningColor;
-					modNode.ToolTipText = $"An old merge, made against an older game version (missing {outdated.Describe()}): delete it and merge again.\n{modNode.ToolTipText}";
+					modNode.ToolTipText = WithLine($"An old merge, made against an older game version (missing {outdated.Describe()}): delete it and merge again.", modNode.ToolTipText);
 				}
 			}
 
@@ -313,6 +315,8 @@ internal partial class ConflictTree : SMTree
 
 		Invalidate();  // the numbers
 	}
+
+	private static string WithLine(string first, string rest) => string.IsNullOrEmpty(rest) ? first : first + "\n" + rest;
 
 	// A changed priority can change a non-mergeable conflict's winner, and with it the order its mods are listed in: the
 	// mods are added again, which puts each in its sorted place. They show no checkboxes, and adding loses that state.
@@ -416,8 +420,8 @@ internal partial class ConflictTree : SMTree
 			return null;
 
 		return metadata.IsEffectiveLoadOrderNumber
-			? $"Load order {number}: this mod has no priority in mods.settings, so it loads after every mod that has one, in name order. {number} is the number it effectively has."
-			: $"Load order {number}: this mod's priority in mods.settings. The lowest number wins.";
+			? $"Not numbered in mods.settings: this mod loads after every numbered mod, in name order. {number} is the number it effectively has."
+			: "Load order number from mods.settings. The lowest number wins.";
 	}
 
 	protected override void Dispose(bool disposing)
@@ -470,10 +474,14 @@ internal partial class ConflictTree : SMTree
 				catNode.Collapse();
 		}
 
-		if (Settings.Get<bool>("CollapseCustomLoadOrder"))
+		// Only the conflicts the load order resolves - the ones with a winner coloured - as the option's label says.
+		if (Settings.Get<bool>("CollapseCustomLoadOrder") && Program.LoadOrder != null)
 		{
 			foreach (TreeNode fileNode in FileNodes)
-				fileNode.Collapse();
+			{
+				if (Program.LoadOrder.HasResolvedConflict(fileNode.GetTreeNodes().Select(modNode => modNode.Text)))
+					fileNode.Collapse();
+			}
 		}
 
 		_ = CollapseIdenticalScriptNodesInTreeView();

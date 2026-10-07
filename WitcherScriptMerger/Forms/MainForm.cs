@@ -99,6 +99,7 @@ internal partial class MainForm : BaseForm
 			Margin = new Padding(0),
 			Name = "treConflicts",
 			ShowLines = false,
+			ShowNodeToolTips = true,
 			Size = new Size(470, 809),
 			Sorted = true,
 			TabIndex = 1,

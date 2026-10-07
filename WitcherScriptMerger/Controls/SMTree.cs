@@ -412,6 +412,7 @@ internal abstract partial class SMTree : TreeView, IDisposable
 		_contextCopyPath.Name = "contextCopyPath";
 		_contextCopyPath.Size = new Size(225, 22);
 		_contextCopyPath.Text = "Copy Path";
+		_contextCopyPath.ToolTipText = "Copies the full path of this file to the clipboard";
 		_contextCopyPath.Click += ContextCopyPath_Click;
 
 		// contextAllSeparator

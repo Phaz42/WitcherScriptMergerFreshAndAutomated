@@ -21,10 +21,8 @@ internal class DefaultSettings
 	internal const bool AutoOverwriteOldMerges = true;
 	internal const bool AutoSkipKDiff3InfoDialogs = true;
 	internal const bool AutoExit = false;
-	internal const bool AutoBackupLoadOrder = true;
 	internal const int ColorTheme = 0;
 	internal const bool AccentColor = true;
-	internal const int PrioTooltips = 0;
 	internal const bool NoConflictsWitcher = true;
 	internal const bool RanThroughVortex = false;
 	internal const string MergedModName = "mod0000_MergedFiles";

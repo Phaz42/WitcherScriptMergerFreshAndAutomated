@@ -20,6 +20,7 @@ using static WitcherScriptMerger.Program;
 
 namespace WitcherScriptMerger.UI;
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "One TreeManager lives as long as the main window; its tooltip timer is released with the process.")]
 internal class TreeManager
 {
 	internal ConflictTree ConflictsTree { get; }
@@ -32,8 +33,8 @@ internal class TreeManager
 	private bool _manualConflictsRefreshRunning;
 
 	private TreeNode _treConflictsPrevNode, _treMergesPrevNode;
-	private TreeNode _prevToolTipNode;
 	private TreeNode _prevNumberToolTipNode;
+	private System.Windows.Forms.Timer _numberToolTipTimer;
 
 	// A mod node's hover fader is made the first time it is hovered, and goes with its node. A list attached when a tree
 	// was built missed nodes: the merges tree is built in queued steps that ran after the list was made (so no fader
@@ -275,7 +276,7 @@ internal class TreeManager
 				TreeNode categoryNode = MergesTree.GetCategoryNode(merge.Category);
 				if (categoryNode == null)
 				{
-					categoryNode = CreateCategoryNode(merge.Category);
+					categoryNode = CreateCategoryNode(merge.Category, true);
 					_ = MergesTree.Nodes.Add(categoryNode);
 				}
 
@@ -735,73 +736,47 @@ internal class TreeManager
 	}
 
 	/// <summary>
-	/// Shows tooltips for conflicts in the ConflictsTree, based on the user's settings for tooltip display.
+	/// The conflicts list's rows show their tooltips themselves (ShowNodeToolTips). A mod's load order number sits before
+	/// its name, outside the row's tooltip area, so its tooltip is shown here - after the same hover delay.
 	/// </summary>
 	private void ShowConflictsToolTip(TreeView tv, MouseEventArgs e)
 	{
 		TreeNode node = tv.GetNodeAt(e.Location);
-
-		// A load order number explains itself, whatever the tooltip setting.
 		string numberToolTip = (tv as ConflictTree)?.LoadOrderNumberToolTip(node, e.Location);
-		if (numberToolTip != null)
+		if (numberToolTip == null)
 		{
-			if (node != _prevNumberToolTipNode)
+			_numberToolTipTimer?.Stop();
+			if (_prevNumberToolTipNode != null)
 			{
-				treConflictsToolTip.Show(numberToolTip, tv, new Point(e.X + 16, node.Bounds.Top + 3));
-				_prevNumberToolTipNode = node;
+				treConflictsToolTip.Hide(tv);
+				_prevNumberToolTipNode = null;
 			}
 
-			_prevToolTipNode = null;  // the name's own tooltip shows again when the mouse moves on to it
 			return;
 		}
 
-		if (_prevNumberToolTipNode != null)
+		if (node == _prevNumberToolTipNode)
+			return;
+
+		treConflictsToolTip.Hide(tv);
+		_prevNumberToolTipNode = node;
+		if (_numberToolTipTimer == null)
 		{
-			treConflictsToolTip.Hide(tv);
-			_prevNumberToolTipNode = null;
+			_numberToolTipTimer = new System.Windows.Forms.Timer { Interval = treConflictsToolTip.InitialDelay };
+			_numberToolTipTimer.Tick += (sender, args) =>
+			{
+				_numberToolTipTimer.Stop();
+				// Shown only if the mouse is still on that number.
+				Point mouse = ConflictsTree.PointToClient(Cursor.Position);
+				TreeNode hovered = ConflictsTree.GetNodeAt(mouse);
+				string text = hovered == _prevNumberToolTipNode ? ConflictsTree.LoadOrderNumberToolTip(hovered, mouse) : null;
+				if (text != null)
+					treConflictsToolTip.Show(text, ConflictsTree, new Point(mouse.X + 16, hovered.Bounds.Top + 3));
+			};
 		}
 
-		bool isBundledNode = node?.Parent?.Parent?.Tag is ModFileCategory tag && tag.IsBundled == true;
-		bool isOutdated = node?.Tag is NodeMetadata { IsOutdated: true };
-
-		// Determine if tooltips are allowed based on settings
-		bool ToolTipsAllowed = false;
-		switch (Settings.Get<int>("PrioToolTips"))
-		{
-			// 0 Never (highest prio is still colored)
-			// 1 Only for Bundled conflicts
-			// 2 Only for Script conflicts
-			// 3 Both Bundled and Script conflicts
-			case 1: // Bundles
-				ToolTipsAllowed = isBundledNode;
-				break;
-			case 2: // Scripts
-				ToolTipsAllowed = !isBundledNode;
-				break;
-			case 3: // Both
-				ToolTipsAllowed = true;
-				break;
-		}
-
-		// Why a mod stands out is shown whatever the priority tooltip setting.
-		ToolTipsAllowed |= isOutdated;
-
-		// Show or hide tooltip based on conditions
-		if (node != null && node != _prevToolTipNode && !string.IsNullOrEmpty(node.ToolTipText) && ToolTipsAllowed)
-		{
-			int mostRightX = node.Bounds.Left + node.Bounds.Width + 15;
-			int centerY = node.Bounds.Top + 3;
-
-			Point ToolTipPos = new(mostRightX, centerY);
-			treConflictsToolTip.Show(node.ToolTipText, tv, ToolTipPos);
-		}
-		else if (node is null || string.IsNullOrEmpty(node.ToolTipText))
-		{
-			treConflictsToolTip.SetToolTip(tv, null);
-			treConflictsToolTip.Hide(tv);
-		}
-
-		_prevToolTipNode = node;
+		_numberToolTipTimer.Stop();
+		_numberToolTipTimer.Start();
 	}
 
 	/// <summary>
@@ -846,12 +821,12 @@ internal class TreeManager
 	/// <summary>
 	/// A category node, as both trees show it: large, bold, in the accent colour.
 	/// </summary>
-	internal static TreeNode CreateCategoryNode(ModFileCategory category)
+	internal static TreeNode CreateCategoryNode(ModFileCategory category, bool forMerges = false)
 	{
 		return new TreeNode
 		{
 			Text = category.DisplayName,
-			ToolTipText = category.ToolTipText,
+			ToolTipText = forMerges ? category.MergesToolTipText : category.ToolTipText,
 			NodeFont = new Font("Segoe UI", 14.0F, FontStyle.Bold),
 			ForeColor = Settings.Get<bool>("AccentColor")
 				? ThemeManager.CurrentTheme.AcceptButtonBackColor

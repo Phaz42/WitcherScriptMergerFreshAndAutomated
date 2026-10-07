@@ -37,8 +37,68 @@ internal partial class OptionsForm : BaseForm
 	internal OptionsForm()
 	{
 		InitializeComponent();
+		SetToolTips();
 		UpdateWindowSizeFromWorkingArea(this);
 		ThemeMngr.ApplyThemeOnForm(this);
+	}
+
+	// What each option does, and what the less obvious terms mean. The tooltip control lives in the designer's container,
+	// which the form disposes.
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Added to the form's components container, which disposes it with the form.")]
+	private void SetToolTips()
+	{
+		components ??= new System.ComponentModel.Container();
+		ToolTip tips = new(components) { AutoPopDelay = 20000, InitialDelay = 500, ReshowDelay = 200 };
+		void Tip(string text, params Control[] controls)
+		{
+			foreach (Control control in controls)
+				tips.SetToolTip(control, text);
+		}
+
+		Tip("The folder The Witcher 3 is installed in, which holds the bin, content and Mods folders. SM-FAE reads the game's own files and your mods from there.",
+			lblGameDir, txtGameDir, btnSelectGameDirectory);
+		Tip("Looks for script files (.ws) that more than one mod changes. Unmerged, only one mod's version is used, which can break the other mod or stop the game from starting.",
+			chkCheckScripts);
+		Tip("Looks for loose XML files, outside bundles, that more than one mod changes. They hold game data such as items, skills and settings.",
+			chkCheckXmlFiles);
+		Tip("Also looks inside mods' bundles, the packed files in their content folders: on every scan, only when you click Refresh, or never. Checking bundles takes longer, because every bundle has to be read; only on Refresh keeps SM-FAE's start fast.",
+			lblCheckBundles, cbCheckBundles);
+		Tip("Collapses a conflict when the same mods conflict in the file listed just above it, which is common for mods that change many files. Scripts are never collapsed this way.",
+			chkCollapseIdenticalConflicts);
+		Tip("Collapses the not-mergeable sections, so the conflicts you can merge come first.",
+			chkCollapseNotMergeable);
+		Tip("Collapses conflicts where your load order decides which mod wins, so the ones still needing a decision stand out.",
+			chkCollapseCustomLoadOrder);
+		Tip("After merging, checks that the merged mod has the top load order number. If another mod outranks it, the game may use that mod's file instead of the merge, and SM-FAE offers to fix that.",
+			chkPromptPrioritize);
+		Tip("Asks before deleting an outdated merge. A merge is outdated when a mod in it was updated, removed or disabled since merging: it no longer matches your mods.",
+			chkPromptOutdatedMerge);
+		Tip("Opens every merge in KDiff3 for you to check before it's saved, even when SM-FAE could merge it automatically.",
+			chkReviewEachMerge);
+		Tip("Shows a short guide when KDiff3 opens for a merge you have to finish by hand: what's happening, how to read KDiff3, and the easy way out.",
+			chkShowKDiff3Guide);
+		Tip("Shows which files went into each merge and where the result was saved.",
+			chkMergeReport);
+		Tip("Shows what went into the merged bundle after it's packed.",
+			chkPackReport);
+		Tip("Warns when two mods have the same load order number in mods.settings. Then the game decides their order itself, and you can't control which one wins.",
+			chkCheckDuplicatePrios);
+		Tip("Merges all script conflicts by itself after each scan, without you selecting them. Conflicts that need a decision still open KDiff3.",
+			chkAutoCreateScriptMerges);
+		Tip("Deletes outdated merges without asking. A merge is outdated when a mod in it was updated, removed or disabled, or its merged file is missing; merge again afterwards.",
+			chkAutoDeleteOldMerges);
+		Tip("When a merged file already exists, replaces it without asking.",
+			chkAutoOverwriteOldMerges);
+		Tip("Hides KDiff3's own information windows, such as its conflict count, which add nothing in SM-FAE.",
+			chkAutoSkipKDiff3InfoDialogs);
+		Tip("Closes SM-FAE when merging is done and no conflicts remain.",
+			chkAutoExit);
+		Tip("Light, dark, or the same as Windows. A change takes effect after SM-FAE restarts.",
+			lblColorTheme, cbColorTheme);
+		Tip("Uses your Windows accent colour for highlights, such as the winning mod and the main buttons, instead of SM-FAE's blue.",
+			chkAccentColor);
+		Tip("Shows a picture when there are no conflicts. You can use your own; see Images\\Custom in SM-FAE's folder.",
+			chkNoConflictsWitcher);
 	}
 
 	private static void ColorizeGroupBoxLine(GroupBox groupBox, Color lineColor)
@@ -83,11 +143,9 @@ internal partial class OptionsForm : BaseForm
 		Settings.Set("AutoOverwriteOldMerges", chkAutoOverwriteOldMerges.Checked);
 		Settings.Set("AutoSkipKDiff3InfoDialogs", chkAutoSkipKDiff3InfoDialogs.Checked);
 		Settings.Set("AutoExit", chkAutoExit.Checked);
-		Settings.Set("AutoBackupLoadOrder", chkAutoBackupLoadOrder.Checked);
 
 		Settings.Set("ColorTheme", cbColorTheme.SelectedIndex);
 		Settings.Set("AccentColor", chkAccentColor.Checked);
-		Settings.Set("PrioTooltips", cbPrioTooltips.SelectedIndex);
 		Settings.Set("NoConflictsWitcher", chkNoConflictsWitcher.Checked);
 
 		Settings.Save();
@@ -230,10 +288,8 @@ internal partial class OptionsForm : BaseForm
 		chkAutoOverwriteOldMerges.Checked = LoadSetting("AutoOverwriteOldMerges", useDef, def.AutoOverwriteOldMerges);
 		chkAutoSkipKDiff3InfoDialogs.Checked = LoadSetting("AutoSkipKDiff3InfoDialogs", useDef, def.AutoSkipKDiff3InfoDialogs);
 		chkAutoExit.Checked = LoadSetting("AutoExit", useDef, def.AutoExit);
-		chkAutoBackupLoadOrder.Checked = LoadSetting("AutoBackupLoadOrder", useDef, def.AutoBackupLoadOrder);
 		cbColorTheme.SelectedIndex = LoadSetting("ColorTheme", useDef, def.ColorTheme);
 		chkAccentColor.Checked = LoadSetting("AccentColor", useDef, def.AccentColor);
-		cbPrioTooltips.SelectedIndex = LoadSetting("PrioTooltips", useDef, def.PrioTooltips);
 		chkNoConflictsWitcher.Checked = LoadSetting("NoConflictsWitcher", useDef, def.NoConflictsWitcher);
 
 		Save();

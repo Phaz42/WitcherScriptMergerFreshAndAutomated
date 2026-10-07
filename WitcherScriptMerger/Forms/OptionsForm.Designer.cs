@@ -82,14 +82,11 @@ namespace WitcherScriptMerger.Forms
 			pnlButtonBar = new Panel();
 			pnlTheming = new Panel();
 			chkNoConflictsWitcher = new CheckBox();
-			lblPrioTooltips = new Label();
-			cbPrioTooltips = new ComboBox();
 			lblColorTheme = new Label();
 			cbColorTheme = new ComboBox();
 			lblTheming = new Label();
 			chkAccentColor = new CheckBox();
 			pnlOptionsMain = new Panel();
-			chkAutoBackupLoadOrder = new CheckBox();
 			pnlConflicts.SuspendLayout();
 			pnlCollapse.SuspendLayout();
 			pnlMerging.SuspendLayout();
@@ -519,7 +516,6 @@ namespace WitcherScriptMerger.Forms
 			// 
 			// pnlAutomation
 			// 
-			pnlAutomation.Controls.Add(chkAutoBackupLoadOrder);
 			pnlAutomation.Controls.Add(chkAutoSkipKDiff3InfoDialogs);
 			pnlAutomation.Controls.Add(chkAutoExit);
 			pnlAutomation.Controls.Add(lblAutomation);
@@ -566,8 +562,6 @@ namespace WitcherScriptMerger.Forms
 			// pnlTheming
 			// 
 			pnlTheming.Controls.Add(chkNoConflictsWitcher);
-			pnlTheming.Controls.Add(lblPrioTooltips);
-			pnlTheming.Controls.Add(cbPrioTooltips);
 			pnlTheming.Controls.Add(lblColorTheme);
 			pnlTheming.Controls.Add(cbColorTheme);
 			pnlTheming.Controls.Add(lblTheming);
@@ -591,32 +585,6 @@ namespace WitcherScriptMerger.Forms
 			chkNoConflictsWitcher.TabIndex = 29;
 			chkNoConflictsWitcher.Text = "Show Witcher when you have no conflicts";
 			chkNoConflictsWitcher.UseVisualStyleBackColor = true;
-			// 
-			// lblPrioTooltips
-			// 
-			lblPrioTooltips.AutoSize = true;
-			lblPrioTooltips.Font = new System.Drawing.Font("Segoe UI", 11F);
-			lblPrioTooltips.Location = new System.Drawing.Point(36, 152);
-			lblPrioTooltips.Margin = new Padding(11, 11, 11, 11);
-			lblPrioTooltips.Name = "lblPrioTooltips";
-			lblPrioTooltips.Size = new System.Drawing.Size(339, 82);
-			lblPrioTooltips.TabIndex = 28;
-			lblPrioTooltips.Tag = "DimmedLabel";
-			lblPrioTooltips.Text = "Show tooltip on highest\r\npriority mod in conflicts:";
-			// 
-			// cbPrioTooltips
-			// 
-			cbPrioTooltips.DropDownStyle = ComboBoxStyle.DropDownList;
-			cbPrioTooltips.DropDownWidth = 350;
-			cbPrioTooltips.Font = new System.Drawing.Font("Segoe UI", 10.8F);
-			cbPrioTooltips.FormattingEnabled = true;
-			cbPrioTooltips.Items.AddRange(new object[] { "Never (but highest prio is still colored)", "Only for Bundled conflicts", "Only for Script conflicts", "Both Bundled and Script conflicts" });
-			cbPrioTooltips.Location = new System.Drawing.Point(395, 176);
-			cbPrioTooltips.Margin = new Padding(11, 11, 11, 11);
-			cbPrioTooltips.MaxDropDownItems = 3;
-			cbPrioTooltips.Name = "cbPrioTooltips";
-			cbPrioTooltips.Size = new System.Drawing.Size(336, 48);
-			cbPrioTooltips.TabIndex = 27;
 			// 
 			// lblColorTheme
 			// 
@@ -682,18 +650,6 @@ namespace WitcherScriptMerger.Forms
 			pnlOptionsMain.Name = "pnlOptionsMain";
 			pnlOptionsMain.Size = new System.Drawing.Size(1628, 1582);
 			pnlOptionsMain.TabIndex = 29;
-			// 
-			// chkAutoBackupLoadOrder
-			// 
-			chkAutoBackupLoadOrder.AutoSize = true;
-			chkAutoBackupLoadOrder.Font = new System.Drawing.Font("Segoe UI", 11F);
-			chkAutoBackupLoadOrder.Location = new System.Drawing.Point(44, 438);
-			chkAutoBackupLoadOrder.Margin = new Padding(11);
-			chkAutoBackupLoadOrder.Name = "chkAutoBackupLoadOrder";
-			chkAutoBackupLoadOrder.Size = new System.Drawing.Size(668, 45);
-			chkAutoBackupLoadOrder.TabIndex = 27;
-			chkAutoBackupLoadOrder.Text = "Automatically make backups of Load Order file";
-			chkAutoBackupLoadOrder.UseVisualStyleBackColor = true;
 			// 
 			// OptionsForm
 			// 
@@ -771,14 +727,11 @@ namespace WitcherScriptMerger.Forms
 		private CheckBox chkAccentColor;
 		private Label lblColorTheme;
 		private ComboBox cbColorTheme;
-		private Label lblPrioTooltips;
-		private ComboBox cbPrioTooltips;
 		private CheckBox chkCollapseIdenticalConflicts;
 		private Panel pnlOptionsMain;
 		internal ComboBox cbCheckBundles;
 		private Label lblCheckBundles;
 		private CheckBox chkCheckDuplicatePrios;
 		private CheckBox chkNoConflictsWitcher;
-		private CheckBox chkAutoBackupLoadOrder;
 	}
 }
