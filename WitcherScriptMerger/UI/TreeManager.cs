@@ -20,7 +20,7 @@ using static WitcherScriptMerger.Program;
 
 namespace WitcherScriptMerger.UI;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "One TreeManager lives as long as the main window; its tooltip timer is released with the process.")]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "One TreeManager lives as long as the main window; its lists' tooltips and their timers are released with the process.")]
 internal class TreeManager
 {
 	internal ConflictTree ConflictsTree { get; }
@@ -33,15 +33,12 @@ internal class TreeManager
 	private bool _manualConflictsRefreshRunning;
 
 	private TreeNode _treConflictsPrevNode, _treMergesPrevNode;
-	private TreeNode _prevNumberToolTipNode;
-	private System.Windows.Forms.Timer _numberToolTipTimer;
+	private readonly ListToolTips _conflictsToolTips, _mergesToolTips;
 
 	// A mod node's hover fader is made the first time it is hovered, and goes with its node. A list attached when a tree
 	// was built missed nodes: the merges tree is built in queued steps that ran after the list was made (so no fader
 	// worked after a merge was created or deleted), and a search can hide nodes as a refresh ends.
 	private readonly ConditionalWeakTable<TreeNode, TreeNodeColorFader> _colorFaders = new();
-
-	private readonly ToolTip treConflictsToolTip;
 
 	// The search above each tree (TreeSearch), its text box and its "12 of 340" count. Null: nothing searched.
 	private TreeSearch _conflictsSearch, _mergesSearch;
@@ -65,7 +62,8 @@ internal class TreeManager
 		MergesTree = treMerges;
 		UIThreadManager = uiThreadManager;
 		ProgressManager = progressManager;
-		this.treConflictsToolTip = treConflictsToolTip;
+		_conflictsToolTips = new ListToolTips(treConflicts, treConflictsToolTip, treConflicts.LoadOrderNumberToolTip);
+		_mergesToolTips = new ListToolTips(treMerges, new ToolTip());
 	}
 
 	/// <summary>
@@ -726,71 +724,15 @@ internal class TreeManager
 		if (tv == ConflictsTree)
 		{
 			_treConflictsPrevNode = HandleTreeViewMouseMoves(tv, GetColorFader, _treConflictsPrevNode, e);
-			ShowConflictsToolTip(tv, e);
+			_conflictsToolTips.OnMouseMove(e.Location);
 		}
 		else
 		{
 			_treMergesPrevNode = tv == MergesTree
 				? HandleTreeViewMouseMoves(tv, GetColorFader, _treMergesPrevNode, e)
 				: throw new NotImplementedException($"Unknown Treeview: {tv.Name}");
+			_mergesToolTips.OnMouseMove(e.Location);
 		}
-	}
-
-	/// <summary>
-	/// Hides the load order number's tooltip when the mouse leaves the conflicts list: no mouse move follows to hide it.
-	/// </summary>
-	internal void OnConflictsTreeMouseLeave(object sender, EventArgs e)
-	{
-		_numberToolTipTimer?.Stop();
-		if (_prevNumberToolTipNode != null)
-		{
-			treConflictsToolTip.Hide(ConflictsTree);
-			_prevNumberToolTipNode = null;
-		}
-	}
-
-	/// <summary>
-	/// The conflicts list's rows show their tooltips themselves (ShowNodeToolTips). A mod's load order number sits before
-	/// its name, outside the row's tooltip area, so its tooltip is shown here - after the same hover delay.
-	/// </summary>
-	private void ShowConflictsToolTip(TreeView tv, MouseEventArgs e)
-	{
-		TreeNode node = tv.GetNodeAt(e.Location);
-		string numberToolTip = (tv as ConflictTree)?.LoadOrderNumberToolTip(node, e.Location);
-		if (numberToolTip == null)
-		{
-			_numberToolTipTimer?.Stop();
-			if (_prevNumberToolTipNode != null)
-			{
-				treConflictsToolTip.Hide(tv);
-				_prevNumberToolTipNode = null;
-			}
-
-			return;
-		}
-
-		if (node == _prevNumberToolTipNode)
-			return;
-
-		treConflictsToolTip.Hide(tv);
-		_prevNumberToolTipNode = node;
-		if (_numberToolTipTimer == null)
-		{
-			_numberToolTipTimer = new System.Windows.Forms.Timer { Interval = treConflictsToolTip.InitialDelay };
-			_numberToolTipTimer.Tick += (sender, args) =>
-			{
-				_numberToolTipTimer.Stop();
-				// Shown only if the mouse is still on that number.
-				Point mouse = ConflictsTree.PointToClient(Cursor.Position);
-				TreeNode hovered = ConflictsTree.GetNodeAt(mouse);
-				string text = hovered == _prevNumberToolTipNode ? ConflictsTree.LoadOrderNumberToolTip(hovered, mouse) : null;
-				if (text != null)
-					treConflictsToolTip.Show(text, ConflictsTree, new Point(mouse.X + 16, hovered.Bounds.Top + 3));
-			};
-		}
-
-		_numberToolTipTimer.Stop();
-		_numberToolTipTimer.Start();
 	}
 
 	/// <summary>
@@ -842,9 +784,7 @@ internal class TreeManager
 			Text = category.DisplayName,
 			ToolTipText = forMerges ? category.MergesToolTipText : category.ToolTipText,
 			NodeFont = new Font("Segoe UI", 14.0F, FontStyle.Bold),
-			ForeColor = ThemeManager.AccentColorAtStart
-				? ThemeManager.CurrentTheme.AcceptButtonBackColor
-				: ThemeManager.DefaultAccentColor,
+			ForeColor = ThemeManager.CurrentTheme.AccentTextColor,
 			Tag = category
 		};
 	}

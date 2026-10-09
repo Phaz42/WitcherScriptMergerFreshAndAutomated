@@ -11,6 +11,13 @@ internal class Theme
 	internal Color ForeDimmedColor;
 	internal Color ForeBrightColor;
 
+	// Fainter than dimmed, still readable: a load order number mods.settings doesn't hold (ConflictTree).
+	internal Color ForeFaintColor;
+
+	// The accent as text - winners, section titles, headings, the selected menu item - readable on the theme's
+	// backgrounds (ThemeManager.UpdateAccentColors). AcceptButtonBackColor is the accent as a fill.
+	internal Color AccentTextColor;
+
 	internal Color OptionsPanelBackColor;
 	internal Color BackgroundPanelBackColor;
 	internal Color LinkColor;
@@ -28,6 +35,7 @@ internal class Theme
 
 	internal Color MenuBackColor;
 	internal Color MenuForeColor;
+	internal Color MenuDisabledForeColor;
 	internal Color MenuSelectedBackColor;
 	internal Color MenuSelectedForeColor;
 

@@ -47,6 +47,7 @@ internal class ThemeManager
 			ForeColor = GetColorByHex("1E1E1E"),
 			ForeDimmedColor = GetColorByHex("646464"),
 			ForeBrightColor = GetColorByHex("000000"),
+			ForeFaintColor = GetColorByHex("8C8C8C"),
 			BackColor = GetColorByHex("dedede"),
 
 			OptionsPanelBackColor = Color.White,
@@ -66,8 +67,8 @@ internal class ThemeManager
 
 			MenuBackColor = GetColorByHex("f9f9f9"),
 			MenuForeColor = GetColorByHex("000000"),
+			MenuDisabledForeColor = GetColorByHex("6D6D6D"),
 			MenuSelectedBackColor = GetColorByHex("f0eced"),
-			MenuSelectedForeColor = DefaultAccentColor,
 
 			TreeViewBackColor = Color.White,
 			WarningColor = GetColorByHex("B45309"),
@@ -82,6 +83,7 @@ internal class ThemeManager
 			ForeColor = GetColorByHex("F1F1F1"),
 			ForeDimmedColor = GetColorByHex("9e9e9e"),
 			ForeBrightColor = GetColorByHex("ffffff"),
+			ForeFaintColor = GetColorByHex("8A8A8A"),
 			BackColor = GetColorByHex("202020"),
 
 			BackgroundPanelBackColor = GetColorByHex("383838"),
@@ -99,9 +101,9 @@ internal class ThemeManager
 			AcceptButtonDownColor = GetColorByHex("373737"),
 
 			MenuBackColor = GetColorByHex("383838"),
-			MenuForeColor = GetColorByHex("9e9e9e"),
+			MenuForeColor = GetColorByHex("D4D4D4"),
+			MenuDisabledForeColor = GetColorByHex("7A7A7A"),
 			MenuSelectedBackColor = GetColorByHex("202020"),
-			MenuSelectedForeColor = DefaultAccentColor,
 
 			TreeViewBackColor = GetColorByHex("2d2d2d"),
 			WarningColor = GetColorByHex("F0A040"),
@@ -113,7 +115,7 @@ internal class ThemeManager
 		CurrentTheme = IsDarkTheme(ColorThemeAtStart) ? DarkTheme : LightTheme;
 		// Read with the default the Options window shows, so a settings file without the key agrees with it.
 		AccentColorAtStart = Settings.Get("AccentColor", DefaultSettings.AccentColor);
-		UpdateThemeWithAccentColor();
+		UpdateAccentColors();
 	}
 
 	/// <summary>
@@ -145,19 +147,24 @@ internal class ThemeManager
 		}
 	}
 
-	private static void UpdateThemeWithAccentColor()
+	// The accent, Windows' or SM-FAE's own blue: as a fill on accent buttons (Windows' only), and as text everywhere it is
+	// written, mixed until it reads on each background it is written on.
+	private static void UpdateAccentColors()
 	{
-		if (Environment.OSVersion.Version.Major < 10)
-			return;
-		if (!AccentColorAtStart)
-			return;
+		Color accentColor = DefaultAccentColor;
+		if (AccentColorAtStart && Environment.OSVersion.Version.Major >= 10)
+		{
+			accentColor = GetAccentColorFromRegistry();
+			CurrentTheme.AcceptButtonBackColor = accentColor;
+			CurrentTheme.AcceptButtonHoverColor = ControlPaint.Light(accentColor, 0.25f);
+			CurrentTheme.AcceptButtonDownColor = ControlPaint.Light(accentColor, 0.5f);
+			CurrentTheme.AcceptButtonForeColor = TextOn(accentColor);
+		}
 
-		Color accentColor = GetAccentColorFromRegistry();
-		CurrentTheme.AcceptButtonBackColor = accentColor;
-		CurrentTheme.AcceptButtonHoverColor = ControlPaint.Light(accentColor, 0.25f);
-		CurrentTheme.AcceptButtonDownColor = ControlPaint.Light(accentColor, 0.5f);
-		CurrentTheme.AcceptButtonForeColor = IsLightColor(accentColor) ? Color.Black : Color.White;
-		CurrentTheme.MenuSelectedForeColor = accentColor;
+		Theme theme = CurrentTheme;
+		theme.AccentTextColor = ReadableOn(accentColor, theme.IsDark, theme.TreeViewBackColor, theme.BackColor,
+			theme.BackgroundPanelBackColor, theme.MenuBackColor, theme.MenuSelectedBackColor);
+		theme.MenuSelectedForeColor = theme.AccentTextColor;
 	}
 
 	private static void ModernizeButton(Button button, Form form, bool standardButton = true)
@@ -176,6 +183,8 @@ internal class ThemeManager
 		button.ForeColor = standardButton ? CurrentTheme.StandardButtonForeColor : CurrentTheme.AcceptButtonForeColor;
 		button.FlatAppearance.BorderSize = 0;
 		button.FlatStyle = FlatStyle.Flat;
+		if (button is Controls.RoundButton round)
+			round.CornerRadius = cornerRadius;
 		button.AutoSize = true;
 		button.FlatAppearance.MouseOverBackColor = standardButton ? CurrentTheme.StandardButtonHoverColor : CurrentTheme.AcceptButtonHoverColor;
 		button.FlatAppearance.MouseDownBackColor = standardButton ? CurrentTheme.StandardButtonDownColor : CurrentTheme.AcceptButtonDownColor;
@@ -305,7 +314,7 @@ internal class ThemeManager
 			}
 			else if (control is Label && (string)control.Tag == "AccentLabel")
 			{
-				control.ForeColor = AccentColorAtStart ? CurrentTheme.AcceptButtonBackColor : DefaultAccentColor;
+				control.ForeColor = CurrentTheme.AccentTextColor;
 			}
 			else if (control is Label && control.Tag?.ToString() == "DimmedLabel")
 			{

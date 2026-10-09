@@ -30,18 +30,18 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MergeReportForm));
             lblMergedFiles = new System.Windows.Forms.Label();
-            btnOpenMergedDir = new System.Windows.Forms.Button();
-            btnOpenMergedFile = new System.Windows.Forms.Button();
+            btnOpenMergedDir = new WitcherScriptMerger.Controls.RoundButton();
+            btnOpenMergedFile = new WitcherScriptMerger.Controls.RoundButton();
             txtMergedPath = new System.Windows.Forms.TextBox();
-            btnOpenDir2 = new System.Windows.Forms.Button();
-            btnOpenFile2 = new System.Windows.Forms.Button();
+            btnOpenDir2 = new WitcherScriptMerger.Controls.RoundButton();
+            btnOpenFile2 = new WitcherScriptMerger.Controls.RoundButton();
             txtFilePath2 = new System.Windows.Forms.TextBox();
-            btnMergeReportOK = new System.Windows.Forms.Button();
+            btnMergeReportOK = new WitcherScriptMerger.Controls.RoundButton();
             chkShowAfterMerge = new System.Windows.Forms.CheckBox();
             lblTempContentFiles = new System.Windows.Forms.Label();
             txtFilePath1 = new System.Windows.Forms.TextBox();
-            btnOpenFile1 = new System.Windows.Forms.Button();
-            btnOpenDir1 = new System.Windows.Forms.Button();
+            btnOpenFile1 = new WitcherScriptMerger.Controls.RoundButton();
+            btnOpenDir1 = new WitcherScriptMerger.Controls.RoundButton();
             lblArrowDown = new System.Windows.Forms.Label();
             lblMod1 = new System.Windows.Forms.Label();
             lblMod2 = new System.Windows.Forms.Label();

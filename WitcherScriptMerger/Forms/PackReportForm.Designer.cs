@@ -30,12 +30,12 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(PackReportForm));
             txtBundlePath = new System.Windows.Forms.TextBox();
-            btnOpenContentDir = new System.Windows.Forms.Button();
+            btnOpenContentDir = new WitcherScriptMerger.Controls.RoundButton();
             lblContent = new System.Windows.Forms.Label();
             txtContent = new System.Windows.Forms.TextBox();
-            btnOpenBundleDir = new System.Windows.Forms.Button();
+            btnOpenBundleDir = new WitcherScriptMerger.Controls.RoundButton();
             lblPackedBundle = new System.Windows.Forms.Label();
-            btnOK = new System.Windows.Forms.Button();
+            btnOK = new WitcherScriptMerger.Controls.RoundButton();
             chkShowAfterPack = new System.Windows.Forms.CheckBox();
             label1 = new System.Windows.Forms.Label();
             SuspendLayout();

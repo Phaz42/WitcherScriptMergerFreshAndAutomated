@@ -31,8 +31,8 @@ partial class MessageForm
 		tlpMessageForm = new System.Windows.Forms.TableLayoutPanel();
 		tbMessage = new System.Windows.Forms.TextBox();
 		panel1 = new System.Windows.Forms.Panel();
-		btnNo = new System.Windows.Forms.Button();
-		btnYes = new System.Windows.Forms.Button();
+		btnNo = new WitcherScriptMerger.Controls.RoundButton();
+		btnYes = new WitcherScriptMerger.Controls.RoundButton();
 		tlpMessageForm.SuspendLayout();
 		panel1.SuspendLayout();
 		SuspendLayout();

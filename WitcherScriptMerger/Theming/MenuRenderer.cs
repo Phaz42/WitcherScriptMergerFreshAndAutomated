@@ -39,7 +39,12 @@ internal partial class MenuRenderer(Theme theme, int fontSize = 10) : ToolStripP
 		Point textLocation = new(left, top);
 
 		Rectangle textRectangle = new(textLocation, textSize);
-		ToolStripItemTextRenderEventArgs centeredTextEventArgs = new(e.Graphics, e.Item, e.Text, textRectangle, e.TextColor, e.TextFont, e.TextFormat);
+		// A disabled item in the theme's disabled colour: Windows' own grey sits too close to the enabled items' on a dark menu.
+		Color textColor = item.Enabled ? e.TextColor : theme.MenuDisabledForeColor;
+		ToolStripItemTextRenderEventArgs centeredTextEventArgs = new(e.Graphics, e.Item, e.Text, textRectangle, textColor, e.TextFont, e.TextFormat)
+		{
+			TextColor = textColor
+		};
 
 		base.OnRenderItemText(centeredTextEventArgs);
 	}

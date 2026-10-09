@@ -41,11 +41,49 @@ internal static class Colors
 		color.G.ToString("X2", CultureInfo.InvariantCulture) +
 		color.B.ToString("X2", CultureInfo.InvariantCulture);
 
-	internal static bool IsLightColor(Color color)
+	// WCAG 2's contrast ratio between two colours, 1 to 21. Normal text needs 4.5 to be read comfortably.
+	internal static double ContrastRatio(Color a, Color b)
 	{
-		double luminance = (0.299 * color.R) + (0.587 * color.G) + (0.114 * color.B);
-		return luminance > 128;
+		double la = RelativeLuminance(a), lb = RelativeLuminance(b);
+		return (Math.Max(la, lb) + 0.05) / (Math.Min(la, lb) + 0.05);
 	}
+
+	private static double RelativeLuminance(Color color)
+	{
+		static double Channel(int value)
+		{
+			double c = value / 255.0;
+			return c <= 0.03928 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
+		}
+
+		return (0.2126 * Channel(color.R)) + (0.7152 * Channel(color.G)) + (0.0722 * Channel(color.B));
+	}
+
+	/// <summary>
+	/// The colour as text: mixed towards white (on dark backgrounds) or black (on light ones) just far enough to reach 4.5:1
+	/// on every background given, so its hue is kept. A Windows accent colour is chosen to fill things, and as text it can
+	/// be unreadable: Windows' default blue reaches only 3:1 on a dark list, a yellow accent 1.7:1 on white.
+	/// </summary>
+	internal static Color ReadableOn(Color color, bool darkBackgrounds, params Color[] backgrounds)
+	{
+		Color target = darkBackgrounds ? Color.White : Color.Black;
+		for (int step = 0; step <= 100; step++)
+		{
+			float amount = step / 100f;
+			Color mixed = Color.FromArgb(
+				(int)Math.Round(color.R + ((target.R - color.R) * amount)),
+				(int)Math.Round(color.G + ((target.G - color.G) * amount)),
+				(int)Math.Round(color.B + ((target.B - color.B) * amount)));
+			if (Array.TrueForAll(backgrounds, background => ContrastRatio(mixed, background) >= 4.5))
+				return mixed;
+		}
+
+		return target;
+	}
+
+	// Text on a fill of this colour: white, as Windows writes on its accent, where that reads; otherwise the better of the two.
+	internal static Color TextOn(Color fill) =>
+		ContrastRatio(Color.White, fill) >= 4.5 || ContrastRatio(Color.White, fill) >= ContrastRatio(Color.Black, fill) ? Color.White : Color.Black;
 
 	internal static Color MakeCooler(Color originalColor, float percentage)
 	{

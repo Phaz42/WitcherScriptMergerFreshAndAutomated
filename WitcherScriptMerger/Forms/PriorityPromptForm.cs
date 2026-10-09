@@ -48,7 +48,7 @@ internal partial class PriorityPromptForm : BaseForm
 		tableLayoutPanel1 = new TableLayoutPanel();
 		lblLoadOrderInfo = new Label();
 		upDownPrio = new NumericUpDown();
-		btnOK = new Button();
+		btnOK = new Controls.RoundButton();
 		pnlTitle = new Panel();
 		lblModName = new Label();
 		lblTitle = new Label();

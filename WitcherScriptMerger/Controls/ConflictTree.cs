@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 using WitcherScriptMerger.FileIndex;
@@ -266,7 +267,7 @@ internal partial class ConflictTree : SMTree
 						modNode.ToolTipText = isMergeable
 							? "Wins this conflict while it isn't merged: without a merge, the game uses only this mod's copy."
 							: "Wins this conflict: the game uses this mod's copy.";
-						modNode.ForeColor = ((NodeMetadata)modNode.Tag).ForeColor = ThemeManager.AccentColorAtStart ? ThemeManager.CurrentTheme.AcceptButtonBackColor : ThemeManager.DefaultAccentColor;
+						modNode.ForeColor = ((NodeMetadata)modNode.Tag).ForeColor = ThemeManager.CurrentTheme.AccentTextColor;
 					}
 				}
 				else
@@ -376,19 +377,79 @@ internal partial class ConflictTree : SMTree
 	// each node's text itself, clipped to the width Windows measured with the tree's font - cutting off the larger
 	// category names - and fills a background that overlaps the checkboxes. Painted afterwards, the tree looks exactly as
 	// before. Each number's box is filled with the background first, so painting it twice changes nothing.
+	// Windows paints the tree into a buffer, the numbers are added there, and only then is it shown: painted onto the
+	// screen after the tree, the numbers blinked on every repaint - and each hovered row's colour fade repaints.
 	protected override void WndProc(ref Message m)
 	{
+		if (m.Msg == WmEraseBackground && IsHandleCreated)
+		{
+			m.Result = 1;  // the buffer below is cleared to the background instead
+			return;
+		}
+
+		if (m.Msg == WmPaint && m.WParam == IntPtr.Zero && IsHandleCreated)
+		{
+			PaintBuffered();
+			return;
+		}
+
 		base.WndProc(ref m);
-		if (m.Msg == WmPaint && IsHandleCreated)
-			PaintLoadOrderNumbers();
 	}
 
 	private const int WmPaint = 0x000F;
+	private const int WmEraseBackground = 0x0014;
 
-	private void PaintLoadOrderNumbers()
+	private void PaintBuffered()
+	{
+		IntPtr screen = BeginPaint(Handle, out PaintStruct paint);
+		try
+		{
+			using BufferedGraphics buffer = BufferedGraphicsManager.Current.Allocate(screen, ClientRectangle);
+			Graphics g = buffer.Graphics;
+			g.Clear(BackColor);
+
+			// The tree paints into the device context a paint message carries, when it carries one.
+			IntPtr hdc = g.GetHdc();
+			try
+			{
+				Message treePaint = Message.Create(Handle, WmPaint, hdc, IntPtr.Zero);
+				base.WndProc(ref treePaint);
+			}
+			finally
+			{
+				g.ReleaseHdc(hdc);
+			}
+
+			PaintLoadOrderNumbers(g);
+			buffer.Render();
+		}
+		finally
+		{
+			_ = EndPaint(Handle, ref paint);
+		}
+	}
+
+	[StructLayout(LayoutKind.Sequential)]
+	private unsafe struct PaintStruct
+	{
+		internal IntPtr Hdc;
+		internal int Erase;
+		internal int Left, Top, Right, Bottom;
+		internal int Restore;
+		internal int IncUpdate;
+		internal fixed byte Reserved[32];
+	}
+
+	[LibraryImport("user32.dll")]
+	private static partial IntPtr BeginPaint(IntPtr hWnd, out PaintStruct paint);
+
+	[LibraryImport("user32.dll")]
+	[return: MarshalAs(UnmanagedType.Bool)]
+	private static partial bool EndPaint(IntPtr hWnd, ref PaintStruct paint);
+
+	private void PaintLoadOrderNumbers(Graphics g)
 	{
 		Theme theme = ThemeManager.CurrentTheme;
-		using Graphics g = CreateGraphics();
 		using SolidBrush background = new(BackColor);
 
 		for (TreeNode node = TopNode; node != null && node.Bounds.Top < ClientSize.Height; node = node.NextVisibleNode)
@@ -396,17 +457,23 @@ internal partial class ConflictTree : SMTree
 			if (node.Tag is not NodeMetadata { LoadOrderNumber: int number } metadata)
 				continue;
 
-			// A number the file does not hold is set apart: italic, and fainter.
-			Color color = metadata.IsEffectiveLoadOrderNumber
-				? Color.FromArgb((theme.ForeDimmedColor.R + theme.TreeViewBackColor.R) / 2, (theme.ForeDimmedColor.G + theme.TreeViewBackColor.G) / 2,
-					(theme.ForeDimmedColor.B + theme.TreeViewBackColor.B) / 2)
-				: theme.ForeDimmedColor;
+			// A number the file does not hold is set apart: italic, and fainter - but still readable.
+			Color color = metadata.IsEffectiveLoadOrderNumber ? theme.ForeFaintColor : theme.ForeDimmedColor;
 			Rectangle box = NumberBounds(node, metadata);
 			g.FillRectangle(background, box);
 			TextRenderer.DrawText(g, number.ToString(CultureInfo.InvariantCulture),
 				metadata.IsEffectiveLoadOrderNumber ? _effectiveNumberFont : _numberFont, box, color,
 				TextFormatFlags.Right | TextFormatFlags.Top | TextFormatFlags.NoPadding);
 		}
+	}
+
+	// Where the number answers the mouse: the whole indent before the name, at the row's full height. The number alone was
+	// a target a few pixels across, missed as often as hit, and rows' numbers had gaps between them; rows' indents touch.
+	private Rectangle NumberHoverBounds(TreeNode modNode, NodeMetadata metadata)
+	{
+		Rectangle number = NumberBounds(modNode, metadata);
+		Rectangle row = modNode.Bounds;
+		return Rectangle.FromLTRB(Math.Max(0, number.Left - LogicalToDeviceUnits(8)), row.Top, row.Left, row.Bottom);
 	}
 
 	// A font's ascent in pixels: the distance from the top of its line to the baseline.
@@ -416,7 +483,7 @@ internal partial class ConflictTree : SMTree
 	/// <summary>The tooltip of the load order number under the mouse, if it points at one; it explains the number.</summary>
 	internal string LoadOrderNumberToolTip(TreeNode node, Point location)
 	{
-		if (node?.Tag is not NodeMetadata { LoadOrderNumber: int number } metadata || !NumberBounds(node, metadata).Contains(location))
+		if (node?.Tag is not NodeMetadata { LoadOrderNumber: int number } metadata || !NumberHoverBounds(node, metadata).Contains(location))
 			return null;
 
 		return metadata.IsEffectiveLoadOrderNumber

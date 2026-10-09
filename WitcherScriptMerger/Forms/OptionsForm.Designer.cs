@@ -52,9 +52,9 @@ namespace WitcherScriptMerger.Forms
 			chkMergeReport = new CheckBox();
 			chkCollapseCustomLoadOrder = new CheckBox();
 			chkCollapseNotMergeable = new CheckBox();
-			btnCancel = new Button();
-			btnOK = new Button();
-			btnApply = new Button();
+			btnCancel = new RoundButton();
+			btnOK = new RoundButton();
+			btnApply = new RoundButton();
 			chkAutoSkipKDiff3InfoDialogs = new CheckBox();
 			chkAutoCreateScriptMerges = new CheckBox();
 			chkAutoExit = new CheckBox();
@@ -62,8 +62,8 @@ namespace WitcherScriptMerger.Forms
 			chkAutoOverwriteOldMerges = new CheckBox();
 			lblGameDir = new Label();
 			txtGameDir = new TextBox();
-			btnSelectGameDirectory = new Button();
-			btnDefaultOptions = new Button();
+			btnSelectGameDirectory = new RoundButton();
+			btnDefaultOptions = new RoundButton();
 			chkCheckXmlFiles = new CheckBox();
 			chkCheckScripts = new CheckBox();
 			pnlConflicts = new Panel();

@@ -99,7 +99,7 @@ internal partial class MainForm : BaseForm
 			Margin = new Padding(0),
 			Name = "treConflicts",
 			ShowLines = false,
-			ShowNodeToolTips = true,
+			ShowNodeToolTips = false,  // SM-FAE shows the rows' tooltips (ListToolTips)
 			Size = new Size(470, 809),
 			Sorted = true,
 			TabIndex = 1,
@@ -120,7 +120,7 @@ internal partial class MainForm : BaseForm
 			Margin = new Padding(0),
 			Name = "treMerges",
 			ShowLines = false,
-			ShowNodeToolTips = true,
+			ShowNodeToolTips = false,  // SM-FAE shows the rows' tooltips (ListToolTips)
 			Size = new Size(470, 809),
 			Sorted = true,
 			TabIndex = 1,
@@ -287,7 +287,6 @@ internal partial class MainForm : BaseForm
 
 		// Attach tree mouse move event handlers
 		treConflicts.MouseMove += treeManager.OnTreeViewMouseMove;
-		treConflicts.MouseLeave += treeManager.OnConflictsTreeMouseLeave;
 		treMerges.MouseMove += treeManager.OnTreeViewMouseMove;
 	}
 

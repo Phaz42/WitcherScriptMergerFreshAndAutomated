@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
+using WitcherScriptMerger.Controls;
 using WitcherScriptMerger.Theming;
 using WitcherScriptMerger.UI;
 
@@ -39,8 +40,8 @@ internal sealed partial class KDiff3GuideForm : BaseForm
 	private readonly RichTextBox _help;
 	private readonly List<RichTextBox> _texts = [];
 	private readonly CheckBox _option;
-	private readonly Button _keepOpen;
-	private readonly Button _close;
+	private readonly RoundButton _keepOpen;
+	private readonly RoundButton _close;
 
 	private GuideMode _mode = GuideMode.Full;
 	private bool _review;
@@ -381,6 +382,7 @@ internal sealed partial class KDiff3GuideForm : BaseForm
 			WordWrap = true
 		};
 		box.ContentsResized += (sender, e) => box.Height = e.NewRectangle.Height + LogicalToDeviceUnits(2);
+		SpaceWordBreak.Apply(box);  // a path or mod name stays on one line
 		_texts.Add(box);
 		_content.Controls.Add(box);
 		return box;
@@ -479,12 +481,13 @@ internal sealed partial class KDiff3GuideForm : BaseForm
 		LogicalToDeviceUnits(padding.Left), LogicalToDeviceUnits(padding.Top),
 		LogicalToDeviceUnits(padding.Right), LogicalToDeviceUnits(padding.Bottom));
 
-	private Button CreateButton(string text, Padding margin)
+	private RoundButton CreateButton(string text, Padding margin)
 	{
-		// Rounded by the theme at its size then, so it is given its full width now.
+		// Rounded by the theme at its size then, so it is given its full width now - as a minimum too, or the auto-sized
+		// button shrinks to its text when it becomes the default button.
 		Font font = new("Segoe UI", 11F);
 		int width = Math.Max(160, TextRenderer.MeasureText(text, font).Width + LogicalToDeviceUnits(40));
-		return new Button { AutoSize = true, Font = font, Margin = margin, Size = new Size(width, 50), Text = text };
+		return new RoundButton { AutoSize = true, Font = font, Margin = margin, MinimumSize = new Size(width, 50), Size = new Size(width, 50), Text = text };
 	}
 
 	protected override void Dispose(bool disposing)

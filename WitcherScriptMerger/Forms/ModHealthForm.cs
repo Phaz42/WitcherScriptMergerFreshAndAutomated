@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
+using WitcherScriptMerger.Controls;
 using WitcherScriptMerger.FileIndex;
 using WitcherScriptMerger.Theming;
 
@@ -14,7 +15,7 @@ namespace WitcherScriptMerger.Forms;
 /// The problem check's report (ModHealth), opened from the status bar: headings and mod names in bold, details indented,
 /// to scroll through and copy - as plain text - into a forum post or bug report.
 /// </summary>
-internal sealed class ModHealthForm : Form
+internal sealed class ModHealthForm : BaseForm
 {
 	private readonly ModHealth _health;
 	private readonly RichTextBox _text;
@@ -26,6 +27,8 @@ internal sealed class ModHealthForm : Form
 	{
 		_health = health;
 
+		// BaseForm, for its title bar in the theme; it scales by font, and this form sizes itself in device units.
+		AutoScaleMode = AutoScaleMode.None;
 		Text = "Mods with Problems";
 		Icon = MainFrm.Icon;
 		StartPosition = FormStartPosition.CenterParent;
@@ -48,8 +51,10 @@ internal sealed class ModHealthForm : Form
 			WordWrap = true
 		};
 		_text.HandleCreated += (sender, e) => ThemeUtils.ApplyWindowTheme(_text);  // dark scrollbars in the dark theme
+		SpaceWordBreak.Apply(_text);  // a path or mod name stays on one line
 
-		Button copy = new() { AutoSize = true, Font = new Font("Segoe UI", 11F), Margin = new Padding(0, 0, 8, 0), Size = new Size(160, 50), Text = "&Copy" };
+		// A minimum size, not only a size: an auto-sized button shrinks to its text when it becomes the default button.
+		RoundButton copy = new() { AutoSize = true, Font = new Font("Segoe UI", 11F), Margin = new Padding(0, 0, 8, 0), MinimumSize = new Size(160, 50), Size = new Size(160, 50), Text = "&Copy" };
 		copy.Click += (sender, e) =>
 		{
 			try
@@ -62,7 +67,7 @@ internal sealed class ModHealthForm : Form
 			}
 		};
 
-		Button close = new() { AutoSize = true, DialogResult = DialogResult.OK, Font = new Font("Segoe UI", 11F), Margin = new Padding(0, 0, 16, 0), Size = new Size(160, 50), Text = "OK" };
+		RoundButton close = new() { AutoSize = true, DialogResult = DialogResult.OK, Font = new Font("Segoe UI", 11F), Margin = new Padding(0, 0, 16, 0), MinimumSize = new Size(160, 50), Size = new Size(160, 50), Text = "OK" };
 		AcceptButton = close;
 		CancelButton = close;
 
