@@ -39,7 +39,7 @@ namespace WitcherScriptMerger.Forms
 			lblBundleScanInfo = new Label();
 			lblProgressCurrentPhase = new Label();
 			lblProgressCurrentAction = new Label();
-			progressBar = new ProgressBar();
+			progressBar = new ThemedProgressBar();
 			statusStrip = new StatusStrip();
 			lblStatusLeft1 = new ToolStripStatusLabel();
 			lblStatusLeft2 = new ToolStripStatusLabel();

@@ -238,7 +238,7 @@
             lnkBmsPlugin.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             lnkBmsPlugin.LinkArea = new System.Windows.Forms.LinkArea(14, 53);
             lnkBmsPlugin.LinkColor = System.Drawing.Color.DodgerBlue;
-            lnkBmsPlugin.Location = new System.Drawing.Point(360, 388);
+            lnkBmsPlugin.Location = new System.Drawing.Point(358, 388);
             lnkBmsPlugin.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             lnkBmsPlugin.Name = "lnkBmsPlugin";
             lnkBmsPlugin.Size = new System.Drawing.Size(244, 28);
@@ -257,7 +257,7 @@
             grpBmsPlugin.Controls.Add(btnBmsPluginPath);
             grpBmsPlugin.Controls.Add(txtBmsPluginPath);
             grpBmsPlugin.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
-            grpBmsPlugin.Location = new System.Drawing.Point(16, 388);
+            grpBmsPlugin.Location = new System.Drawing.Point(12, 388);
             grpBmsPlugin.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             grpBmsPlugin.Name = "grpBmsPlugin";
             grpBmsPlugin.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
@@ -326,7 +326,7 @@
             lnkWccLite.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             lnkWccLite.LinkArea = new System.Windows.Forms.LinkArea(14, 53);
             lnkWccLite.LinkColor = System.Drawing.Color.DodgerBlue;
-            lnkWccLite.Location = new System.Drawing.Point(380, 535);
+            lnkWccLite.Location = new System.Drawing.Point(374, 535);
             lnkWccLite.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             lnkWccLite.Name = "lnkWccLite";
             lnkWccLite.Size = new System.Drawing.Size(228, 28);
@@ -345,7 +345,7 @@
             grpWccLite.Controls.Add(btnWccLitePath);
             grpWccLite.Controls.Add(txtWccLitePath);
             grpWccLite.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
-            grpWccLite.Location = new System.Drawing.Point(16, 535);
+            grpWccLite.Location = new System.Drawing.Point(12, 535);
             grpWccLite.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             grpWccLite.Name = "grpWccLite";
             grpWccLite.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
@@ -448,7 +448,7 @@
             lnkBms.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             lnkBms.LinkArea = new System.Windows.Forms.LinkArea(14, 53);
             lnkBms.LinkColor = System.Drawing.Color.DodgerBlue;
-            lnkBms.Location = new System.Drawing.Point(356, 240);
+            lnkBms.Location = new System.Drawing.Point(358, 240);
             lnkBms.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             lnkBms.Name = "lnkBms";
             lnkBms.Size = new System.Drawing.Size(244, 28);

@@ -44,48 +44,48 @@ namespace WitcherScriptMerger.Forms
 		private void InitializeComponent()
 		{
 			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(OptionsForm));
-			chkPromptPrioritize = new CheckBox();
-			chkPromptOutdatedMerge = new CheckBox();
-			chkPackReport = new CheckBox();
-			chkReviewEachMerge = new CheckBox();
-			chkShowKDiff3Guide = new CheckBox();
-			chkMergeReport = new CheckBox();
-			chkCollapseCustomLoadOrder = new CheckBox();
-			chkCollapseNotMergeable = new CheckBox();
+			chkPromptPrioritize = new ThemedCheckBox();
+			chkPromptOutdatedMerge = new ThemedCheckBox();
+			chkPackReport = new ThemedCheckBox();
+			chkReviewEachMerge = new ThemedCheckBox();
+			chkShowKDiff3Guide = new ThemedCheckBox();
+			chkMergeReport = new ThemedCheckBox();
+			chkCollapseCustomLoadOrder = new ThemedCheckBox();
+			chkCollapseNotMergeable = new ThemedCheckBox();
 			btnCancel = new RoundButton();
 			btnOK = new RoundButton();
 			btnApply = new RoundButton();
-			chkAutoSkipKDiff3InfoDialogs = new CheckBox();
-			chkAutoCreateScriptMerges = new CheckBox();
-			chkAutoExit = new CheckBox();
-			chkAutoDeleteOldMerges = new CheckBox();
-			chkAutoOverwriteOldMerges = new CheckBox();
+			chkAutoSkipKDiff3InfoDialogs = new ThemedCheckBox();
+			chkAutoCreateScriptMerges = new ThemedCheckBox();
+			chkAutoExit = new ThemedCheckBox();
+			chkAutoDeleteOldMerges = new ThemedCheckBox();
+			chkAutoOverwriteOldMerges = new ThemedCheckBox();
 			lblGameDir = new Label();
 			txtGameDir = new TextBox();
 			btnSelectGameDirectory = new RoundButton();
 			btnDefaultOptions = new RoundButton();
-			chkCheckXmlFiles = new CheckBox();
-			chkCheckScripts = new CheckBox();
+			chkCheckXmlFiles = new ThemedCheckBox();
+			chkCheckScripts = new ThemedCheckBox();
 			pnlConflicts = new Panel();
 			cbCheckBundles = new ComboBox();
-			chkScanBundles = new CheckBox();
+			chkScanBundles = new ThemedCheckBox();
 			lblConflicts = new Label();
 			lblCollapse = new Label();
 			pnlCollapse = new Panel();
-			chkCollapseIdenticalConflicts = new CheckBox();
+			chkCollapseIdenticalConflicts = new ThemedCheckBox();
 			lblMerging = new Label();
 			pnlMerging = new Panel();
-			chkCheckDuplicatePrios = new CheckBox();
+			chkCheckDuplicatePrios = new ThemedCheckBox();
 			lblAutomation = new Label();
 			pnlAutomation = new Panel();
 			pnlGameDirectory = new Panel();
 			pnlButtonBar = new Panel();
 			pnlTheming = new Panel();
-			chkNoConflictsWitcher = new CheckBox();
+			chkNoConflictsWitcher = new ThemedCheckBox();
 			lblColorTheme = new Label();
 			cbColorTheme = new ComboBox();
 			lblTheming = new Label();
-			chkAccentColor = new CheckBox();
+			chkAccentColor = new ThemedCheckBox();
 			pnlOptionsMain = new Panel();
 			pnlConflicts.SuspendLayout();
 			pnlCollapse.SuspendLayout();
@@ -241,7 +241,7 @@ namespace WitcherScriptMerger.Forms
 			// 
 			chkAutoSkipKDiff3InfoDialogs.AutoSize = true;
 			chkAutoSkipKDiff3InfoDialogs.Font = new System.Drawing.Font("Segoe UI", 11F);
-			chkAutoSkipKDiff3InfoDialogs.Location = new System.Drawing.Point(44, 302);
+			chkAutoSkipKDiff3InfoDialogs.Location = new System.Drawing.Point(36, 294);
 			chkAutoSkipKDiff3InfoDialogs.Margin = new Padding(11, 11, 11, 11);
 			chkAutoSkipKDiff3InfoDialogs.Name = "chkAutoSkipKDiff3InfoDialogs";
 			chkAutoSkipKDiff3InfoDialogs.Size = new System.Drawing.Size(541, 45);
@@ -253,7 +253,7 @@ namespace WitcherScriptMerger.Forms
 			// 
 			chkAutoCreateScriptMerges.AutoSize = true;
 			chkAutoCreateScriptMerges.Font = new System.Drawing.Font("Segoe UI", 11F);
-			chkAutoCreateScriptMerges.Location = new System.Drawing.Point(44, 96);
+			chkAutoCreateScriptMerges.Location = new System.Drawing.Point(36, 88);
 			chkAutoCreateScriptMerges.Margin = new Padding(11, 11, 11, 11);
 			chkAutoCreateScriptMerges.Name = "chkAutoCreateScriptMerges";
 			chkAutoCreateScriptMerges.Size = new System.Drawing.Size(543, 45);
@@ -265,7 +265,7 @@ namespace WitcherScriptMerger.Forms
 			// 
 			chkAutoExit.AutoSize = true;
 			chkAutoExit.Font = new System.Drawing.Font("Segoe UI", 11F);
-			chkAutoExit.Location = new System.Drawing.Point(44, 371);
+			chkAutoExit.Location = new System.Drawing.Point(36, 363);
 			chkAutoExit.Margin = new Padding(11, 11, 11, 11);
 			chkAutoExit.Name = "chkAutoExit";
 			chkAutoExit.Size = new System.Drawing.Size(642, 45);
@@ -277,7 +277,7 @@ namespace WitcherScriptMerger.Forms
 			// 
 			chkAutoDeleteOldMerges.AutoSize = true;
 			chkAutoDeleteOldMerges.Font = new System.Drawing.Font("Segoe UI", 11F);
-			chkAutoDeleteOldMerges.Location = new System.Drawing.Point(44, 165);
+			chkAutoDeleteOldMerges.Location = new System.Drawing.Point(36, 157);
 			chkAutoDeleteOldMerges.Margin = new Padding(11, 11, 11, 11);
 			chkAutoDeleteOldMerges.Name = "chkAutoDeleteOldMerges";
 			chkAutoDeleteOldMerges.Size = new System.Drawing.Size(558, 45);
@@ -289,7 +289,7 @@ namespace WitcherScriptMerger.Forms
 			// 
 			chkAutoOverwriteOldMerges.AutoSize = true;
 			chkAutoOverwriteOldMerges.Font = new System.Drawing.Font("Segoe UI", 11F);
-			chkAutoOverwriteOldMerges.Location = new System.Drawing.Point(44, 234);
+			chkAutoOverwriteOldMerges.Location = new System.Drawing.Point(36, 226);
 			chkAutoOverwriteOldMerges.Margin = new Padding(11, 11, 11, 11);
 			chkAutoOverwriteOldMerges.Name = "chkAutoOverwriteOldMerges";
 			chkAutoOverwriteOldMerges.Size = new System.Drawing.Size(519, 45);
@@ -387,6 +387,7 @@ namespace WitcherScriptMerger.Forms
 			pnlConflicts.Size = new System.Drawing.Size(764, 312);
 			pnlConflicts.TabIndex = 19;
 			pnlConflicts.Paint += PanelPaintForwarder;
+			pnlConflicts.Tag = "OptionsPanel";
 			// 
 			// cbCheckBundles
 			// 
@@ -425,7 +426,7 @@ namespace WitcherScriptMerger.Forms
 			lblConflicts.Name = "lblConflicts";
 			lblConflicts.Size = new System.Drawing.Size(295, 37);
 			lblConflicts.TabIndex = 20;
-			lblConflicts.Text = "Check for Conflicts in:";
+			lblConflicts.Text = "Check for conflicts in";
 			// 
 			// lblCollapse
 			// 
@@ -436,7 +437,7 @@ namespace WitcherScriptMerger.Forms
 			lblCollapse.Name = "lblCollapse";
 			lblCollapse.Size = new System.Drawing.Size(399, 37);
 			lblCollapse.TabIndex = 22;
-			lblCollapse.Text = "Auto-collapse in Conflicts list:";
+			lblCollapse.Text = "Auto-collapse in the conflicts list";
 			// 
 			// pnlCollapse
 			// 
@@ -451,6 +452,7 @@ namespace WitcherScriptMerger.Forms
 			pnlCollapse.Size = new System.Drawing.Size(764, 312);
 			pnlCollapse.TabIndex = 21;
 			pnlCollapse.Paint += PanelPaintForwarder;
+			pnlCollapse.Tag = "OptionsPanel";
 			// 
 			// chkCollapseIdenticalConflicts
 			// 
@@ -492,6 +494,7 @@ namespace WitcherScriptMerger.Forms
 			pnlMerging.Size = new System.Drawing.Size(764, 592);
 			pnlMerging.TabIndex = 23;
 			pnlMerging.Paint += PanelPaintForwarder;
+			pnlMerging.Tag = "OptionsPanel";
 			// 
 			// chkCheckDuplicatePrios
 			// 
@@ -509,7 +512,7 @@ namespace WitcherScriptMerger.Forms
 			// 
 			lblAutomation.AutoSize = true;
 			lblAutomation.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-			lblAutomation.Location = new System.Drawing.Point(41, 40);
+			lblAutomation.Location = new System.Drawing.Point(32, 32);
 			lblAutomation.Margin = new Padding(8, 8, 8, 8);
 			lblAutomation.Name = "lblAutomation";
 			lblAutomation.Size = new System.Drawing.Size(172, 37);
@@ -527,10 +530,11 @@ namespace WitcherScriptMerger.Forms
 			pnlAutomation.Location = new System.Drawing.Point(834, 522);
 			pnlAutomation.Margin = new Padding(32, 32, 32, 8);
 			pnlAutomation.Name = "pnlAutomation";
-			pnlAutomation.Padding = new Padding(32, 32, 16, 32);
+			pnlAutomation.Padding = new Padding(24, 24, 24, 24);
 			pnlAutomation.Size = new System.Drawing.Size(764, 592);
 			pnlAutomation.TabIndex = 25;
 			pnlAutomation.Paint += PanelPaintForwarder;
+			pnlAutomation.Tag = "OptionsPanel";
 			// 
 			// pnlGameDirectory
 			// 
@@ -575,12 +579,13 @@ namespace WitcherScriptMerger.Forms
 			pnlTheming.Size = new System.Drawing.Size(1566, 264);
 			pnlTheming.TabIndex = 25;
 			pnlTheming.Paint += PanelPaintForwarder;
+			pnlTheming.Tag = "OptionsPanel";
 			// 
 			// chkNoConflictsWitcher
 			// 
 			chkNoConflictsWitcher.AutoSize = true;
 			chkNoConflictsWitcher.Font = new System.Drawing.Font("Segoe UI", 11F);
-			chkNoConflictsWitcher.Location = new System.Drawing.Point(847, 157);
+			chkNoConflictsWitcher.Location = new System.Drawing.Point(839, 157);
 			chkNoConflictsWitcher.Margin = new Padding(11, 11, 11, 11);
 			chkNoConflictsWitcher.Name = "chkNoConflictsWitcher";
 			chkNoConflictsWitcher.Size = new System.Drawing.Size(601, 45);
@@ -598,7 +603,7 @@ namespace WitcherScriptMerger.Forms
 			lblColorTheme.Size = new System.Drawing.Size(196, 41);
 			lblColorTheme.TabIndex = 26;
 			lblColorTheme.Tag = "DimmedLabel";
-			lblColorTheme.Text = "Color Theme:";
+			lblColorTheme.Text = "Color theme:";
 			// 
 			// cbColorTheme
 			// 
@@ -623,18 +628,18 @@ namespace WitcherScriptMerger.Forms
 			lblTheming.Name = "lblTheming";
 			lblTheming.Size = new System.Drawing.Size(793, 37);
 			lblTheming.TabIndex = 24;
-			lblTheming.Text = "User Interface";
+			lblTheming.Text = "User interface";
 			// 
 			// chkAccentColor
 			// 
 			chkAccentColor.AutoSize = true;
 			chkAccentColor.Font = new System.Drawing.Font("Segoe UI", 11F);
-			chkAccentColor.Location = new System.Drawing.Point(847, 88);
+			chkAccentColor.Location = new System.Drawing.Point(839, 88);
 			chkAccentColor.Margin = new Padding(11, 11, 11, 11);
 			chkAccentColor.Name = "chkAccentColor";
 			chkAccentColor.Size = new System.Drawing.Size(409, 45);
 			chkAccentColor.TabIndex = 3;
-			chkAccentColor.Text = "Use Windows Accent Color";
+			chkAccentColor.Text = "Use Windows accent color";
 			chkAccentColor.UseVisualStyleBackColor = true;
 			// 
 			// pnlOptionsMain

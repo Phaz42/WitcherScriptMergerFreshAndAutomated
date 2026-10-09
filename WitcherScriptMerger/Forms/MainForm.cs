@@ -663,17 +663,9 @@ internal partial class MainForm : BaseForm
 
 	private void MnKeyboardShortcuts_Click(object sender, EventArgs e)
 	{
-		string caption = $"{AppName} Keyboard Shortcuts";
-		string msg =
-			$"These keyboard shortcuts are enabled in the main window:\n\n" +
-			$"F5: Refresh Conflicts Panel\n\n" +
-			$"F6: Refresh Merges Panel\n\n" +
-			$"C: Create Selected Merges\n\n" +
-			$"A: Create ALL Script (only) Merges\n\n" +
-			$"D: Delete Selected Merges\n\n" +
-			$"E: Delete ALL Merges\n\n" +
-			$"Esc: Exit Application";
-		_ = uiThreadManager.ShowMessage(msg, caption, MessageBoxButtons.OK, MessageBoxIcon.Information);
+		using KeyboardShortcutsForm form = new();
+		ThemeMngr.ApplyThemeOnForm(form);
+		_ = form.ShowDialog(this);
 	}
 
 	private void MnExitAndPlayDX11_Click(object sender, EventArgs e)

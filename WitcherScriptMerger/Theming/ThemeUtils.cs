@@ -22,6 +22,141 @@ internal static partial class ThemeUtils
 			_ = SetWindowTheme(control.Handle, ThemeManager.CurrentTheme.IsDark ? "DarkMode_Explorer" : "Explorer", null);
 	}
 
+	/// <summary>
+	/// In the dark theme, Windows' dark style for one of its own controls: "DarkMode_CFD" for a dropdown (its box, arrow and
+	/// open list). The light theme keeps Windows' usual look. Applied again if the control's window is recreated.
+	/// </summary>
+	internal static void ApplyDarkStyle(Control control, string darkStyle)
+	{
+		if (control == null || !ThemeManager.CurrentTheme.IsDark)
+			return;
+
+		if (control.IsHandleCreated)
+			_ = SetWindowTheme(control.Handle, darkStyle, null);
+		control.HandleCreated += (sender, e) => _ = SetWindowTheme(((Control)sender).Handle, darkStyle, null);
+	}
+
+	#region Checkboxes
+
+	/// <summary>
+	/// SM-FAE's checkbox, in the lists (SMTree) and in its windows (ThemedCheckBox): a rounded box, filled with the accent
+	/// and ticked when checked. Windows' own is a picture in a fixed blue, which no accent colour or theme reaches.
+	/// </summary>
+	internal static void DrawCheckBox(Graphics g, RectangleF cell, bool isChecked, bool enabled = true)
+	{
+		ArgumentNullException.ThrowIfNull(g);
+		Theme theme = ThemeManager.CurrentTheme;
+		SmoothingMode smoothing = g.SmoothingMode;
+		g.SmoothingMode = SmoothingMode.AntiAlias;
+
+		float inset = cell.Width * 0.06f;
+		RectangleF box = new(cell.Left + inset, cell.Top + inset, cell.Width - (inset * 2), cell.Height - (inset * 2));
+		float diameter = cell.Width * 0.36f;
+		using GraphicsPath path = new();
+		path.AddArc(box.Left, box.Top, diameter, diameter, 180, 90);
+		path.AddArc(box.Right - diameter, box.Top, diameter, diameter, 270, 90);
+		path.AddArc(box.Right - diameter, box.Bottom - diameter, diameter, diameter, 0, 90);
+		path.AddArc(box.Left, box.Bottom - diameter, diameter, diameter, 90, 90);
+		path.CloseFigure();
+
+		if (isChecked)
+		{
+			Color fillColor = enabled ? theme.AccentTextColor : theme.MenuDisabledForeColor;
+			using SolidBrush fill = new(fillColor);
+			g.FillPath(fill, path);
+			// A slightly darker edge sets the box off its background: the fill, a fifth of the way to black.
+			Color edgeColor = Color.FromArgb((int)(fillColor.R * 0.8f), (int)(fillColor.G * 0.8f), (int)(fillColor.B * 0.8f));
+			using (Pen edge = new(edgeColor, Math.Max(1f, cell.Width * 0.04f)))
+				g.DrawPath(edge, path);
+			using Pen tick = new(Colors.TextOn(fillColor), cell.Width * 0.09f)
+			{
+				StartCap = LineCap.Round,
+				EndCap = LineCap.Round,
+				LineJoin = LineJoin.Round
+			};
+			g.DrawLines(tick, [
+				new PointF(box.Left + (box.Width * 0.22f), box.Top + (box.Height * 0.52f)),
+				new PointF(box.Left + (box.Width * 0.42f), box.Top + (box.Height * 0.72f)),
+				new PointF(box.Left + (box.Width * 0.78f), box.Top + (box.Height * 0.30f))
+			]);
+		}
+		else
+		{
+			// Darker than the background in the dark theme, a white field in the light one, as Windows' own.
+			using SolidBrush fill = new(theme.IsDark ? theme.BackColor : theme.FieldBackColor);
+			g.FillPath(fill, path);
+			using Pen border = new(enabled ? theme.ForeDimmedColor : theme.MenuDisabledForeColor, Math.Max(1f, cell.Width * 0.06f));
+			g.DrawPath(border, path);
+		}
+
+		g.SmoothingMode = smoothing;
+	}
+
+	internal static Bitmap CheckBoxImage(int size, bool isChecked)
+	{
+		Bitmap image = null;
+		try
+		{
+			image = new Bitmap(size, size);
+			using (Graphics g = Graphics.FromImage(image))
+				DrawCheckBox(g, new RectangleF(0, 0, size, size), isChecked);
+
+			Bitmap drawn = image;
+			image = null;
+			return drawn;
+		}
+		finally
+		{
+			image?.Dispose();
+		}
+	}
+
+	#endregion
+
+	#region Dark tooltips
+
+	// Every tooltip window SM-FAE has - its own ToolTips, and those Windows Forms makes for menus and the status bar, which
+	// no code here can reach - takes Windows' dark tooltip style as it is created: Windows reports each window it creates
+	// in this process (a WinEvent hook), and a tooltip's class name says what it is.
+	private const uint EventObjectCreate = 0x8000;
+	private const int ObjIdWindow = 0;
+
+	private delegate void WinEventProc(IntPtr hook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint thread, uint time);
+
+	// Held for the life of the program: Windows keeps a pointer to it.
+	private static readonly WinEventProc ToolTipCreated = OnWindowCreated;
+	private static IntPtr _toolTipHook;
+
+	/// <summary>In the dark theme, makes every tooltip created from now on dark. Called once, before any window exists.</summary>
+	internal static void DarkenToolTips()
+	{
+		if (!ThemeManager.CurrentTheme.IsDark || _toolTipHook != IntPtr.Zero)
+			return;
+
+		_toolTipHook = SetWinEventHook(EventObjectCreate, EventObjectCreate, IntPtr.Zero,
+			Marshal.GetFunctionPointerForDelegate(ToolTipCreated), (uint)Environment.ProcessId, 0, 0);
+	}
+
+	private static unsafe void OnWindowCreated(IntPtr hook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint thread, uint time)
+	{
+		if (idObject != ObjIdWindow || hwnd == IntPtr.Zero)
+			return;
+
+		const int capacity = 128;
+		char* name = stackalloc char[capacity];
+		int length = GetClassNameW(hwnd, name, capacity);
+		if (length > 0 && new string(name, 0, length).Contains("tooltips_class32", StringComparison.Ordinal))
+			_ = SetWindowTheme(hwnd, "DarkMode_Explorer", null);
+	}
+
+	[LibraryImport("user32.dll")]
+	private static partial IntPtr SetWinEventHook(uint eventMin, uint eventMax, IntPtr module, IntPtr proc, uint process, uint thread, uint flags);
+
+	[LibraryImport("user32.dll", EntryPoint = "GetClassNameW")]
+	private static unsafe partial int GetClassNameW(IntPtr hWnd, char* className, int maxCount);
+
+	#endregion
+
 	[LibraryImport("User32.dll", EntryPoint = "GetDC")]
 	private static partial IntPtr GetDC(IntPtr hWnd);
 

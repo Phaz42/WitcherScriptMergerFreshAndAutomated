@@ -41,6 +41,26 @@ internal static class Colors
 		color.G.ToString("X2", CultureInfo.InvariantCulture) +
 		color.B.ToString("X2", CultureInfo.InvariantCulture);
 
+	/// <summary>
+	/// The shade of the Windows accent colour Windows' own controls use: on dark backgrounds (AccentLight2), or on light
+	/// ones (AccentDark1). Null where Windows can't say - before Windows 10, or under Wine.
+	/// </summary>
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Windows' accent palette is optional: whatever fails reading it, the caller falls back to the accent colour itself.")]
+	internal static Color? GetWindowsAccentShade(bool darkBackgrounds)
+	{
+		try
+		{
+			Windows.UI.Color shade = new Windows.UI.ViewManagement.UISettings().GetColorValue(darkBackgrounds
+				? Windows.UI.ViewManagement.UIColorType.AccentLight2
+				: Windows.UI.ViewManagement.UIColorType.AccentDark1);
+			return Color.FromArgb(shade.R, shade.G, shade.B);
+		}
+		catch (Exception)
+		{
+			return null;
+		}
+	}
+
 	// WCAG 2's contrast ratio between two colours, 1 to 21. Normal text needs 4.5 to be read comfortably.
 	internal static double ContrastRatio(Color a, Color b)
 	{

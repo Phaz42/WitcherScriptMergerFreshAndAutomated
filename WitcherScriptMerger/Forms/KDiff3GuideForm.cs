@@ -95,7 +95,7 @@ internal sealed partial class KDiff3GuideForm : BaseForm
 		// folded last heading.
 		_content.Controls.Add(new Panel { Height = LogicalToDeviceUnits(32), Margin = new Padding(0), Width = 1 });
 
-		_option = new CheckBox { Anchor = AnchorStyles.Left, AutoSize = true, Margin = Scaled(new Padding(16, 0, 8, 0)), Text = "Show this guide every time" };
+		_option = new ThemedCheckBox { Anchor = AnchorStyles.Left, AutoSize = true, Margin = Scaled(new Padding(16, 0, 8, 0)), Text = "Show this guide every time" };
 		_option.CheckedChanged += (sender, e) =>
 		{
 			if (_mode == GuideMode.Panel)

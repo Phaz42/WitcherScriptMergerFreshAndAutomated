@@ -26,7 +26,10 @@ internal class ThemeManager
 	internal Theme LightTheme;
 	internal Theme DarkTheme;
 	internal static Theme CurrentTheme;
-	internal static Color DefaultAccentColor = GetColorByHex("0078D7");
+	// SM-FAE's own blue, as Windows shades its default blue for its controls: on dark backgrounds (AccentLight2) and on
+	// light ones (AccentDark1). Used when "Use Windows accent color" is off, and for links.
+	private static readonly Color DefaultAccentOnDark = GetColorByHex("60CDFF");
+	private static readonly Color DefaultAccentOnLight = GetColorByHex("005FB8");
 
 	/// <summary>
 	/// The accent colour setting the running theme was built with. Like the theme, it changes only at the next start.
@@ -52,25 +55,28 @@ internal class ThemeManager
 
 			OptionsPanelBackColor = Color.White,
 			BackgroundPanelBackColor = GetColorByHex("f9f9f9"),
-			LinkColor = GetColorByHex("0E70C0"),
 			BorderColor = GetColorByHex("D3D3D3"),
 
 			StandardButtonBackColor = GetColorByHex("f8f8f8"),
 			StandardButtonForeColor = GetColorByHex("000000"),
-			StandardButtonHoverColor = GetColorByHex("fdfdfd"),
-			StandardButtonDownColor = Color.White,
+			StandardButtonHoverColor = GetColorByHex("EFEFEF"),
+			StandardButtonDownColor = GetColorByHex("DCDCDC"),
 
 			AcceptButtonBackColor = GetColorByHex("f8f8f8"),
 			AcceptButtonForeColor = GetColorByHex("000000"),
-			AcceptButtonHoverColor = GetColorByHex("fdfdfd"),
-			AcceptButtonDownColor = Color.White,
+			AcceptButtonHoverColor = GetColorByHex("EFEFEF"),
+			AcceptButtonDownColor = GetColorByHex("DCDCDC"),
 
 			MenuBackColor = GetColorByHex("f9f9f9"),
 			MenuForeColor = GetColorByHex("000000"),
-			MenuDisabledForeColor = GetColorByHex("6D6D6D"),
+			MenuDisabledForeColor = GetColorByHex("A0A0A0"),
 			MenuSelectedBackColor = GetColorByHex("f0eced"),
 
 			TreeViewBackColor = Color.White,
+			FieldBackColor = Color.White,
+			SeparatorColor = GetColorByHex("B0B0B0"),
+			ProgressTrackColor = GetColorByHex("C4C4C4"),
+			SuccessColor = GetColorByHex("0F7B0F"),
 			WarningColor = GetColorByHex("B45309"),
 
 			IsDark = false
@@ -87,7 +93,6 @@ internal class ThemeManager
 			BackColor = GetColorByHex("202020"),
 
 			BackgroundPanelBackColor = GetColorByHex("383838"),
-			LinkColor = GetColorByHex("0E70C0"),
 			BorderColor = GetColorByHex("141414"),
 
 			StandardButtonBackColor = GetColorByHex("2d2d2d"),
@@ -106,6 +111,11 @@ internal class ThemeManager
 			MenuSelectedBackColor = GetColorByHex("202020"),
 
 			TreeViewBackColor = GetColorByHex("2d2d2d"),
+			OptionsPanelBackColor = GetColorByHex("2B2B2B"),
+			FieldBackColor = GetColorByHex("383838"),
+			SeparatorColor = GetColorByHex("505050"),
+			ProgressTrackColor = GetColorByHex("383838"),
+			SuccessColor = GetColorByHex("6CCB5F"),
 			WarningColor = GetColorByHex("F0A040"),
 
 			IsDark = true
@@ -116,6 +126,7 @@ internal class ThemeManager
 		// Read with the default the Options window shows, so a settings file without the key agrees with it.
 		AccentColorAtStart = Settings.Get("AccentColor", DefaultSettings.AccentColor);
 		UpdateAccentColors();
+		DarkenToolTips();
 	}
 
 	/// <summary>
@@ -149,22 +160,33 @@ internal class ThemeManager
 
 	// The accent, Windows' or SM-FAE's own blue: as a fill on accent buttons (Windows' only), and as text everywhere it is
 	// written, mixed until it reads on each background it is written on.
+	// One accent colour, the shade Windows itself uses for its controls in the theme - its dark checkboxes are the light
+	// shade, its light ones the dark shade - for text, fills, checkboxes and the progress bar alike: three different blues
+	// side by side looked inconsistent. Windows' shades are made to read on its backgrounds; mixing them further only
+	// matters for a colour that doesn't, such as the raw accent where the shades can't be read.
 	private static void UpdateAccentColors()
 	{
-		Color accentColor = DefaultAccentColor;
-		if (AccentColorAtStart && Environment.OSVersion.Version.Major >= 10)
+		Theme theme = CurrentTheme;
+		Color accentColor = theme.IsDark ? DefaultAccentOnDark : DefaultAccentOnLight;
+		bool windowsAccent = AccentColorAtStart && Environment.OSVersion.Version.Major >= 10;
+		if (windowsAccent)
+			accentColor = GetWindowsAccentShade(theme.IsDark) ?? GetAccentColorFromRegistry();
+
+		accentColor = ReadableOn(accentColor, theme.IsDark, theme.TreeViewBackColor, theme.BackColor, theme.OptionsPanelBackColor,
+			theme.BackgroundPanelBackColor, theme.MenuBackColor, theme.MenuSelectedBackColor);
+		theme.AccentTextColor = accentColor;
+		theme.MenuSelectedForeColor = accentColor;
+
+		if (windowsAccent)
 		{
-			accentColor = GetAccentColorFromRegistry();
-			CurrentTheme.AcceptButtonBackColor = accentColor;
-			CurrentTheme.AcceptButtonHoverColor = ControlPaint.Light(accentColor, 0.25f);
-			CurrentTheme.AcceptButtonDownColor = ControlPaint.Light(accentColor, 0.5f);
-			CurrentTheme.AcceptButtonForeColor = TextOn(accentColor);
+			theme.AcceptButtonBackColor = accentColor;
+			theme.AcceptButtonHoverColor = ControlPaint.Light(accentColor, 0.25f);
+			theme.AcceptButtonDownColor = ControlPaint.Light(accentColor, 0.5f);
+			theme.AcceptButtonForeColor = TextOn(accentColor);
 		}
 
-		Theme theme = CurrentTheme;
-		theme.AccentTextColor = ReadableOn(accentColor, theme.IsDark, theme.TreeViewBackColor, theme.BackColor,
-			theme.BackgroundPanelBackColor, theme.MenuBackColor, theme.MenuSelectedBackColor);
-		theme.MenuSelectedForeColor = theme.AccentTextColor;
+		// A link stays SM-FAE's blue, whatever the accent: a link should look like one.
+		theme.LinkColor = theme.IsDark ? DefaultAccentOnDark : DefaultAccentOnLight;
 	}
 
 	private static void ModernizeButton(Button button, Form form, bool standardButton = true)
@@ -215,7 +237,22 @@ internal class ThemeManager
 		g.DrawPath(pen, path);
 	}
 
-	internal void PanelPaint(object sender, PaintEventArgs e) => DrawRoundedBorder2((Panel)sender, 2, 15, CurrentTheme.BorderColor, CurrentTheme.BackColor);
+	internal void PanelPaint(object sender, PaintEventArgs e) => DrawRoundedBorder2((Panel)sender, 2, 15, CurrentTheme.BorderColor, CurrentTheme.OptionsPanelBackColor);
+
+	// The status bar's separators: a thin line in the theme, half the bar's height, at a section's left edge. Windows Forms
+	// draws a status label's border in 3D - a white highlight beside a dark shadow - whatever the colours around it.
+	private static void PaintStatusSeparator(object sender, PaintEventArgs e)
+	{
+		ToolStripItem label = (ToolStripItem)sender;
+		int height = label.Height / 2;
+		int top = (label.Height - height) / 2;
+		using Pen pen = new(CurrentTheme.SeparatorColor, 1);
+		e.Graphics.DrawLine(pen, 0, top, 0, top + height);
+	}
+
+	// A control's background: an Options group's colour inside one (Tag "OptionsPanel"), otherwise the window's.
+	private static Color BackColorFor(Control control) =>
+		control.Parent?.Tag?.ToString() == "OptionsPanel" ? CurrentTheme.OptionsPanelBackColor : CurrentTheme.BackColor;
 
 #pragma warning disable CA1822 // Mark members as static
 	internal void AttachColorFaderToCheckBoxes(Control parentControl, out List<ColorFader> colorFaders, int? fadeInDuration = null, int? fadeOutDuration = null)
@@ -254,11 +291,6 @@ internal class ThemeManager
 
 		form.ForeColor = CurrentTheme.ForeColor;
 		form.BackColor = CurrentTheme.BackColor;
-
-		if (form is OptionsForm)
-		{
-			form.BackColor = CurrentTheme.BackgroundPanelBackColor;
-		}
 
 		ApplyThemeToControls(form.Controls, form);
 
@@ -299,18 +331,11 @@ internal class ThemeManager
 
 			if (control is Button button)
 			{
-				bool standard = true;
-				string buttonText = button.Text; // Cache the button text
-
-				if (buttonText.StartsWith("exit", StringComparison.OrdinalIgnoreCase) ||
-					buttonText.StartsWith("menu", StringComparison.OrdinalIgnoreCase) ||
-					buttonText.Replace("&", "", StringComparison.OrdinalIgnoreCase).StartsWith("create all", StringComparison.OrdinalIgnoreCase) ||
-					buttonText.Equals("ok", StringComparison.OrdinalIgnoreCase))
-				{
-					standard = false;
-				}
-
-				ModernizeButton(button, form, standard);
+				// The accent marks each window's main action: its default button, which Enter presses - OK in every dialog -
+				// and in the main window, which has none, Menu, Create All Script Merges and the countdown's Exit Now.
+				bool accent = button == form.AcceptButton
+					|| (form is MainForm main && (button == main.btnMainMenu || button == main.btnCreateAllScriptMerges || button == main.btnExitNow));
+				ModernizeButton(button, form, !accent);
 			}
 			else if (control is Label && (string)control.Tag == "AccentLabel")
 			{
@@ -319,7 +344,19 @@ internal class ThemeManager
 			else if (control is Label && control.Tag?.ToString() == "DimmedLabel")
 			{
 				control.ForeColor = CurrentTheme.ForeDimmedColor;
-				control.BackColor = CurrentTheme.BackColor;
+				control.BackColor = BackColorFor(control);
+			}
+			else if (control is LinkLabel link)
+			{
+				link.BackColor = BackColorFor(link);
+				link.ForeColor = CurrentTheme.ForeColor;
+				link.LinkColor = link.ActiveLinkColor = link.VisitedLinkColor = CurrentTheme.LinkColor;
+			}
+			else if (control is ComboBox comboBox)
+			{
+				comboBox.BackColor = CurrentTheme.FieldBackColor;
+				comboBox.ForeColor = CurrentTheme.ForeColor;
+				ApplyDarkStyle(comboBox, "DarkMode_CFD");
 			}
 			else if (control as TreeView is TreeView tv)
 			{
@@ -337,6 +374,15 @@ internal class ThemeManager
 				strip.ForeColor = CurrentTheme.ForeDimmedColor;
 				strip.BackColor = CurrentTheme.BackColor;
 
+				// A section's left border becomes the theme's separator, drawn here (PaintStatusSeparator).
+				foreach (ToolStripItem item in strip.Items)
+				{
+					if (item is ToolStripStatusLabel { BorderSides: ToolStripStatusLabelBorderSides.Left } label)
+					{
+						label.BorderSides = ToolStripStatusLabelBorderSides.None;
+						label.Paint += PaintStatusSeparator;
+					}
+				}
 			}
 			else if (control is TextBox searchBox && searchBox.Tag?.ToString() == "SearchBox")
 			{
@@ -346,7 +392,8 @@ internal class ThemeManager
 			}
 			else if (control.Parent.Parent is DependencyForm && control is TextBox tb)
 			{
-				tb.ForeColor = Color.White;
+				tb.BackColor = CurrentTheme.FieldBackColor;
+				tb.ForeColor = CurrentTheme.ForeColor;
 			}
 			else if (control is Panel pnl && pnl is not TableLayoutPanel && pnl.Name != "pnlProgress")
 			{
@@ -360,11 +407,11 @@ internal class ThemeManager
 			else if (control is CheckBox && form is OptionsForm)
 			{
 				control.ForeColor = CurrentTheme.ForeDimmedColor;
-				control.BackColor = CurrentTheme.BackColor;
+				control.BackColor = BackColorFor(control);
 			}
 			else
 			{
-				control.BackColor = CurrentTheme.BackColor;
+				control.BackColor = BackColorFor(control);
 				control.ForeColor = CurrentTheme.ForeColor;
 
 				if (control.HasChildren)

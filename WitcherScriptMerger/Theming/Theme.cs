@@ -18,6 +18,7 @@ internal class Theme
 	// backgrounds (ThemeManager.UpdateAccentColors). AcceptButtonBackColor is the accent as a fill.
 	internal Color AccentTextColor;
 
+	// The Options window's groups, lighter than the window behind them.
 	internal Color OptionsPanelBackColor;
 	internal Color BackgroundPanelBackColor;
 	internal Color LinkColor;
@@ -40,6 +41,18 @@ internal class Theme
 	internal Color MenuSelectedForeColor;
 
 	internal Color TreeViewBackColor;
+
+	// A thin dividing line: between the status bar's sections.
+	internal Color SeparatorColor;
+
+	// An input field: a dropdown, a path.
+	internal Color FieldBackColor;
+
+	// The progress bar's empty part; the filled part is the accent (AccentTextColor).
+	internal Color ProgressTrackColor;
+
+	// Something found or in order: a dependency's path that points at its file.
+	internal Color SuccessColor;
 
 	// A mod with a problem the mod check found (ModHealth): readable on the list's background in each theme.
 	internal Color WarningColor;

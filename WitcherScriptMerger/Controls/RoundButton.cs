@@ -6,16 +6,16 @@ using System.Windows.Forms;
 namespace WitcherScriptMerger.Controls;
 
 /// <summary>
-/// A button as the theme rounds it (ThemeManager.ModernizeButton), whose keyboard focus shows as a rounded ring in its text
-/// colour. Windows' own focus mark on a flat button is a thin square frame, which the rounded corners cut, and in the dark
-/// theme it read as a misdrawn white outline.
+/// A button as the theme rounds it (ThemeManager.ModernizeButton), whose focus shows as a rounded ring in its text colour -
+/// always, whether the keyboard or the mouse moved it there. Windows' own focus mark on a flat button is a thin square
+/// frame, which the rounded corners cut, shown only once a key was pressed; in the dark theme it read as a misdrawn outline.
 /// </summary>
 internal class RoundButton : Button
 {
 	/// <summary>The corner radius the theme gave it, in pixels.</summary>
 	internal int CornerRadius { get; set; } = 12;
 
-	// Windows' frame is replaced, not removed: the ring below is drawn exactly when Windows would draw it.
+	// Windows' frame is replaced by the ring below.
 	protected override bool ShowFocusCues => false;
 
 	// Never drawn as the default button: Windows marks it with the same square frame, on the form's AcceptButton while
@@ -28,7 +28,7 @@ internal class RoundButton : Button
 		ArgumentNullException.ThrowIfNull(pevent);
 		base.OnPaint(pevent);
 
-		if (!Focused || !base.ShowFocusCues)
+		if (!Focused)
 			return;
 
 		float width = Math.Max(1f, DeviceDpi / 96f);

@@ -37,7 +37,7 @@
             btnOpenFile2 = new WitcherScriptMerger.Controls.RoundButton();
             txtFilePath2 = new System.Windows.Forms.TextBox();
             btnMergeReportOK = new WitcherScriptMerger.Controls.RoundButton();
-            chkShowAfterMerge = new System.Windows.Forms.CheckBox();
+            chkShowAfterMerge = new WitcherScriptMerger.Controls.ThemedCheckBox();
             lblTempContentFiles = new System.Windows.Forms.Label();
             txtFilePath1 = new System.Windows.Forms.TextBox();
             btnOpenFile1 = new WitcherScriptMerger.Controls.RoundButton();

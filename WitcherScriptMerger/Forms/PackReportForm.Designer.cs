@@ -36,7 +36,7 @@
             btnOpenBundleDir = new WitcherScriptMerger.Controls.RoundButton();
             lblPackedBundle = new System.Windows.Forms.Label();
             btnOK = new WitcherScriptMerger.Controls.RoundButton();
-            chkShowAfterPack = new System.Windows.Forms.CheckBox();
+            chkShowAfterPack = new WitcherScriptMerger.Controls.ThemedCheckBox();
             label1 = new System.Windows.Forms.Label();
             SuspendLayout();
             // 

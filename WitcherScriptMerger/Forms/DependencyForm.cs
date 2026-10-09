@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
 
+using WitcherScriptMerger.Theming;
 using WitcherScriptMerger.Tools;
 
 using static WitcherScriptMerger.Program;
@@ -23,9 +25,21 @@ internal partial class DependencyForm : BaseForm
 		}
 	}
 
+	// Each path field and the file type it must point at.
+	private readonly Dictionary<TextBox, string> _extensions;
+
 	internal DependencyForm()
 	{
 		InitializeComponent();
+		_extensions = new()
+		{
+			[txtKDiff3Path] = ".exe",
+			[txtBmsPath] = ".exe",
+			[txtBmsPluginPath] = ".bms",
+			[txtWccLitePath] = ".exe"
+		};
+		foreach (TextBox txt in _extensions.Keys)
+			txt.Parent.Paint += PaintPathMarks;
 		ThemeMngr.ApplyThemeOnForm(this);
 	}
 
@@ -40,11 +54,9 @@ internal partial class DependencyForm : BaseForm
 
 	private void BtnOK_Click(object sender, EventArgs e)
 	{
-		bool allValid =
-			Color.DarkSeaGreen == txtKDiff3Path.BackColor &&
-			Color.DarkSeaGreen == txtBmsPath.BackColor &&
-			Color.DarkSeaGreen == txtBmsPluginPath.BackColor &&
-			Color.DarkSeaGreen == txtWccLitePath.BackColor;
+		bool allValid = true;
+		foreach (TextBox txt in _extensions.Keys)
+			allValid &= IsValid(txt);
 
 		if (!allValid &&
 			DialogResult.No == MessageBox.Show(
@@ -117,16 +129,25 @@ internal partial class DependencyForm : BaseForm
 
 	#region Validation
 
-	private void Exe_TextChanged(object sender, EventArgs e) => ValidateTextBox(sender as TextBox, ".exe");
+	private void Exe_TextChanged(object sender, EventArgs e) => ((Control)sender).Parent?.Invalidate();
 
-	private void Bms_TextChanged(object sender, EventArgs e) => ValidateTextBox(sender as TextBox, ".bms");
+	private void Bms_TextChanged(object sender, EventArgs e) => ((Control)sender).Parent?.Invalidate();
 
-	private static void ValidateTextBox(TextBox txt, string validExtension)
+	private bool IsValid(TextBox txt) => txt.Text.EndsWithIgnoreCase(_extensions[txt]) && File.Exists(txt.Text);
+
+	// Under each path, a line: green when it points at its file, amber when not. The field keeps the theme's colours - a
+	// field filled green or brown, with white text, read at about 2:1.
+	private void PaintPathMarks(object sender, PaintEventArgs e)
 	{
-		string path = txt.Text;
-		txt.BackColor = path.EndsWithIgnoreCase(validExtension) && File.Exists(path)
-			? Color.DarkSeaGreen
-			: Color.RosyBrown;
+		foreach (TextBox txt in _extensions.Keys)
+		{
+			if (txt.Parent != sender)
+				continue;
+
+			Theme theme = ThemeManager.CurrentTheme;
+			using SolidBrush brush = new(IsValid(txt) ? theme.SuccessColor : theme.WarningColor);
+			e.Graphics.FillRectangle(brush, txt.Left, txt.Bottom + LogicalToDeviceUnits(1), txt.Width, Math.Max(2, LogicalToDeviceUnits(3)));
+		}
 	}
 
 	#endregion

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -25,6 +26,7 @@ internal abstract partial class SMTree : TreeView, IDisposable
 			if (disposing)
 			{
 				// dispose managed state (managed objects)
+				_checkBoxImages?.Dispose();
 				_contextMenu.Dispose();
 				_contextOpenModFile.Dispose();
 				_contextOpenModFileDir.Dispose();
@@ -128,10 +130,43 @@ internal abstract partial class SMTree : TreeView, IDisposable
 		_ = SendMessage(Handle, TVM_SETEXTENDEDSTYLE, TVS_EX_DOUBLEBUFFER, TVS_EX_DOUBLEBUFFER);
 		ApplyWindowTheme();
 		base.OnHandleCreated(e);
+		ApplyThemedCheckBoxes();
 	}
 
 	/// <summary>Gives the control the Windows look of the current theme: dark scrollbars in the dark theme.</summary>
 	internal void ApplyWindowTheme() => ThemeUtils.ApplyWindowTheme(this);
+
+	#endregion
+
+	#region Checkboxes
+
+	// Windows draws a list's checkboxes as images, in a fixed blue whatever the theme or accent. They are SM-FAE's images
+	// instead, the checkbox every window here shows (ThemeUtils.DrawCheckBox), in the accent colour.
+	private ImageList _checkBoxImages;
+
+	private const int TVM_GETIMAGELIST = 0x1100 + 8;
+	private const int TVSIL_STATE = 2;
+
+	[LibraryImport("comctl32.dll")]
+	[return: MarshalAs(UnmanagedType.Bool)]
+	private static partial bool ImageList_GetIconSize(IntPtr imageList, out int width, out int height);
+
+	private void ApplyThemedCheckBoxes()
+	{
+		if (!CheckBoxes || StateImageList != null)
+			return;
+
+		// Windows' own checkbox images' size, where it has made them yet; otherwise its size at this scaling.
+		int size = LogicalToDeviceUnits(13);
+		IntPtr native = SendMessage(Handle, TVM_GETIMAGELIST, TVSIL_STATE, IntPtr.Zero);
+		if (native != IntPtr.Zero && ImageList_GetIconSize(native, out int width, out _) && width > 0)
+			size = width;
+
+		_checkBoxImages = new ImageList { ColorDepth = ColorDepth.Depth32Bit, ImageSize = new Size(size, size) };
+		_checkBoxImages.Images.Add(ThemeUtils.CheckBoxImage(size, false));  // index 0: unchecked
+		_checkBoxImages.Images.Add(ThemeUtils.CheckBoxImage(size, true));   // index 1: checked
+		StateImageList = _checkBoxImages;
+	}
 
 	#endregion
 
