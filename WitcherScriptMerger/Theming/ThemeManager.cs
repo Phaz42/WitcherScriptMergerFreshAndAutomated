@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using Microsoft.Win32;
 
 using WitcherScriptMerger.Forms;
+using WitcherScriptMerger.Utilities;
 
 using static WitcherScriptMerger.Program;
 using static WitcherScriptMerger.Theming.Colors;
@@ -31,6 +32,11 @@ internal class ThemeManager
 	/// The accent colour setting the running theme was built with. Like the theme, it changes only at the next start.
 	/// </summary>
 	internal static bool AccentColorAtStart { get; private set; }
+
+	/// <summary>
+	/// The ColorTheme setting the running theme was built from.
+	/// </summary>
+	private static int ColorThemeAtStart;
 
 	internal ThemeManager()
 	{
@@ -103,16 +109,19 @@ internal class ThemeManager
 			IsDark = true
 		};
 
-		CurrentTheme = IsDarkTheme(Settings.Get<int>("ColorTheme")) ? DarkTheme : LightTheme;
-		AccentColorAtStart = Settings.Get<bool>("AccentColor");
+		ColorThemeAtStart = Settings.Get("ColorTheme", DefaultSettings.ColorTheme);
+		CurrentTheme = IsDarkTheme(ColorThemeAtStart) ? DarkTheme : LightTheme;
+		// Read with the default the Options window shows, so a settings file without the key agrees with it.
+		AccentColorAtStart = Settings.Get("AccentColor", DefaultSettings.AccentColor);
 		UpdateThemeWithAccentColor();
 	}
 
 	/// <summary>
-	/// Whether a ColorTheme choice would give a different theme from the running one. Follow Windows is compared by
-	/// what Windows uses now.
+	/// Whether a ColorTheme choice is a change from the setting the running theme was built from, and gives a different
+	/// theme. Windows switching its own theme meanwhile, with Follow Windows kept, is not a change made here.
 	/// </summary>
-	internal static bool DiffersFromCurrentTheme(int colorTheme) => IsDarkTheme(colorTheme) != CurrentTheme.IsDark;
+	internal static bool DiffersFromCurrentTheme(int colorTheme) =>
+		colorTheme != ColorThemeAtStart && IsDarkTheme(colorTheme) != CurrentTheme.IsDark;
 
 	// ColorTheme: 0 follows Windows, 1 is light, 2 is dark.
 	private static bool IsDarkTheme(int colorTheme) => colorTheme switch
@@ -140,7 +149,7 @@ internal class ThemeManager
 	{
 		if (Environment.OSVersion.Version.Major < 10)
 			return;
-		if (!Settings.Get<bool>("AccentColor"))
+		if (!AccentColorAtStart)
 			return;
 
 		Color accentColor = GetAccentColorFromRegistry();
@@ -296,7 +305,7 @@ internal class ThemeManager
 			}
 			else if (control is Label && (string)control.Tag == "AccentLabel")
 			{
-				control.ForeColor = Settings.Get<bool>("AccentColor") ? CurrentTheme.AcceptButtonBackColor : DefaultAccentColor;
+				control.ForeColor = AccentColorAtStart ? CurrentTheme.AcceptButtonBackColor : DefaultAccentColor;
 			}
 			else if (control is Label && control.Tag?.ToString() == "DimmedLabel")
 			{

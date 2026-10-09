@@ -54,7 +54,7 @@ internal class AppSettings
 	/// <summary>
 	/// Whether every scan looks inside bundles, not only a manual refresh.
 	/// </summary>
-	internal bool ScanBundlesOnEveryScan => ScanBundles && Get<int>("CheckBundles") == 0;
+	internal bool ScanBundlesOnEveryScan => ScanBundles && Get("CheckBundles", DefaultSettings.CheckBundles) == 0;
 
 	/// <summary>
 	/// Before 1.0, not checking bundles was a third choice of CheckBundles, 2 ("Never"). It is now ScanBundles, off,
@@ -62,7 +62,7 @@ internal class AppSettings
 	/// </summary>
 	private void TranslateNeverCheckBundles()
 	{
-		if (Get<int>("CheckBundles") != 2)
+		if (Get("CheckBundles", DefaultSettings.CheckBundles) != 2)
 			return;
 
 		Set("ScanBundles", false);

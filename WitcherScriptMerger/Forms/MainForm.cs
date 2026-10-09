@@ -287,6 +287,7 @@ internal partial class MainForm : BaseForm
 
 		// Attach tree mouse move event handlers
 		treConflicts.MouseMove += treeManager.OnTreeViewMouseMove;
+		treConflicts.MouseLeave += treeManager.OnConflictsTreeMouseLeave;
 		treMerges.MouseMove += treeManager.OnTreeViewMouseMove;
 	}
 
@@ -433,6 +434,11 @@ internal partial class MainForm : BaseForm
 			e.Handled = e.SuppressKeyPress = true;
 			return;
 		}
+
+		// The shortcuts are the keys alone: with Ctrl, Alt or Shift a key is the focused control's - the lists' Ctrl+A and
+		// Ctrl+D select and deselect all.
+		if (e.Modifiers != Keys.None)
+			return;
 
 		// Trigger button clicks based on key presses. A key used here goes no further: the list in focus would take it as
 		// typing - a jump to an item starting with that letter - and beep when there is none, as it always does for Esc.

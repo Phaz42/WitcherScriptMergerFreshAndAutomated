@@ -114,6 +114,7 @@ internal class TreeManager
 		if (OptionsFrm.BundleScanOptionChanged || (Program.Inventory.ScriptsChanged && Program.Inventory.BundleChanged))
 		{
 			ConflictsTree.Nodes.Clear();
+			OptionsFrm.BundleScanOptionChanged = false; // rebuilt once for the change
 		}
 		else
 		{
@@ -736,6 +737,19 @@ internal class TreeManager
 	}
 
 	/// <summary>
+	/// Hides the load order number's tooltip when the mouse leaves the conflicts list: no mouse move follows to hide it.
+	/// </summary>
+	internal void OnConflictsTreeMouseLeave(object sender, EventArgs e)
+	{
+		_numberToolTipTimer?.Stop();
+		if (_prevNumberToolTipNode != null)
+		{
+			treConflictsToolTip.Hide(ConflictsTree);
+			_prevNumberToolTipNode = null;
+		}
+	}
+
+	/// <summary>
 	/// The conflicts list's rows show their tooltips themselves (ShowNodeToolTips). A mod's load order number sits before
 	/// its name, outside the row's tooltip area, so its tooltip is shown here - after the same hover delay.
 	/// </summary>
@@ -828,7 +842,7 @@ internal class TreeManager
 			Text = category.DisplayName,
 			ToolTipText = forMerges ? category.MergesToolTipText : category.ToolTipText,
 			NodeFont = new Font("Segoe UI", 14.0F, FontStyle.Bold),
-			ForeColor = Settings.Get<bool>("AccentColor")
+			ForeColor = ThemeManager.AccentColorAtStart
 				? ThemeManager.CurrentTheme.AcceptButtonBackColor
 				: ThemeManager.DefaultAccentColor,
 			Tag = category

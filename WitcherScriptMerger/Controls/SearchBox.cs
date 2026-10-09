@@ -149,7 +149,7 @@ internal sealed class SearchBox : Panel
 		if (!TextBox.Focused)
 			return;
 
-		Color border = Settings.Get<bool>("AccentColor") ? ThemeManager.CurrentTheme.AcceptButtonBackColor : ThemeManager.DefaultAccentColor;
+		Color border = ThemeManager.AccentColorAtStart ? ThemeManager.CurrentTheme.AcceptButtonBackColor : ThemeManager.DefaultAccentColor;
 		using Pen pen = new(border, 1f);
 		g.DrawPath(pen, path);
 	}

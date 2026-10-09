@@ -315,16 +315,22 @@ internal partial class CustomLoadOrder : IDisposable
 
 	/// <summary>
 	/// The number each enabled mod shows in a non-mergeable conflict: its priority in this file, gaps and all; for a mod
-	/// with none, the number it effectively has - counting on from the file's highest priority, in name order among the
-	/// installed mods with none. Disabled mods have none: they do not load.
+	/// with none, the number it effectively has - counting on from the highest priority of the enabled mods, in name order
+	/// among the installed mods with none. Disabled mods have none: they do not load, so they don't count either (SM-FAE
+	/// itself lists a disabled mod at the bottom priority, 9999). A mod listed twice is read from its first section, as
+	/// GetModLoadSettingByName - and so the sorting and the winner - read it.
 	/// </summary>
 	internal Dictionary<string, (int Number, bool Effective)> GetLoadOrderNumbers(IEnumerable<string> installedMods)
 	{
 		Dictionary<string, (int Number, bool Effective)> numbers = new(StringComparer.OrdinalIgnoreCase);
-		foreach (ModLoadSetting setting in Mods.Where(setting => setting.IsEnabled == true && setting.Priority.HasValue))
+		List<ModLoadSetting> numbered = Mods
+			.DistinctBy(setting => setting.ModName, StringComparer.OrdinalIgnoreCase)
+			.Where(setting => setting.IsEnabled == true && setting.Priority.HasValue)
+			.ToList();
+		foreach (ModLoadSetting setting in numbered)
 			numbers[setting.ModName] = (setting.Priority.Value, false);
 
-		int number = Mods.Where(setting => setting.Priority.HasValue).Select(setting => setting.Priority.Value).DefaultIfEmpty(TopPriority).Max();
+		int number = numbered.Select(setting => setting.Priority.Value).DefaultIfEmpty(TopPriority).Max();
 		foreach (string modName in installedMods
 			.Where(modName => GetModLoadSettingByName(modName) is not { } setting || (setting.IsEnabled == true && !setting.Priority.HasValue))
 			.OrderBy(modName => modName, new LoadOrderComparer()))

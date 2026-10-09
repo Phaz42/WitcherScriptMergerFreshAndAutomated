@@ -192,9 +192,15 @@ internal partial class OptionsForm : BaseForm
 		if (DialogResult.Yes == MessageBox.Show(this,
 			$"{what} takes effect after a restart. Restart SM-FAE now?",
 			"Restart SM-FAE", MessageBoxButtons.YesNo, MessageBoxIcon.Question))
-			Program.Restart();
+		{
+			if (!Program.Restart())
+				_ = MessageBox.Show(this, "SM-FAE can't restart while it is scanning or merging. Restart it yourself when that has finished.",
+					"Restart SM-FAE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+		}
 		else
+		{
 			declinedRestart = choice;
+		}
 	}
 
 	private void BtnSelectGameDirectory_Click(object sender, EventArgs e) => SelectGameDirectory();
@@ -291,7 +297,11 @@ internal partial class OptionsForm : BaseForm
 
 	private void BtnDefaultOptions_Click(object sender, EventArgs e)
 	{
+		// Defaults set the bundle options without the clicks that flag a change, so the change is detected here.
+		(bool, int) bundleOptions = (chkScanBundles.Checked, cbCheckBundles.SelectedIndex);
 		LoadSettings(true);
+		if (bundleOptions != (chkScanBundles.Checked, cbCheckBundles.SelectedIndex))
+			BundleScanOptionChanged = true;
 		Save();
 		OfferRestartForTheme();
 	}
@@ -309,7 +319,9 @@ internal partial class OptionsForm : BaseForm
 		chkCheckScripts.Checked = LoadSetting("CheckScripts", useDef, def.CheckScripts);
 		chkCheckXmlFiles.Checked = LoadSetting("CheckXmlFiles", useDef, def.CheckXmlFiles);
 		chkScanBundles.Checked = LoadSetting("ScanBundles", useDef, def.ScanBundles);
-		cbCheckBundles.SelectedIndex = LoadSetting("CheckBundles", useDef, def.CheckBundles);
+		// The dropdown has two choices: any other saved value - edited by hand, or damaged - shows the default.
+		int checkBundles = LoadSetting("CheckBundles", useDef, def.CheckBundles);
+		cbCheckBundles.SelectedIndex = checkBundles is >= 0 and <= 1 ? checkBundles : def.CheckBundles;
 		ChkScanBundles_CheckedChanged(null, EventArgs.Empty); // CheckedChanged fires only when the value changes
 		chkCollapseIdenticalConflicts.Checked = LoadSetting("CollapseIdenticalConflicts", useDef, def.CollapseIdenticalConflicts);
 		chkCollapseNotMergeable.Checked = LoadSetting("CollapseNotMergeable", useDef, def.CollapseNotMergeable);

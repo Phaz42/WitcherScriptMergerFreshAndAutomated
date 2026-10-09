@@ -266,7 +266,7 @@ internal partial class ConflictTree : SMTree
 						modNode.ToolTipText = isMergeable
 							? "Wins this conflict while it isn't merged: without a merge, the game uses only this mod's copy."
 							: "Wins this conflict: the game uses this mod's copy.";
-						modNode.ForeColor = ((NodeMetadata)modNode.Tag).ForeColor = Settings.Get<bool>("AccentColor") ? ThemeManager.CurrentTheme.AcceptButtonBackColor : ThemeManager.DefaultAccentColor;
+						modNode.ForeColor = ((NodeMetadata)modNode.Tag).ForeColor = ThemeManager.AccentColorAtStart ? ThemeManager.CurrentTheme.AcceptButtonBackColor : ThemeManager.DefaultAccentColor;
 					}
 				}
 				else

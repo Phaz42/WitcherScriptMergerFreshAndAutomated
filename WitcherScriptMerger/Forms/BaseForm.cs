@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
 
-using Microsoft.Win32;
+using WitcherScriptMerger.Theming;
 
 using static WitcherScriptMerger.Program;
 
@@ -15,33 +15,9 @@ internal partial class BaseForm : Form
 	{
 		if (!DesignMode)
 		{
-			bool isUsingLightTheme = false;
-			switch (Settings.Get<int>("ColorTheme"))
-			{
-				default:
-				case 0:
-					// Follow Windows
-					try
-					{
-						isUsingLightTheme = (int)Registry.GetValue(
-						"HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
-						"AppsUseLightTheme", false) == 1;
-					}
-					catch (Exception) { }
-
-					break;
-
-				case 1:
-					// Light Theme
-					isUsingLightTheme = true;
-					break;
-
-				case 2:
-					// Dark Theme
-					isUsingLightTheme = false;
-					break;
-			}
-
+			// The title bar matches the running theme, which is set at start: a theme changed since then, in Options or in
+			// Windows, applies after a restart, to the title bar too.
+			bool isUsingLightTheme = ThemeManager.CurrentTheme is { IsDark: false };
 
 			if (!isUsingLightTheme)
 			{
