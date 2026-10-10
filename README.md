@@ -1,6 +1,6 @@
 <div align="center">
   
-# 🐺 Script Merger — Fresh & Automated Edition (SM-FAE)
+# 🐺 Script Merger — Fresh and Automated Edition (SM-FAE)
 *The modern community evolution of the essential Witcher 3 modding utility.*
 
 [![Nexus Mods](https://img.shields.io/badge/Nexus%20Mods-SM--FAE-orange?style=for-the-badge)](https://www.nexusmods.com/witcher3/mods/8405)
@@ -10,31 +10,38 @@
 
 <br>
 
-> [!CAUTION]
-> ### 🧊 DEVELOPMENT FROZEN
-> This project is currently in a **frozen state**.  
+> [!NOTE]
+> ### ✅ Version 1.0 — maintained
+> SM-FAE **1.0** is out, and SM-FAE is **fully supported until at least 6 months after the first stable release of the new app** I'm working on, possibly longer, depending on adoption.
 > 
-> A **completely rebuilt, from-scratch next-generation script merger app** is well under way: roughly 75% of it is built, and nearly all of its functionality is already in place — only the user interface remains. The new project features a modern UI framework (Avalonia), **native SteamOS/Linux support**, and a much cleaner, headless architecture using modern .NET.
-> 
-> The goal is to release this next-gen version well in time for the upcoming **Witcher 3: Songs of the Past** expansion, ensuring the modding community is fully prepared for the new era of content!
+> The new app is a completely rebuilt, from-scratch script merger. More about it in the sticky posts on the [Nexus Mods page](https://www.nexusmods.com/witcher3/mods/8405?tab=posts).
 
 ---
 
 ## 📌 Overview
-This repository contains the source code for **Script Merger - Fresh & Automated Edition (SM-FAE)**, a community-driven evolution of the original Witcher 3 script merging utility. SM-FAE introduced automation, modern theming, and improved workflow integrations for modern mod managers.
+This repository contains the source code for **Script Merger - Fresh and Automated Edition (SM-FAE)**, a community-driven evolution of the original Witcher 3 script merging utility. SM-FAE finds the conflicts between your mods and helps you resolve them: it merges scripts, XML files and bundled text files automatically where it can, opens KDiff3 where a person has to decide, and lists what can't be merged in load order. It works with both the original game (4.04) and The Witcher 3 Remastered (5.x).
 
-For actual application downloads, detailed feature lists, user documentation, and comments/contact info, please visit the Nexus Mods page:  
+For downloads, the full feature list, user documentation, and comments and contact info, visit the Nexus Mods page:  
 👉 **[SM-FAE on Nexus Mods](https://www.nexusmods.com/witcher3/mods/8405)**
 
-## 📂 Repository State & Commit History (v0.9.8-rc.5)
+## ✨ What's new in 1.0
+1.0 ends the release candidates. The highlights:
+* **Search** in both lists, with **Ctrl+F**.
+* A **mod problem check** on every scan: scripts made for an older game version, and mods installed incorrectly.
+* **Leave out an outdated mod** when merging.
+* A **KDiff3 guide** that opens with KDiff3 when two mods change the same lines.
+* Mods in **Not Mergeable** conflicts listed **in their load order**, winner first, with their load order numbers.
+* A dark theme applied more consistently, an accent color across the theme, and tooltips throughout.
 
-If you are browsing the source, you may notice a lack of incremental commit history.
+The full list is in the "What's new in 1.0" post on the [Nexus Mods page](https://www.nexusmods.com/witcher3/mods/8405?tab=posts).
 
-All development over the lifecycle of SM-FAE was done locally in this repository without intermediary commits. The first commit is a single "snapshot" of the latest development stage at the time: the **`v0.9.8-rc.3`** Release Candidate, which was never published as binaries.
+## 📂 Repository State & Commit History
 
-**Despite the frozen state, one more update was released: `v0.9.8-rc.4`.** The Witcher 3 Remastered (5.x) arrived unanticipated, and with it a changed script encoding and a changed bundle format that SM-FAE could not handle. `v0.9.8-rc.4` adds support for the Remastered version — script and bundle merging, and a warning before merging a mod made for an older game version — while merges on 4.04 give the same results as before. A follow-up, `v0.9.8-rc.5`, fixes choosing the game folder, which `v0.9.8-rc.4` broke for most GOG installations. The changes are committed incrementally on top of the snapshot, and the published binaries are built from each release's tag.
+If you are browsing the source, you may notice a lack of incremental commit history before `v0.9.8-rc.4`.
 
-`v0.9.8-rc.5` is intended to be the last SM-FAE release, bridging the gap until the next-generation app is released.
+All earlier development of SM-FAE was done locally, without intermediary commits. The first commit is a single "snapshot" of the development stage at the time: the **`v0.9.8-rc.3`** release candidate, which was never published as binaries.
+
+Everything since is committed incrementally on top of that snapshot: **`v0.9.8-rc.4`** (support for The Witcher 3 Remastered: its changed script encoding and bundle format), **`v0.9.8-rc.5`** (a fix for choosing the game folder on most GOG installations), and **`v1.0.0`**. The binaries published on Nexus Mods are built from each release's tag.
 
 ## 📜 License & Lineage
 
