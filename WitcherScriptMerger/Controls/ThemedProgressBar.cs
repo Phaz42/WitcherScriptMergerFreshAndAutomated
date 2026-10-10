@@ -79,7 +79,7 @@ internal sealed class ThemedProgressBar : ProgressBar
 		// The fill is rounded like the track, and clipped to it where the marquee segment runs past its ends.
 		using Region clip = new(trackPath);
 		g.SetClip(clip, CombineMode.Replace);
-		using SolidBrush fillBrush = new(theme.AccentColor);
+		using SolidBrush fillBrush = new(theme.AccentFillColor);
 		if (fill.Width >= radius * 2)
 		{
 			using GraphicsPath fillPath = Rounded(fill, radius);

@@ -26,9 +26,11 @@ internal class ThemeManager
 	internal Theme LightTheme;
 	internal Theme DarkTheme;
 	internal static Theme CurrentTheme;
-	// SM-FAE's own blue: Windows' default blue as Windows shades it for its own controls, on dark backgrounds (AccentLight2)
-	// and on light ones (AccentDark1). The accent when "Use Windows accent color" is off, and always the links' colour.
-	private static readonly Color SmfaeAccentOnDark = GetColorByHex("60CDFF");
+	// SM-FAE's own blue, the accent when "Use Windows accent color" is off, and always the links' colour. On light
+	// backgrounds Windows' own shade of its default blue (AccentDark1). On dark ones the same hue, 209 degrees, at full
+	// saturation, made just light enough to read as text (4.5:1 on 383838): Windows' dark shade (AccentLight2, 60CDFF)
+	// drifts towards cyan, far from the light theme's blue.
+	private static readonly Color SmfaeAccentOnDark = GetColorByHex("44A5FF");
 	private static readonly Color SmfaeAccentOnLight = GetColorByHex("005FB8");
 
 	/// <summary>
@@ -149,27 +151,31 @@ internal class ThemeManager
 		}
 	}
 
-	// The accent, SM-FAE's own blue or the Windows accent's shade, as text and as a fill alike - the accent buttons too,
-	// whichever it is: the option chooses the colour, not whether there is one.
-	// One accent colour, the shade Windows itself uses for its controls in the theme - its dark checkboxes are the light
-	// shade, its light ones the dark shade - for text, fills, checkboxes and the progress bar alike: three different blues
-	// side by side looked inconsistent. Windows' shades are made to read on its backgrounds; mixing them further only
-	// matters for a colour that doesn't, such as the raw accent where the shades can't be read.
+	// The accent, as text and as a fill - the accent buttons too, whichever colour it is: the option chooses the colour, not
+	// whether there is one.
+	// Off: SM-FAE's own blue, one colour for both.
+	// On: the accent as the user picked it. As a fill it is kept as it is, unless it doesn't stand out from the window
+	// (3:1); as text it is mixed until it reads (4.5:1) on every background it is written on - two shades of the user's
+	// colour. Windows' own controls use a safer shade of it (AccentLight2 on dark, AccentDark1 on light), often far paler
+	// than the colour picked; the user's choice should show.
 	private static void UpdateAccentColors()
 	{
 		Theme theme = CurrentTheme;
-		Color accentColor = theme.IsDark ? SmfaeAccentOnDark : SmfaeAccentOnLight;
-		if (UseWindowsAccentAtStart && Environment.OSVersion.Version.Major >= 10)
-			accentColor = GetWindowsAccentShade(theme.IsDark) ?? GetAccentColorFromRegistry();
+		Color[] textBackgrounds = [theme.TreeViewBackColor, theme.BackColor, theme.OptionsPanelBackColor,
+			theme.BackgroundPanelBackColor, theme.MenuBackColor, theme.MenuSelectedBackColor];
+		Color smfaeAccent = theme.IsDark ? SmfaeAccentOnDark : SmfaeAccentOnLight;
+		Color? picked = UseWindowsAccentAtStart ? GetAccentColorFromRegistry() : null;
 
-		accentColor = ReadableOn(accentColor, theme.IsDark, theme.TreeViewBackColor, theme.BackColor, theme.OptionsPanelBackColor,
-			theme.BackgroundPanelBackColor, theme.MenuBackColor, theme.MenuSelectedBackColor);
-		theme.AccentColor = accentColor;
+		// Tried and rejected (2026-10-10): the accent unchanged everywhere - a dark accent such as 6E1420 read at 1.2:1 as
+		// text on the dark lists.
+		theme.AccentColor = ReadableOn(picked ?? smfaeAccent, theme.IsDark, textBackgrounds);
+		theme.AccentFillColor = picked is Color own ? ContrastingOn(own, theme.IsDark, 3.0, theme.BackColor) : theme.AccentColor;
 
-		theme.AccentButtonBackColor = accentColor;
-		theme.AccentButtonHoverColor = ControlPaint.Light(accentColor, 0.25f);
-		theme.AccentButtonDownColor = ControlPaint.Light(accentColor, 0.5f);
-		theme.AccentButtonForeColor = TextOn(accentColor);
+		Color fill = theme.AccentFillColor;
+		theme.AccentButtonBackColor = fill;
+		theme.AccentButtonHoverColor = ControlPaint.Light(fill, 0.25f);
+		theme.AccentButtonDownColor = ControlPaint.Light(fill, 0.5f);
+		theme.AccentButtonForeColor = TextOn(fill);
 
 		// A link stays SM-FAE's blue, whatever the accent: a link should look like one.
 		theme.LinkColor = theme.IsDark ? SmfaeAccentOnDark : SmfaeAccentOnLight;
@@ -186,6 +192,10 @@ internal class ThemeManager
 			button.MinimumSize = GetDpiAwareSize(180, 50, form);
 			cornerRadius = GetDpiAwarePixels(cornerRadius, form);
 		}
+
+		// The Menu button is bigger and more prominent than the others on purpose, and a quarter rounder.
+		if (form is MainForm mainForm && button == mainForm.btnMainMenu)
+			cornerRadius = cornerRadius * 5 / 4;
 
 		button.BackColor = standardButton ? CurrentTheme.StandardButtonBackColor : CurrentTheme.AccentButtonBackColor;
 		button.ForeColor = standardButton ? CurrentTheme.StandardButtonForeColor : CurrentTheme.AccentButtonForeColor;

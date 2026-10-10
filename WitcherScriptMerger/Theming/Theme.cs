@@ -14,10 +14,13 @@ internal class Theme
 	// Fainter than dimmed, still readable: a load order number mods.settings doesn't hold (ConflictTree).
 	internal Color ForeFaintColor;
 
-	// The accent: SM-FAE's blue, or with "Use Windows accent color" the shade of the Windows accent Windows' own controls
-	// use (ThemeManager.UpdateAccentColors). Text in it - winners, section titles, headings, the selected menu item - and
-	// fills: checkboxes, the progress bar, the search box's border. The accent buttons are filled with it too (AccentButton*).
+	// The accent, SM-FAE's blue or with "Use Windows accent color" the user's own (ThemeManager.UpdateAccentColors).
+	// AccentColor is the accent as text - winners, section titles, headings, the selected menu item - readable on every
+	// background. AccentFillColor is the accent as a fill - accent buttons (AccentButton*), checked checkboxes, the progress
+	// bar, the search box's border. They are the same colour unless the user's accent needs lightening or darkening to read
+	// as text.
 	internal Color AccentColor;
+	internal Color AccentFillColor;
 
 	// The Options window's groups, lighter than the window behind them.
 	internal Color OptionsPanelBackColor;
@@ -49,7 +52,7 @@ internal class Theme
 	// An input field: a dropdown, a path.
 	internal Color FieldBackColor;
 
-	// The progress bar's empty part; the filled part is the accent (AccentColor).
+	// The progress bar's empty part; the filled part is the accent (AccentFillColor).
 	internal Color ProgressTrackColor;
 
 	// Something found or in order: a dependency's path that points at its file.

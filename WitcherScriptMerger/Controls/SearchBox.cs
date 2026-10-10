@@ -149,7 +149,7 @@ internal sealed class SearchBox : Panel
 		if (!TextBox.Focused)
 			return;
 
-		Color border = ThemeManager.CurrentTheme.AccentColor;
+		Color border = ThemeManager.CurrentTheme.AccentFillColor;
 		using Pen pen = new(border, 1f);
 		g.DrawPath(pen, path);
 	}

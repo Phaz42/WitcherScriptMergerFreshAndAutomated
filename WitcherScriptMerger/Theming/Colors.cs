@@ -8,24 +8,31 @@ namespace WitcherScriptMerger.Theming;
 
 internal static class Colors
 {
-	internal static Color GetAccentColorFromRegistry()
+	/// <summary>
+	/// The Windows accent colour as the user picked it in Settings, or null where Windows doesn't say. Both values hold it
+	/// as 0xAABBGGRR; Explorer's is where Settings writes the choice, DWM's (the title bars') is read where that is missing.
+	/// </summary>
+	internal static Color? GetAccentColorFromRegistry()
 	{
-		try
+		foreach ((string key, string name) in new[]
 		{
-			using RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\DWM");
-			if (key != null)
+			(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Accent", "AccentColorMenu"),
+			(@"Software\Microsoft\Windows\DWM", "AccentColor"),
+		})
+		{
+			try
 			{
-				int accentColor = (int)key.GetValue("AccentColor");
-				return Color.FromArgb(
-					255, // Alpha
-					accentColor & 0xFF, // Red
-					(accentColor & 0xFF00) >> 8, // Green
-					(accentColor & 0xFF0000) >> 16); // Blue
+				using RegistryKey accentKey = Registry.CurrentUser.OpenSubKey(key);
+				if (accentKey?.GetValue(name) is int abgr)
+					return Color.FromArgb(abgr & 0xFF, (abgr >> 8) & 0xFF, (abgr >> 16) & 0xFF);
+			}
+			catch (Exception ex) when (ex is System.Security.SecurityException or System.IO.IOException or UnauthorizedAccessException)
+			{
+				// Try the next value; without either, the caller uses SM-FAE's own colour.
 			}
 		}
-		catch (Exception) { }
 
-		return Color.FromArgb(0, 120, 215); // Default blue
+		return null;
 	}
 
 	internal static Color GetColorByHex(string hex)
@@ -40,26 +47,6 @@ internal static class Colors
 		color.R.ToString("X2", CultureInfo.InvariantCulture) +
 		color.G.ToString("X2", CultureInfo.InvariantCulture) +
 		color.B.ToString("X2", CultureInfo.InvariantCulture);
-
-	/// <summary>
-	/// The shade of the Windows accent colour Windows' own controls use: on dark backgrounds (AccentLight2), or on light
-	/// ones (AccentDark1). Null where Windows can't say - before Windows 10, or under Wine.
-	/// </summary>
-	[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Windows' accent palette is optional: whatever fails reading it, the caller falls back to the accent colour itself.")]
-	internal static Color? GetWindowsAccentShade(bool darkBackgrounds)
-	{
-		try
-		{
-			Windows.UI.Color shade = new Windows.UI.ViewManagement.UISettings().GetColorValue(darkBackgrounds
-				? Windows.UI.ViewManagement.UIColorType.AccentLight2
-				: Windows.UI.ViewManagement.UIColorType.AccentDark1);
-			return Color.FromArgb(shade.R, shade.G, shade.B);
-		}
-		catch (Exception)
-		{
-			return null;
-		}
-	}
 
 	// WCAG 2's contrast ratio between two colours, 1 to 21. Normal text needs 4.5 to be read comfortably.
 	internal static double ContrastRatio(Color a, Color b)
@@ -84,7 +71,15 @@ internal static class Colors
 	/// on every background given, so its hue is kept. A Windows accent colour is chosen to fill things, and as text it can
 	/// be unreadable: Windows' default blue reaches only 3:1 on a dark list, a yellow accent 1.7:1 on white.
 	/// </summary>
-	internal static Color ReadableOn(Color color, bool darkBackgrounds, params Color[] backgrounds)
+	internal static Color ReadableOn(Color color, bool darkBackgrounds, params Color[] backgrounds) =>
+		ContrastingOn(color, darkBackgrounds, 4.5, backgrounds);
+
+	/// <summary>
+	/// The colour mixed towards white (on dark backgrounds) or black (on light ones) just far enough to reach the given
+	/// contrast on every background given - unchanged where it already does. 4.5:1 for text; 3:1 for a control's fill,
+	/// the usual minimum for something that isn't text to stand out.
+	/// </summary>
+	internal static Color ContrastingOn(Color color, bool darkBackgrounds, double ratio, params Color[] backgrounds)
 	{
 		Color target = darkBackgrounds ? Color.White : Color.Black;
 		for (int step = 0; step <= 100; step++)
@@ -94,7 +89,7 @@ internal static class Colors
 				(int)Math.Round(color.R + ((target.R - color.R) * amount)),
 				(int)Math.Round(color.G + ((target.G - color.G) * amount)),
 				(int)Math.Round(color.B + ((target.B - color.B) * amount)));
-			if (Array.TrueForAll(backgrounds, background => ContrastRatio(mixed, background) >= 4.5))
+			if (Array.TrueForAll(backgrounds, background => ContrastRatio(mixed, background) >= ratio))
 				return mixed;
 		}
 
