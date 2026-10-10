@@ -61,7 +61,7 @@ internal static partial class ThemeUtils
 
 		if (isChecked)
 		{
-			Color fillColor = enabled ? theme.AccentTextColor : theme.MenuDisabledForeColor;
+			Color fillColor = enabled ? theme.AccentColor : theme.MenuDisabledForeColor;
 			using SolidBrush fill = new(fillColor);
 			g.FillPath(fill, path);
 			// A slightly darker edge sets the box off its background: the fill, a fifth of the way to black.

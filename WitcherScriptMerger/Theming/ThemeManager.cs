@@ -26,15 +26,16 @@ internal class ThemeManager
 	internal Theme LightTheme;
 	internal Theme DarkTheme;
 	internal static Theme CurrentTheme;
-	// SM-FAE's own blue, as Windows shades its default blue for its controls: on dark backgrounds (AccentLight2) and on
-	// light ones (AccentDark1). Used when "Use Windows accent color" is off, and for links.
-	private static readonly Color DefaultAccentOnDark = GetColorByHex("60CDFF");
-	private static readonly Color DefaultAccentOnLight = GetColorByHex("005FB8");
+	// SM-FAE's own blue: Windows' default blue as Windows shades it for its own controls, on dark backgrounds (AccentLight2)
+	// and on light ones (AccentDark1). The accent when "Use Windows accent color" is off, and always the links' colour.
+	private static readonly Color SmfaeAccentOnDark = GetColorByHex("60CDFF");
+	private static readonly Color SmfaeAccentOnLight = GetColorByHex("005FB8");
 
 	/// <summary>
-	/// The accent colour setting the running theme was built with. Like the theme, it changes only at the next start.
+	/// Whether the running theme's accent is the Windows accent: the "Use Windows accent color" setting (key AccentColor)
+	/// it was built with. Like the theme, it changes only at the next start.
 	/// </summary>
-	internal static bool AccentColorAtStart { get; private set; }
+	internal static bool UseWindowsAccentAtStart { get; private set; }
 
 	/// <summary>
 	/// The ColorTheme setting the running theme was built from.
@@ -61,11 +62,6 @@ internal class ThemeManager
 			StandardButtonForeColor = GetColorByHex("000000"),
 			StandardButtonHoverColor = GetColorByHex("EFEFEF"),
 			StandardButtonDownColor = GetColorByHex("DCDCDC"),
-
-			AcceptButtonBackColor = GetColorByHex("f8f8f8"),
-			AcceptButtonForeColor = GetColorByHex("000000"),
-			AcceptButtonHoverColor = GetColorByHex("EFEFEF"),
-			AcceptButtonDownColor = GetColorByHex("DCDCDC"),
 
 			MenuBackColor = GetColorByHex("f9f9f9"),
 			MenuForeColor = GetColorByHex("000000"),
@@ -100,11 +96,6 @@ internal class ThemeManager
 			StandardButtonHoverColor = GetColorByHex("454545"),
 			StandardButtonDownColor = GetColorByHex("373737"),
 
-			AcceptButtonBackColor = GetColorByHex("2d2d2d"),
-			AcceptButtonForeColor = GetColorByHex("f2f2f2"),
-			AcceptButtonHoverColor = GetColorByHex("454545"),
-			AcceptButtonDownColor = GetColorByHex("373737"),
-
 			MenuBackColor = GetColorByHex("383838"),
 			MenuForeColor = GetColorByHex("D4D4D4"),
 			MenuDisabledForeColor = GetColorByHex("7A7A7A"),
@@ -124,7 +115,7 @@ internal class ThemeManager
 		ColorThemeAtStart = Settings.Get("ColorTheme", DefaultSettings.ColorTheme);
 		CurrentTheme = IsDarkTheme(ColorThemeAtStart) ? DarkTheme : LightTheme;
 		// Read with the default the Options window shows, so a settings file without the key agrees with it.
-		AccentColorAtStart = Settings.Get("AccentColor", DefaultSettings.AccentColor);
+		UseWindowsAccentAtStart = Settings.Get("AccentColor", DefaultSettings.AccentColor);
 		UpdateAccentColors();
 		DarkenToolTips();
 	}
@@ -158,8 +149,8 @@ internal class ThemeManager
 		}
 	}
 
-	// The accent, Windows' or SM-FAE's own blue: as a fill on accent buttons (Windows' only), and as text everywhere it is
-	// written, mixed until it reads on each background it is written on.
+	// The accent, SM-FAE's own blue or the Windows accent's shade, as text and as a fill alike - the accent buttons too,
+	// whichever it is: the option chooses the colour, not whether there is one.
 	// One accent colour, the shade Windows itself uses for its controls in the theme - its dark checkboxes are the light
 	// shade, its light ones the dark shade - for text, fills, checkboxes and the progress bar alike: three different blues
 	// side by side looked inconsistent. Windows' shades are made to read on its backgrounds; mixing them further only
@@ -167,26 +158,21 @@ internal class ThemeManager
 	private static void UpdateAccentColors()
 	{
 		Theme theme = CurrentTheme;
-		Color accentColor = theme.IsDark ? DefaultAccentOnDark : DefaultAccentOnLight;
-		bool windowsAccent = AccentColorAtStart && Environment.OSVersion.Version.Major >= 10;
-		if (windowsAccent)
+		Color accentColor = theme.IsDark ? SmfaeAccentOnDark : SmfaeAccentOnLight;
+		if (UseWindowsAccentAtStart && Environment.OSVersion.Version.Major >= 10)
 			accentColor = GetWindowsAccentShade(theme.IsDark) ?? GetAccentColorFromRegistry();
 
 		accentColor = ReadableOn(accentColor, theme.IsDark, theme.TreeViewBackColor, theme.BackColor, theme.OptionsPanelBackColor,
 			theme.BackgroundPanelBackColor, theme.MenuBackColor, theme.MenuSelectedBackColor);
-		theme.AccentTextColor = accentColor;
-		theme.MenuSelectedForeColor = accentColor;
+		theme.AccentColor = accentColor;
 
-		if (windowsAccent)
-		{
-			theme.AcceptButtonBackColor = accentColor;
-			theme.AcceptButtonHoverColor = ControlPaint.Light(accentColor, 0.25f);
-			theme.AcceptButtonDownColor = ControlPaint.Light(accentColor, 0.5f);
-			theme.AcceptButtonForeColor = TextOn(accentColor);
-		}
+		theme.AccentButtonBackColor = accentColor;
+		theme.AccentButtonHoverColor = ControlPaint.Light(accentColor, 0.25f);
+		theme.AccentButtonDownColor = ControlPaint.Light(accentColor, 0.5f);
+		theme.AccentButtonForeColor = TextOn(accentColor);
 
 		// A link stays SM-FAE's blue, whatever the accent: a link should look like one.
-		theme.LinkColor = theme.IsDark ? DefaultAccentOnDark : DefaultAccentOnLight;
+		theme.LinkColor = theme.IsDark ? SmfaeAccentOnDark : SmfaeAccentOnLight;
 	}
 
 	private static void ModernizeButton(Button button, Form form, bool standardButton = true)
@@ -201,15 +187,15 @@ internal class ThemeManager
 			cornerRadius = GetDpiAwarePixels(cornerRadius, form);
 		}
 
-		button.BackColor = standardButton ? CurrentTheme.StandardButtonBackColor : CurrentTheme.AcceptButtonBackColor;
-		button.ForeColor = standardButton ? CurrentTheme.StandardButtonForeColor : CurrentTheme.AcceptButtonForeColor;
+		button.BackColor = standardButton ? CurrentTheme.StandardButtonBackColor : CurrentTheme.AccentButtonBackColor;
+		button.ForeColor = standardButton ? CurrentTheme.StandardButtonForeColor : CurrentTheme.AccentButtonForeColor;
 		button.FlatAppearance.BorderSize = 0;
 		button.FlatStyle = FlatStyle.Flat;
 		if (button is Controls.RoundButton round)
 			round.CornerRadius = cornerRadius;
 		button.AutoSize = true;
-		button.FlatAppearance.MouseOverBackColor = standardButton ? CurrentTheme.StandardButtonHoverColor : CurrentTheme.AcceptButtonHoverColor;
-		button.FlatAppearance.MouseDownBackColor = standardButton ? CurrentTheme.StandardButtonDownColor : CurrentTheme.AcceptButtonDownColor;
+		button.FlatAppearance.MouseOverBackColor = standardButton ? CurrentTheme.StandardButtonHoverColor : CurrentTheme.AccentButtonHoverColor;
+		button.FlatAppearance.MouseDownBackColor = standardButton ? CurrentTheme.StandardButtonDownColor : CurrentTheme.AccentButtonDownColor;
 
 		// Create a rounded rectangle using a GraphicsPath
 		using GraphicsPath path = new();
@@ -339,7 +325,7 @@ internal class ThemeManager
 			}
 			else if (control is Label && (string)control.Tag == "AccentLabel")
 			{
-				control.ForeColor = CurrentTheme.AccentTextColor;
+				control.ForeColor = CurrentTheme.AccentColor;
 			}
 			else if (control is Label && control.Tag?.ToString() == "DimmedLabel")
 			{

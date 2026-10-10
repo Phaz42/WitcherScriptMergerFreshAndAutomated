@@ -129,9 +129,16 @@ internal partial class DependencyForm : BaseForm
 
 	#region Validation
 
-	private void Exe_TextChanged(object sender, EventArgs e) => ((Control)sender).Parent?.Invalidate();
+	// Checked when the path changes, never while painting: on a disconnected network drive each File.Exists can stall the
+	// window for seconds. OK checks again, for a file deleted or created since.
+	private readonly Dictionary<TextBox, bool> _valid = [];
 
-	private void Bms_TextChanged(object sender, EventArgs e) => ((Control)sender).Parent?.Invalidate();
+	private void Path_TextChanged(object sender, EventArgs e)
+	{
+		TextBox txt = (TextBox)sender;
+		_valid[txt] = IsValid(txt);
+		txt.Parent?.Invalidate();
+	}
 
 	private bool IsValid(TextBox txt) => txt.Text.EndsWithIgnoreCase(_extensions[txt]) && File.Exists(txt.Text);
 
@@ -145,7 +152,7 @@ internal partial class DependencyForm : BaseForm
 				continue;
 
 			Theme theme = ThemeManager.CurrentTheme;
-			using SolidBrush brush = new(IsValid(txt) ? theme.SuccessColor : theme.WarningColor);
+			using SolidBrush brush = new(_valid.GetValueOrDefault(txt) ? theme.SuccessColor : theme.WarningColor);
 			e.Graphics.FillRectangle(brush, txt.Left, txt.Bottom + LogicalToDeviceUnits(1), txt.Width, Math.Max(2, LogicalToDeviceUnits(3)));
 		}
 	}

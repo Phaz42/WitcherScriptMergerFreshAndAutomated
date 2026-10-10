@@ -84,22 +84,39 @@ internal sealed class ListToolTips : IDisposable
 
 	// Shown twice: WinForms' ToolTip.Show doesn't appear the first time after a visible tooltip was hidden, nor the very
 	// first time - moving from one group's load order number to the next group's showed nothing. A second call shows it.
+	// Each Show adds a handler to the form's Deactivate event that only a Hide removes, so every Show is matched by a Hide
+	// (HideToolTip); otherwise the handlers pile up as the mouse crosses rows. An extra Hide does nothing.
+	// WinForms shows nothing while another window is active, so then the tooltip doesn't count as shown: the next row
+	// waits the delay, as the first does.
 	private void Show(string text, TreeNode node, Point mouse)
 	{
+		HideToolTip();
+		if (_tree.FindForm() is not { } form || form != Form.ActiveForm)
+			return;
+
 		Point location = new(mouse.X + 16, node.Bounds.Top + 3);
 		_toolTip.Show(text, _tree, location);
 		_toolTip.Show(text, _tree, location);
 		_shown = true;
 	}
 
-	private void Hide()
+	/// <summary>Hides the tooltip; also when the list is rebuilt under a resting mouse, which no mouse event reports.</summary>
+	internal void Hide()
 	{
 		_timer.Stop();
-		if (_shown)
-			_toolTip.Hide(_tree);
-		_shown = false;
+		HideToolTip();
 		_node = null;
 		_onNumber = false;
+	}
+
+	private void HideToolTip()
+	{
+		if (_shown)
+		{
+			_toolTip.Hide(_tree);
+			_toolTip.Hide(_tree);
+		}
+		_shown = false;
 	}
 
 	public void Dispose() => _timer.Dispose();

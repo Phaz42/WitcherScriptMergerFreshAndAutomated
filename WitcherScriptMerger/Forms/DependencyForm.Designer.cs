@@ -129,16 +129,14 @@
             txtKDiff3Path.Name = "txtKDiff3Path";
             txtKDiff3Path.Size = new System.Drawing.Size(481, 27);
             txtKDiff3Path.TabIndex = 0;
-            txtKDiff3Path.TextChanged += Exe_TextChanged;
+            txtKDiff3Path.TextChanged += Path_TextChanged;
             // 
             // lnkKDiff3
             // 
-            lnkKDiff3.ActiveLinkColor = System.Drawing.Color.DodgerBlue;
             lnkKDiff3.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
             lnkKDiff3.AutoSize = true;
             lnkKDiff3.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             lnkKDiff3.LinkArea = new System.Windows.Forms.LinkArea(14, 53);
-            lnkKDiff3.LinkColor = System.Drawing.Color.DodgerBlue;
             lnkKDiff3.Location = new System.Drawing.Point(390, 92);
             lnkKDiff3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             lnkKDiff3.Name = "lnkKDiff3";
@@ -147,7 +145,6 @@
             lnkKDiff3.TabStop = true;
             lnkKDiff3.Text = "Download from KDiff3 Site";
             lnkKDiff3.UseCompatibleTextRendering = true;
-            lnkKDiff3.VisitedLinkColor = System.Drawing.Color.DodgerBlue;
             lnkKDiff3.LinkClicked += LnkKDiff3_LinkClicked;
             // 
             // lblPrompt
@@ -228,16 +225,14 @@
             txtBmsPath.Name = "txtBmsPath";
             txtBmsPath.Size = new System.Drawing.Size(481, 27);
             txtBmsPath.TabIndex = 0;
-            txtBmsPath.TextChanged += Exe_TextChanged;
+            txtBmsPath.TextChanged += Path_TextChanged;
             // 
             // lnkBmsPlugin
             // 
-            lnkBmsPlugin.ActiveLinkColor = System.Drawing.Color.DodgerBlue;
             lnkBmsPlugin.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
             lnkBmsPlugin.AutoSize = true;
             lnkBmsPlugin.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             lnkBmsPlugin.LinkArea = new System.Windows.Forms.LinkArea(14, 53);
-            lnkBmsPlugin.LinkColor = System.Drawing.Color.DodgerBlue;
             lnkBmsPlugin.Location = new System.Drawing.Point(358, 388);
             lnkBmsPlugin.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             lnkBmsPlugin.Name = "lnkBmsPlugin";
@@ -246,7 +241,6 @@
             lnkBmsPlugin.TabStop = true;
             lnkBmsPlugin.Text = "Download from QuickBMS Site";
             lnkBmsPlugin.UseCompatibleTextRendering = true;
-            lnkBmsPlugin.VisitedLinkColor = System.Drawing.Color.DodgerBlue;
             lnkBmsPlugin.LinkClicked += LnkBms_LinkClicked;
             // 
             // grpBmsPlugin
@@ -316,16 +310,14 @@
             txtBmsPluginPath.Name = "txtBmsPluginPath";
             txtBmsPluginPath.Size = new System.Drawing.Size(481, 27);
             txtBmsPluginPath.TabIndex = 0;
-            txtBmsPluginPath.TextChanged += Bms_TextChanged;
+            txtBmsPluginPath.TextChanged += Path_TextChanged;
             // 
             // lnkWccLite
             // 
-            lnkWccLite.ActiveLinkColor = System.Drawing.Color.DodgerBlue;
             lnkWccLite.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
             lnkWccLite.AutoSize = true;
             lnkWccLite.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             lnkWccLite.LinkArea = new System.Windows.Forms.LinkArea(14, 53);
-            lnkWccLite.LinkColor = System.Drawing.Color.DodgerBlue;
             lnkWccLite.Location = new System.Drawing.Point(374, 535);
             lnkWccLite.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             lnkWccLite.Name = "lnkWccLite";
@@ -334,7 +326,6 @@
             lnkWccLite.TabStop = true;
             lnkWccLite.Text = "Download from Nexus Mods";
             lnkWccLite.UseCompatibleTextRendering = true;
-            lnkWccLite.VisitedLinkColor = System.Drawing.Color.DodgerBlue;
             lnkWccLite.LinkClicked += LnkWccLite_LinkClicked;
             // 
             // grpWccLite
@@ -404,7 +395,7 @@
             txtWccLitePath.Name = "txtWccLitePath";
             txtWccLitePath.Size = new System.Drawing.Size(481, 27);
             txtWccLitePath.TabIndex = 0;
-            txtWccLitePath.TextChanged += Exe_TextChanged;
+            txtWccLitePath.TextChanged += Path_TextChanged;
             // 
             // btnOK
             // 
@@ -442,12 +433,10 @@
             // 
             // lnkBms
             // 
-            lnkBms.ActiveLinkColor = System.Drawing.Color.DodgerBlue;
             lnkBms.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
             lnkBms.AutoSize = true;
             lnkBms.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             lnkBms.LinkArea = new System.Windows.Forms.LinkArea(14, 53);
-            lnkBms.LinkColor = System.Drawing.Color.DodgerBlue;
             lnkBms.Location = new System.Drawing.Point(358, 240);
             lnkBms.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             lnkBms.Name = "lnkBms";
@@ -456,7 +445,6 @@
             lnkBms.TabStop = true;
             lnkBms.Text = "Download from QuickBMS Site";
             lnkBms.UseCompatibleTextRendering = true;
-            lnkBms.VisitedLinkColor = System.Drawing.Color.DodgerBlue;
             lnkBms.LinkClicked += LnkBms_LinkClicked;
             // 
             // DependencyForm

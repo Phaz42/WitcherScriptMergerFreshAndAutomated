@@ -66,6 +66,14 @@ internal class TreeManager
 		_mergesToolTips = new ListToolTips(treMerges, new ToolTip());
 	}
 
+	// A tooltip stays until the mouse moves; when a list is rebuilt or searched under a resting mouse, it would float over
+	// rows that are no longer there.
+	private void HideToolTips()
+	{
+		_conflictsToolTips.Hide();
+		_mergesToolTips.Hide();
+	}
+
 	/// <summary>
 	/// Refreshes both the conflicts and merges trees.
 	/// </summary>
@@ -106,6 +114,7 @@ internal class TreeManager
 		ProgressManager.lblStatusLeft1.Text = "Refreshing...";
 		ProgressManager.lblStatusLeft2.Visible = ProgressManager.lblStatusLeft3.Visible = false;
 
+		HideToolTips();
 		ConflictsTree.BeginUpdate();
 
 		// Clear tree nodes or update specific nodes based on conditions
@@ -173,6 +182,7 @@ internal class TreeManager
 		// Clear merge tree nodes
 		InvokeRequired?.Invoke(this, new InvokeRequiredEventArgs(delegate
 		{
+			HideToolTips();
 			ConflictsTree.BeginUpdate();
 			// Every merge node is rebuilt below; any a search hid would otherwise come back beside the new ones.
 			_ = MergesTree.ShowAllNodes();
@@ -604,6 +614,7 @@ internal class TreeManager
 			TreeSearch search = tree == ConflictsTree ? _conflictsSearch : _mergesSearch;
 
 			// A search that hid nothing still made the found mods bold and expanded the tree, so clearing it restyles too.
+			HideToolTips();
 			tree.BeginUpdate();
 			bool wasSearched = _searchApplied.Remove(tree);
 			bool changed = tree.ShowAllNodes() | wasSearched;
@@ -784,7 +795,7 @@ internal class TreeManager
 			Text = category.DisplayName,
 			ToolTipText = forMerges ? category.MergesToolTipText : category.ToolTipText,
 			NodeFont = new Font("Segoe UI", 14.0F, FontStyle.Bold),
-			ForeColor = ThemeManager.CurrentTheme.AccentTextColor,
+			ForeColor = ThemeManager.CurrentTheme.AccentColor,
 			Tag = category
 		};
 	}

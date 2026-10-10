@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -18,7 +19,7 @@ internal static class KDiff3
 		FileMerger.MergeSource source1,
 		FileMerger.MergeSource source2,
 		FileInfo vanillaFile,
-		string outputPath, bool followFileLinks, string relativePath)
+		string outputPath, bool followFileLinks, string relativePath, IReadOnlyList<string> mergedSoFar)
 	{
 		if (!File.Exists(ExePath))
 		{
@@ -141,7 +142,7 @@ internal static class KDiff3
 		KDiff3GuideContext guide = new(
 			relativePath, source1.Name, source2.Name, hasVanillaVersion,
 			source1FullName.EqualsIgnoreCase(outputPath) || source1FullName.StartsWithIgnoreCase(Paths.MergedBundleContentAbsolute),
-			reason);
+			mergedSoFar, reason);
 
 		using Process kdiff3Proc = Process.Start(kdiff3Path, args);
 		bool windowShown = WaitForExit(kdiff3Proc, guide);

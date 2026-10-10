@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 using WitcherScriptMerger.Forms;
 
@@ -29,7 +30,9 @@ internal enum KDiff3Reason
 /// <param name="HasGameFile">KDiff3 compares three panes: A the game's own file, B the first side, C the second.
 /// Without it, two: A the first side, B the second.</param>
 /// <param name="FirstIsMergeSoFar">The first side is the file merged so far from earlier mods, not a mod's own copy.</param>
-internal sealed record KDiff3GuideContext(string RelativePath, string First, string Second, bool HasGameFile, bool FirstIsMergeSoFar, KDiff3Reason Reason)
+/// <param name="MergedSoFar">Those earlier mods, by name: the ones the second side may conflict with. The merged mod is
+/// no mod a user can uninstall or ask about, so the guide names them instead.</param>
+internal sealed record KDiff3GuideContext(string RelativePath, string First, string Second, bool HasGameFile, bool FirstIsMergeSoFar, IReadOnlyList<string> MergedSoFar, KDiff3Reason Reason)
 {
 	/// <summary>The review guide, for a user who chose to review every merge; otherwise the manual merging guide.</summary>
 	internal bool IsReview => Reason == KDiff3Reason.Review;

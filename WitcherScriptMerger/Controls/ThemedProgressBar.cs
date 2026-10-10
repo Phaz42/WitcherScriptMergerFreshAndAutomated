@@ -20,6 +20,8 @@ internal sealed class ThemedProgressBar : ProgressBar
 	internal ThemedProgressBar()
 	{
 		SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+		// Windows' own marquee off: its timer would repaint the bar beside this one's, for nothing.
+		MarqueeAnimationSpeed = 0;
 		_marquee.Tick += (sender, e) =>
 		{
 			_marqueePosition = (_marqueePosition + 0.012f) % 1.4f;
@@ -77,7 +79,7 @@ internal sealed class ThemedProgressBar : ProgressBar
 		// The fill is rounded like the track, and clipped to it where the marquee segment runs past its ends.
 		using Region clip = new(trackPath);
 		g.SetClip(clip, CombineMode.Replace);
-		using SolidBrush fillBrush = new(theme.AccentTextColor);
+		using SolidBrush fillBrush = new(theme.AccentColor);
 		if (fill.Width >= radius * 2)
 		{
 			using GraphicsPath fillPath = Rounded(fill, radius);

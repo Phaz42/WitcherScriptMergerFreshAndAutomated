@@ -357,7 +357,10 @@ internal partial class FileMerger : IDisposable
 	{
 		ProgressInfo.CurrentAction = $"Merging {source1.Name} && {source2.Name} — waiting for KDiff3 to close";
 
-		int exitCode = KDiff3.Run(source1, source2, _vanillaFile, _outputPath, !isBundled, merge.RelativePath);
+		// The mods already in this file's merge, for the KDiff3 guide: when the first side is that merge, they are what the
+		// second mod conflicts with.
+		List<string> mergedSoFar = merge.Mods.Select(mod => mod.Name).Where(name => !name.EqualsIgnoreCase(source2.Name)).ToList();
+		int exitCode = KDiff3.Run(source1, source2, _vanillaFile, _outputPath, !isBundled, merge.RelativePath, mergedSoFar);
 
 		if (exitCode == 0)
 		{

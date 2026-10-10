@@ -13,7 +13,7 @@ internal sealed class KeyboardShortcutsForm : BaseForm
 {
 	private static readonly (string Heading, string Note, (string Key, string Action)[] Keys)[] Groups =
 	[
-		("Main window", "Not while typing in a search box", [
+		("Main window", "Letters and Esc: not while typing in a search box", [
 			("F5", "Refresh the conflicts list"),
 			("F6", "Refresh the merges list"),
 			("C", "Create the selected merges"),

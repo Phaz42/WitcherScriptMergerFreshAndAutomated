@@ -25,7 +25,7 @@ internal partial class OptionsForm : BaseForm
 	internal bool BundleScanOptionChanged;
 
 	// The theme and accent colour last declined in the restart question, so the same choice is not asked about again.
-	private (int ColorTheme, bool AccentColor)? declinedRestart;
+	private (int ColorTheme, bool UseWindowsAccent)? declinedRestart;
 
 	private List<ColorFader> colorFaders;
 
@@ -181,9 +181,9 @@ internal partial class OptionsForm : BaseForm
 	/// </summary>
 	private void OfferRestartForTheme()
 	{
-		(int ColorTheme, bool AccentColor) choice = (cbColorTheme.SelectedIndex, chkAccentColor.Checked);
+		(int ColorTheme, bool UseWindowsAccent) choice = (cbColorTheme.SelectedIndex, chkAccentColor.Checked);
 		bool themeDiffers = ThemeManager.DiffersFromCurrentTheme(choice.ColorTheme);
-		bool accentDiffers = choice.AccentColor != ThemeManager.AccentColorAtStart;
+		bool accentDiffers = choice.UseWindowsAccent != ThemeManager.UseWindowsAccentAtStart;
 		if ((!themeDiffers && !accentDiffers) || choice == declinedRestart)
 			return;
 

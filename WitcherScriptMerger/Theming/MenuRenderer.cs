@@ -17,7 +17,7 @@ internal partial class MenuRenderer(Theme theme, int fontSize = 10) : ToolStripP
 
 		if (e.Item.Selected)
 		{
-			e.Item.ForeColor = theme.MenuSelectedForeColor;
+			e.Item.ForeColor = theme.AccentColor;
 
 			using SolidBrush brush = new(theme.MenuSelectedBackColor);
 			e.Graphics.FillRectangle(brush, rect);
@@ -39,14 +39,15 @@ internal partial class MenuRenderer(Theme theme, int fontSize = 10) : ToolStripP
 		Point textLocation = new(left, top);
 
 		Rectangle textRectangle = new(textLocation, textSize);
-		// A disabled item in the theme's disabled colour: Windows' own grey sits too close to the enabled items' on a dark menu.
-		Color textColor = item.Enabled ? e.TextColor : theme.MenuDisabledForeColor;
-		ToolStripItemTextRenderEventArgs centeredTextEventArgs = new(e.Graphics, e.Item, e.Text, textRectangle, textColor, e.TextFont, e.TextFormat)
+		// A disabled item in the theme's disabled colour: Windows' own grey sits too close to the enabled items' on a dark
+		// menu. Drawn here, because the base renderer draws every disabled item in Windows' grey, whatever colour it is given.
+		if (!item.Enabled)
 		{
-			TextColor = textColor
-		};
+			TextRenderer.DrawText(e.Graphics, e.Text, e.TextFont, textRectangle, theme.MenuDisabledForeColor, e.TextFormat);
+			return;
+		}
 
-		base.OnRenderItemText(centeredTextEventArgs);
+		base.OnRenderItemText(new ToolStripItemTextRenderEventArgs(e.Graphics, e.Item, e.Text, textRectangle, e.TextColor, e.TextFont, e.TextFormat));
 	}
 
 	protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e) => e.ToolStrip.BackColor = theme.MenuBackColor;

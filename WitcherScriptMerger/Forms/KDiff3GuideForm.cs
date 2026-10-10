@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -291,6 +292,9 @@ internal sealed partial class KDiff3GuideForm : BaseForm
 		string second = context == null ? "the second mod" : Bold(context.Second);
 		string file = context == null ? "the file" : Bold(context.RelativePath);
 		string kind = context == null || context.RelativePath.EndsWithIgnoreCase(".ws") ? "script file" : "file";
+		// When the first side is the merge so far, the second mod conflicts with one or more of the mods in it, by name.
+		bool mergeSoFar = context?.FirstIsMergeSoFar == true;
+		string earlierMods = mergeSoFar && context.MergedSoFar.Count > 0 ? NameList(context.MergedSoFar) : "the mods merged before it";
 		string letters = threePanes ? "*A*, *B* or *C*" : "*A* or *B*";
 		string both = threePanes ? "both *B* and *C*" : "both *A* and *B*";
 
@@ -338,8 +342,11 @@ internal sealed partial class KDiff3GuideForm : BaseForm
 				+ "undoes everything you did, with no permanent harm.\n"
 				+ "\n"
 				+ "But if this looks like a bridge too far, there's an easy way out:\n"
-				+ "• Close KDiff3 without saving. Nothing is merged for this file.\n"
-				+ $"• Choose which of the two mods you want to keep, {first} or {second}, and uninstall the other.\n"
+				+ $"• Close KDiff3 without saving. {second} is left out of this file's merge.\n"
+				+ (mergeSoFar
+					? $"• Then uninstall {second}, or keep it and uninstall the mod it conflicts with instead: one of the mods "
+						+ $"merged before it, {earlierMods}.\n"
+					: $"• Choose which of the two mods you want to keep, {first} or {second}, and uninstall the other.\n")
 				+ "• Back in SM-FAE, refresh and merge again."
 		});
 
@@ -360,11 +367,19 @@ internal sealed partial class KDiff3GuideForm : BaseForm
 			+ "• Some mods can't be used together at all. Then the easy way out is the only way.");
 
 		Write(_help,
-			$"Ask in the Posts section of either mod's Nexus page. Say which mod it conflicts with, and name the file, {file}. "
+			(mergeSoFar
+				? $"Ask in the Posts section of {second}'s Nexus page, or of the mods merged before it. Name them, {earlierMods}, "
+					+ $"and the file, {file}. "
+				: $"Ask in the Posts section of either mod's Nexus page. Say which mod it conflicts with, and name the file, {file}. ")
 			+ "The author or other users may know a fix, or have a compatibility patch.");
 	}
 
 	private static string Bold(string text) => "*" + text + "*";
+
+	// "A", "A and B", "A, B and C", each in bold.
+	private static string NameList(IReadOnlyList<string> names) => names.Count == 1
+		? Bold(names[0])
+		: string.Join(", ", names.Take(names.Count - 1).Select(Bold)) + " and " + Bold(names[^1]);
 
 	private RichTextBox AddText()
 	{
