@@ -19,7 +19,7 @@
 ---
 
 ## 📌 Overview
-This repository contains the source code for **Script Merger - Fresh and Automated Edition (SM-FAE)**, a community-driven evolution of the original Witcher 3 script merging utility. SM-FAE finds the conflicts between your mods and helps you resolve them: it merges scripts, XML files and bundled text files automatically where it can, opens KDiff3 where a person has to decide, and lists what can't be merged in load order. It works with both the original game (4.04) and The Witcher 3 Remastered (5.x).
+This repository contains the source code for **Script Merger - Fresh and Automated Edition (SM-FAE)**, a community-driven evolution of the original Witcher 3 script merging utility. SM-FAE finds the conflicts between your mods and helps you resolve them: it merges scripts, XML files and bundled text files automatically where it can, opens KDiff3 where a person has to decide, and lists what can't be merged in load order. It works with The Witcher 3 Remastered (5.x), Next-Gen (4.x) and Classic (1.32).
 
 For downloads, the full feature list, user documentation, and comments and contact info, visit the Nexus Mods page:  
 👉 **[SM-FAE on Nexus Mods](https://www.nexusmods.com/witcher3/mods/8405)**
