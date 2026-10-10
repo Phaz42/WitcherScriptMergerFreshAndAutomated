@@ -57,7 +57,7 @@ internal class ModFileIndex
 			_ = mergedModNames.Add(mergedModSetting.Trim());
 		if (ModCount == 0)
 		{
-			_ = MainFrm.uiThreadManager.ShowMessage("There are no mods in the Mods directory, nothing to do...");
+			_ = MainFrm.uiThreadManager.ShowMessage("There are no mods in the Mods folder: nothing to do.");
 		}
 
 		using BackgroundWorker bgWorker = new()

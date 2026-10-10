@@ -14,7 +14,7 @@ internal static class WccLite
 	{
 		if (!Directory.Exists(sourceDir))
 		{
-			_ = MainFrm.uiThreadManager.ShowError("Can't find content directory to pack into bundle:\n\n" + sourceDir, "Missing Directory");
+			_ = MainFrm.uiThreadManager.ShowError("Can't find the content folder to pack into a bundle:\n\n" + sourceDir, "Missing Folder");
 			return 1;
 		}
 
@@ -60,7 +60,7 @@ internal static class WccLite
 		string errorMsg = null;
 		if (!string.IsNullOrWhiteSpace(stdError))
 			errorMsg = stdError;
-		else if (stdOutput.EndsWith("Wcc operation failed", StringComparison.OrdinalIgnoreCase))
+		else if (stdOutput.EndsWith("wcc_lite Failed", StringComparison.OrdinalIgnoreCase))
 			errorMsg = stdOutput;
 		if (errorMsg != null)
 		{

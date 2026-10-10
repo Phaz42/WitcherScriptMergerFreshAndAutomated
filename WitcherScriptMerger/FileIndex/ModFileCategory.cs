@@ -31,11 +31,11 @@ internal static class Categories
 	internal static ModFileCategory BundleText = new(
 		3, "Bundled Text",
 		"Text files inside mods' bundles, changed by more than one mod. SM-FAE can merge them and pack the result into a bundle of its own.",
-		"Bundled text files SM-FAE has merged and packed into the merged mod's own bundle.",
+		"Bundled text files SM-FAE has merged and packed into the Merged Mod's own bundle.",
 		true, true);
 
 	internal static ModFileCategory BundleNotMergeable = new(
-		4, "Bundled Non-text - Not Mergeable",
+		4, "Bundled Non-Text - Not Mergeable",
 		"Packed files that can't be merged, such as textures, models and menus. The game uses one mod's copy: the one with the lowest load order number, listed first. Double-click a mod to change its number.",
 		null,
 		false, true);

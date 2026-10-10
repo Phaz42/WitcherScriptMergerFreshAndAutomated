@@ -70,11 +70,11 @@ internal partial class OptionsForm : BaseForm
 			cbCheckBundles);
 		Tip("Collapses a conflict when the same mods conflict in the file listed just above it, which is common for mods that change many files. Scripts are never collapsed this way.",
 			chkCollapseIdenticalConflicts);
-		Tip("Collapses the not-mergeable sections, so the conflicts you can merge come first.",
+		Tip("Collapses the Not Mergeable sections, so the conflicts you can merge come first.",
 			chkCollapseNotMergeable);
 		Tip("Collapses conflicts where your load order decides which mod wins, so the ones still needing a decision stand out.",
 			chkCollapseCustomLoadOrder);
-		Tip("After merging, checks that the merged mod has the top load order number. If another mod outranks it, the game may use that mod's file instead of the merge, and SM-FAE offers to fix that.",
+		Tip("After merging, checks that the Merged Mod has the top load order number. If another mod outranks it, the game may use that mod's file instead of the merge, and SM-FAE offers to fix that.",
 			chkPromptPrioritize);
 		Tip("Asks before deleting an outdated merge. A merge is outdated when a mod in it was updated, removed or disabled since merging: it no longer matches your mods.",
 			chkPromptOutdatedMerge);
@@ -90,7 +90,7 @@ internal partial class OptionsForm : BaseForm
 			chkCheckDuplicatePrios);
 		Tip("Merges all script conflicts by itself after each scan, without you selecting them. Conflicts that need a decision still open KDiff3.",
 			chkAutoCreateScriptMerges);
-		Tip("Deletes outdated merges without asking. A merge is outdated when a mod in it was updated, removed or disabled, or its merged file is missing; merge again afterwards.",
+		Tip("Deletes outdated merges without asking. A merge is outdated when a mod in it was updated, removed or disabled, or its merged file is missing; merge again afterward.",
 			chkAutoDeleteOldMerges);
 		Tip("When a merged file already exists, replaces it without asking.",
 			chkAutoOverwriteOldMerges);
@@ -100,7 +100,7 @@ internal partial class OptionsForm : BaseForm
 			chkAutoExit);
 		Tip("Light, dark, or the same as Windows. A change takes effect after a restart, which SM-FAE offers.",
 			lblColorTheme, cbColorTheme);
-		Tip("Uses your Windows accent colour for highlights, such as the winning mod and the main buttons, instead of SM-FAE's blue.",
+		Tip("Uses your Windows accent color for highlights, such as the winning mod and the main buttons, instead of SM-FAE's blue.",
 			chkAccentColor);
 		Tip("Shows a picture when there are no conflicts. You can use your own; see Images\\Custom in SM-FAE's folder.",
 			chkNoConflictsWitcher);
@@ -187,7 +187,7 @@ internal partial class OptionsForm : BaseForm
 		if ((!themeDiffers && !accentDiffers) || choice == declinedRestart)
 			return;
 
-		string what = themeDiffers ? "The new theme" : "The new accent colour setting";
+		string what = themeDiffers ? "The new theme" : "The new accent color setting";
 		// Owned by this window, which is topmost: owned by the main window, it could open behind it.
 		if (DialogResult.Yes == MessageBox.Show(this,
 			$"{what} takes effect after a restart. Restart SM-FAE now?",
@@ -229,19 +229,19 @@ internal partial class OptionsForm : BaseForm
 		// Also when a saved folder no longer exists: it is not a game folder, so the user is asked for one.
 		if (!Directory.Exists(GameDirectory))
 		{
-			_ = MainFrm.uiThreadManager.ShowMessage("In the following screen, please select your main Witcher 3 game directory.",
-				"Select Witcher 3 game directory", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			_ = MainFrm.uiThreadManager.ShowMessage("In the following window, please select your main Witcher 3 game folder.",
+				"Select the Witcher 3 Game Folder", MessageBoxButtons.OK, MessageBoxIcon.Information);
 			SelectGameDirectory();
 		}
 	}
 
 	private static bool ConfirmAutoGameDir(string gameDir)
 	{
-		string msg = "Your Witcher 3 Game directory was found at the following location, is this correct?\n\n" + gameDir;
+		string msg = "SM-FAE found your Witcher 3 game folder at this location. Is this correct?\n\n" + gameDir;
 
 		return DialogResult.Yes == MainFrm.uiThreadManager.ShowMessage(
 			msg,
-			"Check Witcher 3 game directory location",
+			"Check the Witcher 3 Game Folder",
 			MessageBoxButtons.YesNo,
 			MessageBoxIcon.Question);
 	}
@@ -275,8 +275,8 @@ internal partial class OptionsForm : BaseForm
 		}
 		else if (!Directory.Exists(GameDirectory))
 		{
-			_ = MainFrm.uiThreadManager.ShowMessage("Invalid or no game directory selected, Script Merger will now exit.\n\n" +
-				"Restart the program to try again.", "Invalid game directory", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			_ = MainFrm.uiThreadManager.ShowMessage("No valid game folder was selected. SM-FAE will now exit.\n\n" +
+				"Restart SM-FAE to try again.", "Invalid Game Folder", MessageBoxButtons.OK, MessageBoxIcon.Error);
 			AutoExit(null);
 		}
 	}

@@ -167,7 +167,7 @@ internal partial class ConflictTree : SMTree
 				_contextShowOnlyMod.Enabled = true;
 				_contextRemoveFromCustomLoadOrder.Text =
 					isDisabled
-					? "Clear Set Load Order && Disabled State"
+					? "Clear Set Load Order and Disabled State"
 					: "Clear Set Load Order";
 			}
 		}

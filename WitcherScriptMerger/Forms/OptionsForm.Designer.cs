@@ -106,7 +106,7 @@ namespace WitcherScriptMerger.Forms
 			chkPromptPrioritize.Name = "chkPromptPrioritize";
 			chkPromptPrioritize.Size = new System.Drawing.Size(549, 45);
 			chkPromptPrioritize.TabIndex = 4;
-			chkPromptPrioritize.Text = "Check priority of master merged mod";
+			chkPromptPrioritize.Text = "Check the Merged Mod's load order number";
 			chkPromptPrioritize.UseVisualStyleBackColor = true;
 			// 
 			// chkPromptOutdatedMerge
@@ -190,7 +190,7 @@ namespace WitcherScriptMerger.Forms
 			chkCollapseNotMergeable.Name = "chkCollapseNotMergeable";
 			chkCollapseNotMergeable.Size = new System.Drawing.Size(367, 45);
 			chkCollapseNotMergeable.TabIndex = 0;
-			chkCollapseNotMergeable.Text = "Not mergeable conflicts";
+			chkCollapseNotMergeable.Text = "Not Mergeable conflicts";
 			chkCollapseNotMergeable.UseVisualStyleBackColor = true;
 			// 
 			// btnCancel
@@ -306,7 +306,7 @@ namespace WitcherScriptMerger.Forms
 			lblGameDir.Name = "lblGameDir";
 			lblGameDir.Size = new System.Drawing.Size(387, 45);
 			lblGameDir.TabIndex = 14;
-			lblGameDir.Text = "Witcher 3 game directory:";
+			lblGameDir.Text = "Witcher 3 game folder:";
 			// 
 			// txtGameDir
 			// 
@@ -426,7 +426,7 @@ namespace WitcherScriptMerger.Forms
 			lblConflicts.Name = "lblConflicts";
 			lblConflicts.Size = new System.Drawing.Size(295, 37);
 			lblConflicts.TabIndex = 20;
-			lblConflicts.Text = "Check for conflicts in";
+			lblConflicts.Text = "Check for Conflicts In";
 			// 
 			// lblCollapse
 			// 
@@ -437,7 +437,7 @@ namespace WitcherScriptMerger.Forms
 			lblCollapse.Name = "lblCollapse";
 			lblCollapse.Size = new System.Drawing.Size(399, 37);
 			lblCollapse.TabIndex = 22;
-			lblCollapse.Text = "Auto-collapse in the conflicts list";
+			lblCollapse.Text = "Auto-Collapse in the Conflicts List";
 			// 
 			// pnlCollapse
 			// 
@@ -505,7 +505,7 @@ namespace WitcherScriptMerger.Forms
 			chkCheckDuplicatePrios.Name = "chkCheckDuplicatePrios";
 			chkCheckDuplicatePrios.Size = new System.Drawing.Size(500, 45);
 			chkCheckDuplicatePrios.TabIndex = 25;
-			chkCheckDuplicatePrios.Text = "Check for duplicate mod priorities";
+			chkCheckDuplicatePrios.Text = "Check for duplicate load order numbers";
 			chkCheckDuplicatePrios.UseVisualStyleBackColor = true;
 			// 
 			// lblAutomation
@@ -628,7 +628,7 @@ namespace WitcherScriptMerger.Forms
 			lblTheming.Name = "lblTheming";
 			lblTheming.Size = new System.Drawing.Size(793, 37);
 			lblTheming.TabIndex = 24;
-			lblTheming.Text = "User interface";
+			lblTheming.Text = "User Interface";
 			// 
 			// chkAccentColor
 			// 

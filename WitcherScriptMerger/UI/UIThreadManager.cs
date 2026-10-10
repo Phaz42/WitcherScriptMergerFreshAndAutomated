@@ -59,8 +59,8 @@ internal class UIThreadManager
 	}
 
 	/// <summary>
-	/// Shows an error whose technical details are collapsed under "Show technical details", so the user first reads what
-	/// happened and what to do; "Copy details" puts all of it on the clipboard. Where the native task dialog is
+	/// Shows an error whose technical details are collapsed under "Show Technical Details", so the user first reads what
+	/// happened and what to do; "Copy Details" puts all of it on the clipboard. Where the native task dialog is
 	/// unavailable, a plain message box shows everything, the details last (Ctrl+C copies a message box's text).
 	/// </summary>
 	internal void ShowErrorWithDetails(string heading, string text, string details, string title = "Error")
@@ -70,7 +70,7 @@ internal class UIThreadManager
 		void Show()
 		{
 			// Copies the whole error - what a user pastes into a forum post or bug report - and leaves the dialog open.
-			TaskDialogButton copyButton = new("Copy details") { AllowCloseDialog = false };
+			TaskDialogButton copyButton = new("Copy Details") { AllowCloseDialog = false };
 			copyButton.Click += (sender, e) =>
 			{
 				string all = $"{title}\n\n{heading}\n\n{text}\n\n{details}".Replace("\r\n", "\n", StringComparison.Ordinal);
@@ -94,8 +94,8 @@ internal class UIThreadManager
 				DefaultButton = TaskDialogButton.OK,
 				Expander = new TaskDialogExpander(details)
 				{
-					CollapsedButtonText = "Show technical details",
-					ExpandedButtonText = "Hide technical details",
+					CollapsedButtonText = "Show Technical Details",
+					ExpandedButtonText = "Hide Technical Details",
 					Position = TaskDialogExpanderPosition.AfterFootnote
 				}
 			};
@@ -169,7 +169,7 @@ internal class UIThreadManager
 		if (mainForm.treConflicts.HasCategory(Categories.Script))
 			return;
 
-		mainForm.progressManager.InitializeProgressScreen("Merging complete, auto closing in 2 seconds...");
+		mainForm.progressManager.InitializeProgressScreen("Merging complete. Closing in 2 seconds...");
 		mainForm.progressBar.Hide();
 		mainForm.btnDontExit.Show();
 		mainForm.btnExitNow.Show();

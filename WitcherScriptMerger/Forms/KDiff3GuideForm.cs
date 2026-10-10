@@ -338,7 +338,7 @@ internal sealed partial class KDiff3GuideForm : BaseForm
 			_ =>
 				"Resolving script conflicts by hand can be difficult if you don't have experience reading script code. It's "
 				+ "usually not something you learn in half an hour, starting from nothing. If you feel up to it, even with less "
-				+ "experience, it's certainly not wrong to try: if the game doesn't start afterwards, Delete Merges in SM-FAE "
+				+ "experience, it's certainly not wrong to try: if the game doesn't start afterward, *Delete All Merges* in SM-FAE "
 				+ "undoes everything you did, with no permanent harm.\n"
 				+ "\n"
 				+ "But if this looks like a bridge too far, there's an easy way out:\n"

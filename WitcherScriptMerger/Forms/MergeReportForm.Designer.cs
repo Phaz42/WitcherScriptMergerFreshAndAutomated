@@ -58,7 +58,7 @@
             lblMergedFiles.Name = "lblMergedFiles";
             lblMergedFiles.Size = new System.Drawing.Size(230, 28);
             lblMergedFiles.TabIndex = 5;
-            lblMergedFiles.Text = "Created new merged file!";
+            lblMergedFiles.Text = "New Merged File Created";
             // 
             // btnOpenMergedDir
             // 
@@ -73,7 +73,7 @@
             btnOpenMergedDir.Name = "btnOpenMergedDir";
             btnOpenMergedDir.Size = new System.Drawing.Size(388, 35);
             btnOpenMergedDir.TabIndex = 2;
-            btnOpenMergedDir.Text = "Open Directory";
+            btnOpenMergedDir.Text = "Open Folder";
             btnOpenMergedDir.UseVisualStyleBackColor = false;
             btnOpenMergedDir.Click += BtnOpenOutputDir_Click;
             // 
@@ -121,7 +121,7 @@
             btnOpenDir2.Name = "btnOpenDir2";
             btnOpenDir2.Size = new System.Drawing.Size(388, 35);
             btnOpenDir2.TabIndex = 2;
-            btnOpenDir2.Text = "Open Directory";
+            btnOpenDir2.Text = "Open Folder";
             btnOpenDir2.UseVisualStyleBackColor = false;
             btnOpenDir2.Click += BtnOpenDir2_Click;
             // 
@@ -239,7 +239,7 @@
             btnOpenDir1.Name = "btnOpenDir1";
             btnOpenDir1.Size = new System.Drawing.Size(388, 35);
             btnOpenDir1.TabIndex = 2;
-            btnOpenDir1.Text = "Open Directory";
+            btnOpenDir1.Text = "Open Folder";
             btnOpenDir1.UseVisualStyleBackColor = false;
             btnOpenDir1.Click += BtnOpenDir1_Click;
             // 

@@ -361,7 +361,7 @@ internal class TreeManager
 		if (string.IsNullOrWhiteSpace(Paths.GameDirectory) || !Directory.Exists(Paths.GameDirectory))
 		{
 			_ = UIThreadManager.ShowMessage(
-				"Please set your 'The Witcher 3 Wild Hunt' game directory in the Options screen.");
+				"Please set the game folder of The Witcher 3 in Options.");
 			return;
 		}
 
@@ -847,7 +847,7 @@ internal class TreeManager
 			merge.GetMergedFile() + "\n\n";
 
 		msg += merge.IsBundleContent
-			? "Remove from Merges list & repack merged bundle?"
+			? "Remove from the Merges list and repack the merged bundle?"
 			: "Remove from Merges list?";
 
 		return DialogResult.Yes == UIThreadManager.ShowMessage(
@@ -878,7 +878,7 @@ internal class TreeManager
 			merge.GetModFile(modName) + "\n\n";
 
 		msg += merge.IsBundleContent
-			? "Delete this affected merge & repack the merged bundle?"
+			? "Delete this affected merge and repack the merged bundle?"
 			: "Delete this affected merge?";
 
 		return DialogResult.Yes == UIThreadManager.ShowMessage(
@@ -930,7 +930,7 @@ internal class TreeManager
 			string.Join("\n            ", merge.Mods.Select(mod => mod.Name)) + "\n\n";
 
 		msg += merge.IsBundleContent
-			? "Delete this affected merge & repack the merged bundle?"
+			? "Delete this affected merge and repack the merged bundle?"
 			: "Delete this affected merge?";
 
 		msg += "\n\nYes:           Recommended\nNo:            Not recommended, the merges may be outdated\nCancel:    No, and never perform this check again";

@@ -135,7 +135,7 @@ internal partial class CustomLoadOrder : IDisposable
 				string[] parts = trimmedLine.Split('=');
 				if (parts.Length != 2)
 				{
-					ShowWarningForMalformedFile($"Unrecognized setting or value for mod {currentMod.ModName},on line:\n\n{line}");
+					ShowWarningForMalformedFile($"Unrecognized setting or value for mod {currentMod.ModName}, on line:\n\n{line}");
 					return false;
 				}
 
@@ -146,7 +146,7 @@ internal partial class CustomLoadOrder : IDisposable
 				{
 					if (!int.TryParse(value, out int priority) || TopPriority > priority || priority > BottomPriority)
 					{
-						ShowWarningForMalformedFile($"The priority for mod {currentMod.ModName} isn't within the valid range of {TopPriority} to {BottomPriority}:\n\n{line}");
+						ShowWarningForMalformedFile($"The Priority (load order number) for mod {currentMod.ModName} isn't within the valid range of {TopPriority} to {BottomPriority}:\n\n{line}");
 						return false;
 					}
 
@@ -156,7 +156,7 @@ internal partial class CustomLoadOrder : IDisposable
 				{
 					if (!value.Equals("0", StringComparison.Ordinal) && !value.Equals("1", StringComparison.Ordinal))
 					{
-						ShowWarningForMalformedFile($"The 'Enabled' setting for mod {currentMod.ModName} isn't within the valid range of 0 or 1:\n\n{line}");
+						ShowWarningForMalformedFile($"The 'Enabled' setting for mod {currentMod.ModName} must be 0 or 1:\n\n{line}");
 						return false;
 					}
 
@@ -169,7 +169,7 @@ internal partial class CustomLoadOrder : IDisposable
 				}
 				else
 				{
-					ShowWarningForMalformedFile($"Unrecognized setting for mod {currentMod.ModName},on line:\n\n{line}");
+					ShowWarningForMalformedFile($"Unrecognized setting for mod {currentMod.ModName}, on line:\n\n{line}");
 					return false;
 				}
 			}

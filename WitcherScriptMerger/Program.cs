@@ -134,7 +134,7 @@ internal static partial class Program
 	/// </summary>
 	private static void SendSignal()
 	{
-		_ = MessageBox.Show("Another instance of SM-FAE is already running. Trying to switch to it now, but this won't work if it's minimized. If so, switch to it manually, or check Task Manager if an old WitcherScriptMerger.exe process is still running.\n\nIf you see this popup while no other instance is active, please report this as a bug!", "Another SM-FAE instance is running", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+		_ = MessageBox.Show("Another instance of SM-FAE is already running. Trying to switch to it now, but this won't work if it's minimized. If so, switch to it manually, or check Task Manager if an old WitcherScriptMerger.exe process is still running.\n\nIf you see this popup while no other instance is active, please report this as a bug.", "Another SM-FAE Instance Is Running", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 
 		using NamedPipeClientStream client = new(pipeName);
 		try
@@ -164,7 +164,7 @@ internal static partial class Program
 	internal static MessageForm MessageFrm;
 	internal static ThemeManager ThemeMngr;
 
-	internal static string AppName = "Script Merger: Fresh & Automated Edition";
+	internal static string AppName = "Script Merger - Fresh and Automated Edition (SM-FAE)";
 
 	#region Titlebar Follow Windows Theming
 	// Title bar follow Windows Dark/Ligh theme
@@ -340,7 +340,7 @@ internal static partial class Program
 	{
 		if (!Directory.Exists(dirPath))
 		{
-			_ = MainFrm.uiThreadManager.ShowMessage("Can't find directory: " + dirPath);
+			_ = MainFrm.uiThreadManager.ShowMessage("Can't find folder: " + dirPath);
 			return false;
 		}
 

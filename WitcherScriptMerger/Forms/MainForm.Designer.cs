@@ -467,7 +467,7 @@ namespace WitcherScriptMerger.Forms
 			MinimumSize = new Size(970, 600);
 			Name = "MainForm";
 			StartPosition = FormStartPosition.CenterScreen;
-			Text = "Script Merger: Fresh & Automated Edition";
+			Text = "Script Merger - Fresh and Automated Edition (SM-FAE)";
 			FormClosing += MainForm_FormClosing;
 			Load += MainForm_Load;
 			Shown += MainForm_Shown;

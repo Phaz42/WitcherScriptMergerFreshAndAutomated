@@ -13,7 +13,7 @@ internal sealed class KeyboardShortcutsForm : BaseForm
 {
 	private static readonly (string Heading, string Note, (string Key, string Action)[] Keys)[] Groups =
 	[
-		("Main window", "Letters and Esc: not while typing in a search box", [
+		("Main Window", "Letters and Esc: not while typing in a search box", [
 			("F5", "Refresh the conflicts list"),
 			("F6", "Refresh the merges list"),
 			("C", "Create the selected merges"),
@@ -27,7 +27,7 @@ internal sealed class KeyboardShortcutsForm : BaseForm
 			("Ctrl+D", "Deselect everything in the list"),
 			("Ctrl+F", "Search the list"),
 		]),
-		("Search box", null, [
+		("Search Box", null, [
 			("Enter", "Search now"),
 			("Esc", "Clear the search; when it's empty, back to the list"),
 		]),

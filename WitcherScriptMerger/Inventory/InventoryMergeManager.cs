@@ -75,16 +75,16 @@ internal class InventoryMergeManager
 
 	private bool ConfirmRemoveOldMerges()
 	{
-		string removeOldMergesMsg = $"Old merges (not registered in the Script Merger inventory) were found " +
-			$"in the \"merged mods\" directory:\n\n{Paths.RetrieveMergedModDir()}\n\nOld merges should be removed. " +
-			"This is safe to do, unless you have made manual changes in this directory. Regular (non-manual) " +
-			"merges can be re-created automatically. " +
-			"If you do not remove the old merges, Script Merger will close.\n\n" +
+		string removeOldMergesMsg = $"Old merges, not registered in SM-FAE's inventory, were found " +
+			$"in the Merged Mod folder:\n\n{Paths.RetrieveMergedModDir()}\n\nOld merges should be removed. " +
+			"This is safe, unless you have made manual changes in this folder. Regular merges " +
+			"can be created again automatically. " +
+			"If you don't remove the old merges, SM-FAE will close.\n\n" +
 			"Remove the old merges now?";
 
 		return DialogResult.Yes == uiThreadManager.ShowMessage(
 			removeOldMergesMsg,
-			"Remove old merges?",
+			"Remove Old Merges?",
 			MessageBoxButtons.YesNo,
 			MessageBoxIcon.Question);
 	}
@@ -102,8 +102,8 @@ internal class InventoryMergeManager
 		catch (Exception Ex)
 		{
 			_ = uiThreadManager.ShowMessage($"Removing old merges failed:\n\n{Ex}\n\n" +
-				"Script Merger will now close. Try to remove this directory manually:\n\n" +
-				$"{Paths.RetrieveMergedModDir()}", "Removing old merges failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				"SM-FAE will now close. Try to remove this folder manually:\n\n" +
+				$"{Paths.RetrieveMergedModDir()}", "Removing Old Merges Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
 			return false;
 		}
 #pragma warning restore CA1031 // Do not catch general exception types
@@ -111,9 +111,9 @@ internal class InventoryMergeManager
 
 	internal async Task<bool> RefreshMergeInventory()
 	{
-		progressManager.InitializeProgressScreen("Checking existing Merges and Merged Mod Directory", ProgressBarStyle.Continuous);
+		progressManager.InitializeProgressScreen("Checking Existing Merges and the Merged Mod Folder", ProgressBarStyle.Continuous);
 
-		progressManager.lblProgressCurrentAction.Text = "Checking existing Merges and Merged Mod Directory";
+		progressManager.lblProgressCurrentAction.Text = "Checking existing merges and the Merged Mod folder";
 		progressManager.progressBar.Value = 10;
 		if (!GetIsInventoryInOrder())
 			AutoExit(null);
@@ -142,24 +142,23 @@ internal class InventoryMergeManager
 
 		if (Settings.Get<bool>("CheckDuplicatePrios"))
 		{
-			progressManager.lblProgressCurrentAction.Text = "Checking for duplicate priorities in Load Order";
+			progressManager.lblProgressCurrentAction.Text = "Checking for duplicate load order numbers";
 			if (LoadOrderValidator.CheckForDuplicatePrios(Program.LoadOrder).Count > 0)
 			{
 				string dupes = string.Empty;
 				foreach (KeyValuePair<int, string> mod in LoadOrderValidator.CheckForDuplicatePrios(Program.LoadOrder))
 				{
-					dupes += $"Prio {mod.Key}: {mod.Value}\r\n";
+					dupes += $"{mod.Key}: {mod.Value}\r\n";
 				}
 
-				string msg = $"Mods with duplicate priorities were found in your mods.settings file. This can cause " +
-					$"unexpected behavior and you have no real control over the order those mods are loaded in. " +
-					$"Because {AppName} (SM-FAE) has no way to determine which of the duplicates should get the highest priority, " +
-					$"you should resolve this manually by editing the following file, before making any priority changes " +
-					$"with SM-FAE:\r\n\r\n{Program.LoadOrder.FilePath}\r\n\r\n" +
+				string msg = $"Some mods share a load order number (Priority) in your mods.settings file. Then the game " +
+					$"decides their order itself, and you have no real control over which of them loads first. " +
+					$"SM-FAE can't tell which of them should come first, so resolve this by editing the following file " +
+					$"before you change any load order numbers in SM-FAE:\r\n\r\n{Program.LoadOrder.FilePath}\r\n\r\n" +
 					$"Do you want to open the mods.settings file now?\r\n\r\n\r\n" +
-					$"The mods with duplicate priorities are:\r\n\r\n{dupes}\r\n";
+					$"The mods that share a load order number:\r\n\r\n{dupes}\r\n";
 
-				MessageFrm.Text = "Duplicate mod priorities detected";
+				MessageFrm.Text = "Duplicate Load Order Numbers";
 				MessageFrm.Message = msg;
 				if (uiThreadManager.ShowModal(MessageFrm) == DialogResult.Yes)
 				{ _ = TryOpenFile(Program.LoadOrder.FilePath); }
@@ -280,8 +279,8 @@ internal class InventoryMergeManager
 		int validFileNodeCount = treeManager.ConflictsTree.FileNodes.Count(node => node.GetTreeNodes().Count(modNode => modNode.Checked) > 1);
 		if (validFileNodeCount > 0)
 			return true;
-		_ = uiThreadManager.ShowMessage("You have not selected any files to merge!",
-			"No files selected",
+		_ = uiThreadManager.ShowMessage("You haven't selected any files to merge.",
+			"No Files Selected",
 			MessageBoxButtons.OK,
 			MessageBoxIcon.Warning);
 		return false;
@@ -292,8 +291,8 @@ internal class InventoryMergeManager
 		int selectedCount = treeManager.MergesTree.FileNodes.Count(node => node.Checked);
 		if (selectedCount > 0)
 			return true;
-		_ = uiThreadManager.ShowMessage("You have not selected any merges to delete!",
-			"No files selected",
+		_ = uiThreadManager.ShowMessage("You haven't selected any merges to delete.",
+			"No Merges Selected",
 			MessageBoxButtons.OK,
 			MessageBoxIcon.Warning);
 		return false;
@@ -392,8 +391,8 @@ internal class InventoryMergeManager
 			string[] dirPaths = Directory.GetDirectories(mergeModPath, "*", SearchOption.AllDirectories)
 				.OrderByDescending(dir => dir.Length).ToArray();
 #pragma warning restore IDE0305 // Simplify collection initialization
-			string errorMsg = "Merges have been removed successfully, but we were unable to automatically "
-							+ $"remove the generated merged mod folder: {mergeModPath}; please remove the folder manually.";
+			string errorMsg = "The merges were removed, but SM-FAE couldn't remove the Merged Mod folder: "
+							+ $"{mergeModPath}. Please remove the folder manually.";
 			Array.ForEach(filePaths, filePath =>
 			{
 #pragma warning disable CA1031 // Do not catch general exception types

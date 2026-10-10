@@ -44,7 +44,7 @@ internal partial class MergeTree : SMTree
 		// contextOpenMergedFileDir
 		_contextOpenMergedFileDir.Name = "contextOpenMergedFileDir";
 		_contextOpenMergedFileDir.Size = new Size(225, 22);
-		_contextOpenMergedFileDir.Text = "Open Merged File Directory";
+		_contextOpenMergedFileDir.Text = "Open Merged File Folder";
 		_contextOpenMergedFileDir.ToolTipText = "Opens the location of the merged version of the file";
 		_contextOpenMergedFileDir.Click += ContextOpenDirectory_Click;
 

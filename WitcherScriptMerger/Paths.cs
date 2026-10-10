@@ -115,9 +115,9 @@ internal static class Paths
 		if (!Directory.Exists(ScriptsDirectory))
 		{
 			_ = MainFrm.uiThreadManager.ShowMessage(
-				$"Can't find the Scripts directory at the expected location: {ScriptsDirectory}\n\n" +
-				"This indicates that either the wrong game directory is selected or the game isn't installed correctly. " +
-				"Select the correct game directory via the Options menu, verify game files through Steam/GOG, " +
+				$"Can't find the Scripts folder at the expected location: {ScriptsDirectory}\n\n" +
+				"This indicates that either the wrong game folder is selected or the game isn't installed correctly. " +
+				"Select the correct game folder in Options, verify the game files in Steam, GOG Galaxy or Epic, " +
 				"or reinstall the game.");
 			return false;
 		}
@@ -134,9 +134,9 @@ internal static class Paths
 		if (!Directory.Exists(BundlesDirectory))
 		{
 			_ = MainFrm.uiThreadManager.ShowMessage(
-				$"Can't find the \"content\" directory at the expected location: {BundlesDirectory}\n\n" +
-				"This indicates that either the wrong game directory is selected or the game isn't installed correctly. " +
-				"Select the correct game directory via the Options menu, verify game files through Steam/GOG, " +
+				$"Can't find the \"content\" folder at the expected location: {BundlesDirectory}\n\n" +
+				"This indicates that either the wrong game folder is selected or the game isn't installed correctly. " +
+				"Select the correct game folder in Options, verify the game files in Steam, GOG Galaxy or Epic, " +
 				"or reinstall the game.");
 			return false;
 		}

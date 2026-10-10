@@ -425,21 +425,21 @@ internal abstract partial class SMTree : TreeView, IDisposable
 		// contextOpenModFileDir
 		_contextOpenModFileDir.Name = "contextOpenModFileDir";
 		_contextOpenModFileDir.Size = new Size(225, 22);
-		_contextOpenModFileDir.Text = "Open Mod File Directory";
+		_contextOpenModFileDir.Text = "Open Mod File Folder";
 		_contextOpenModFileDir.ToolTipText = "Opens the location of this mod's version of the file";
 		_contextOpenModFileDir.Click += ContextOpenDirectory_Click;
 
 		// contextOpenModBundleDir
 		_contextOpenModBundleDir.Name = "contextOpenModBundleDir";
 		_contextOpenModBundleDir.Size = new Size(225, 22);
-		_contextOpenModBundleDir.Text = "Open Mod Bundle Directory";
+		_contextOpenModBundleDir.Text = "Open Mod Bundle Folder";
 		_contextOpenModBundleDir.ToolTipText = "Opens the location of this mod's bundle file";
 		_contextOpenModBundleDir.Click += ContextOpenDirectory_Click;
 
 		// contextOpenVanillaFileDir
 		_contextOpenVanillaFileDir.Name = "contextOpenVanillaFileDir";
 		_contextOpenVanillaFileDir.Size = new Size(225, 22);
-		_contextOpenVanillaFileDir.Text = "Open Vanilla File Directory";
+		_contextOpenVanillaFileDir.Text = "Open Vanilla File Folder";
 		_contextOpenVanillaFileDir.ToolTipText = "Opens the location of the unmodded version of the file";
 		_contextOpenVanillaFileDir.Click += ContextOpenVanillaDirectory_Click;
 

@@ -123,7 +123,7 @@ internal static class KDiff3
 				reason = KDiff3Reason.UpdatedMod;
 				_ = MainFrm.uiThreadManager.ShowMessage(
 					"You are merging an updated mod file into a merge created with a previous version of the file.\n\n" +
-					"You should carefully inspect this merge, because KDiff3's auto-solving behavior KEEPS changes from the previous version of the mod file that have been REMOVED in the new version.",
+					"Check this merge carefully: KDiff3's automatic merging keeps changes the previous version of the mod file made, even ones the new version removed.",
 					"Warning",
 					System.Windows.Forms.MessageBoxButtons.OK,
 					System.Windows.Forms.MessageBoxIcon.Warning);

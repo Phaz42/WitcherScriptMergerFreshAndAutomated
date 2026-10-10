@@ -304,14 +304,14 @@ internal partial class MainForm : BaseForm
 		// asked for again here: the Options window, where the message points, cannot be reached once the program exits.
 		if (!Paths.ValidateAllDirectories())
 		{
-			_ = uiThreadManager.ShowMessage("In the following screen, please select your main Witcher 3 game directory.",
-				"Select Witcher 3 game directory", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			_ = uiThreadManager.ShowMessage("In the following window, please select your main Witcher 3 game folder.",
+				"Select the Witcher 3 Game Folder", MessageBoxButtons.OK, MessageBoxIcon.Information);
 			OptionsFrm.SelectGameDirectory();
 			if (!Paths.ValidateAllDirectories())
 				AutoExit(null);
 		}
 		if (!Paths.ValidateDependencyPaths())
-			AutoExit(null, "(Some) dependencies are missing. Restart the application and set the right dependency paths. Alternatively, download the SM-FAE \"FULL\" package, which includes all dependencies, and install that.");
+			AutoExit(null, "Some dependencies are missing. Restart SM-FAE and set their paths in Dependency Locations. Or download the SM-FAE Full package, which includes all dependencies, and install that.");
 
 		// Check inventory order
 		if (!inventoryMergeManager.GetIsInventoryInOrder())
@@ -522,15 +522,15 @@ internal partial class MainForm : BaseForm
 
 
 		// Open Submenu
-		ToolStripMenuItem mnOpenLoadOrderFile = new("Open Load Order File Directory") { Name = "mnOpenLoadOrderFile" };
+		ToolStripMenuItem mnOpenLoadOrderFile = new("Open Load Order File Folder") { Name = "mnOpenLoadOrderFile" };
 		mnOpenLoadOrderFile.Click += MnOpenLoadOrderFile_Click;
 		_ = openMenu.Items.Add(mnOpenLoadOrderFile);
 
-		ToolStripMenuItem mnOpenMergedModDir = new("Open Merged Mod Directory") { Name = "mnOpenMergedModDir" };
+		ToolStripMenuItem mnOpenMergedModDir = new("Open Merged Mod Folder") { Name = "mnOpenMergedModDir" };
 		mnOpenMergedModDir.Click += MnOpenMergedModDir_Click;
 		_ = openMenu.Items.Add(mnOpenMergedModDir);
 
-		ToolStripMenuItem mnOpenBundleContentDir = new("Open Merged Bundle Content Directory") { Name = "mnOpenBundleContentDir" };
+		ToolStripMenuItem mnOpenBundleContentDir = new("Open Merged Bundle Content Folder") { Name = "mnOpenBundleContentDir" };
 		mnOpenBundleContentDir.Click += MnOpenBundleContentDir_Click;
 		_ = openMenu.Items.Add(mnOpenBundleContentDir);
 
@@ -548,7 +548,7 @@ internal partial class MainForm : BaseForm
 		_ = mainMenu.Items.Add(mnDependencies);
 
 		// Repack
-		ToolStripMenuItem mnExportConflicts = new("Export conflicts to CSV file") { Name = "mnExportConflicts" };
+		ToolStripMenuItem mnExportConflicts = new("Export Conflicts to CSV File") { Name = "mnExportConflicts" };
 		mnExportConflicts.Click += MnExportConflicts_Click;
 		_ = mainMenu.Items.Add(mnExportConflicts);
 
@@ -571,12 +571,12 @@ internal partial class MainForm : BaseForm
 		_ = mainMenu.Items.Add(sep);
 
 		// Exit DX11
-		ToolStripMenuItem mnExitAndPlayDX11 = new("Exit and launch game (DX11)") { Name = "mnExitAndPlayDX11" };
+		ToolStripMenuItem mnExitAndPlayDX11 = new("Exit and Launch Game (DX11)") { Name = "mnExitAndPlayDX11" };
 		mnExitAndPlayDX11.Click += MnExitAndPlayDX11_Click;
 		_ = mainMenu.Items.Add(mnExitAndPlayDX11);
 
 		// Exit DX12
-		ToolStripMenuItem mnExitAndPlayDX12 = new("Exit and launch game (DX12)") { Name = "mnExitAndPlayDX12" };
+		ToolStripMenuItem mnExitAndPlayDX12 = new("Exit and Launch Game (DX12)") { Name = "mnExitAndPlayDX12" };
 		mnExitAndPlayDX12.Click += MnExitAndPlayDX12_Click;
 		_ = mainMenu.Items.Add(mnExitAndPlayDX12);
 
@@ -642,7 +642,7 @@ internal partial class MainForm : BaseForm
 	{
 		if (!Directory.Exists(Paths.RetrieveMergedModDir()))
 		{
-			_ = MessageBox.Show($"The Merged Mods directory ({Paths.RetrieveMergedModDir()}) does not exist. Did you create any merges yet?");
+			_ = MessageBox.Show($"The Merged Mod folder ({Paths.RetrieveMergedModDir()}) doesn't exist. Have you created any merges yet?");
 			return;
 		}
 
@@ -673,7 +673,7 @@ internal partial class MainForm : BaseForm
 		if (TryOpenFile(Paths.GameExeDX11))
 			Environment.Exit(0);
 		else
-			_ = MessageBox.Show($"DX11 game executable not found at expected location:\n\n{Paths.GameExeDX11}", "Game executable not found", MessageBoxButtons.OK);
+			_ = MessageBox.Show($"DX11 game executable not found at the expected location:\n\n{Paths.GameExeDX11}", "Game Executable Not Found", MessageBoxButtons.OK);
 	}
 
 	private void MnExitAndPlayDX12_Click(object sender, EventArgs e)
@@ -681,7 +681,7 @@ internal partial class MainForm : BaseForm
 		if (TryOpenFile(Paths.GameExeDX12))
 			Environment.Exit(0);
 		else
-			_ = MessageBox.Show($"DX12 game executable not found at expected location:\n\n{Paths.GameExeDX12}", "Game executable not found", MessageBoxButtons.OK);
+			_ = MessageBox.Show($"DX12 game executable not found at the expected location:\n\n{Paths.GameExeDX12}", "Game Executable Not Found", MessageBoxButtons.OK);
 	}
 
 	private void MnExit_Click(object sender, EventArgs e) => AutoExit();

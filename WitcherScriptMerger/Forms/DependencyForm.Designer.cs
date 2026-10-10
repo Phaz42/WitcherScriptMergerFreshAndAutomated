@@ -88,7 +88,7 @@
             lblKDiff3Msg.Name = "lblKDiff3Msg";
             lblKDiff3Msg.Size = new System.Drawing.Size(521, 19);
             lblKDiff3Msg.TabIndex = 4;
-            lblKDiff3Msg.Text = "Script Merger uses this open-source tool by Joachim Eibl to create merged text files.";
+            lblKDiff3Msg.Text = "SM-FAE uses this open-source tool by Joachim Eibl to create merged text files.";
             // 
             // lblKDiff3Path
             // 
@@ -184,7 +184,7 @@
             lblBmsMsg.Name = "lblBmsMsg";
             lblBmsMsg.Size = new System.Drawing.Size(567, 19);
             lblBmsMsg.TabIndex = 4;
-            lblBmsMsg.Text = "Script Merger uses this open-source tool by Luigi Auriemma to scan && unpack .bundle files.";
+            lblBmsMsg.Text = "SM-FAE uses this open-source tool by Luigi Auriemma to scan and unpack .bundle files.";
             // 
             // lblBmsPath
             // 
@@ -354,7 +354,7 @@
             lblWccLiteMsg.Name = "lblWccLiteMsg";
             lblWccLiteMsg.Size = new System.Drawing.Size(524, 19);
             lblWccLiteMsg.TabIndex = 4;
-            lblWccLiteMsg.Text = "Script Merger uses this official CDPR tool to pack merged XML files into .bundle files.";
+            lblWccLiteMsg.Text = "SM-FAE uses this official CDPR tool to pack merged XML files into .bundle files.";
             // 
             // lblWccLitePath
             // 

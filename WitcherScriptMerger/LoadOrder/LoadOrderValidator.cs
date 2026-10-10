@@ -66,8 +66,8 @@ internal static class LoadOrderValidator
 	private static DialogResult PromptToPrioritizeMergedMod(string modsSettingsPath)
 	{
 		DialogResult choice = MessageBox.Show(
-			$"Detected custom load order in {modsSettingsPath}, but merged files aren't configured to load first.\n\n" +
-			"Would you like Script Merger to modify the load order so that your merged files have top priority?\n\n" +
+			$"SM-FAE found a custom load order in {modsSettingsPath}, but the Merged Mod isn't set to load first.\n\n" +
+			"Should SM-FAE change the load order so that the Merged Mod loads first?\n\n" +
 			"Yes:       Recommended\nNo:        Not recommended, the merged scripts may not get loaded\nCancel:  No, and never perform this check again",
 			"Custom Load Order Problem",
 			MessageBoxButtons.YesNoCancel,

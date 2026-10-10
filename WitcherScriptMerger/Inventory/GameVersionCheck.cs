@@ -100,7 +100,7 @@ internal static class GameVersionCheck
 		TaskDialogPage page = new()
 		{
 			Caption = "Made for an Older Game Version",
-			Heading = "Made for an older game version",
+			Heading = "Made for an Older Game Version",
 			Text = text,
 			Icon = TaskDialogIcon.Warning,
 			AllowCancel = true

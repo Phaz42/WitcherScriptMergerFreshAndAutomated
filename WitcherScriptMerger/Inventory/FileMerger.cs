@@ -355,7 +355,7 @@ internal partial class FileMerger : IDisposable
 
 	private FileInfo MergeText(Merge merge, MergeSource source1, MergeSource source2, bool isBundled)
 	{
-		ProgressInfo.CurrentAction = $"Merging {source1.Name} && {source2.Name} — waiting for KDiff3 to close";
+		ProgressInfo.CurrentAction = $"Merging {source1.Name} and {source2.Name} — waiting for KDiff3 to close";
 
 		// The mods already in this file's merge, for the KDiff3 guide: when the first side is that merge, they are what the
 		// second mod conflicts with.
@@ -397,9 +397,9 @@ internal partial class FileMerger : IDisposable
 	private static bool ConfirmRemainingConflict(string mergedModName)
 	{
 		return DialogResult.Yes == MainFrm.uiThreadManager.ShowMessage(
-			"There will still be a conflict if you use the merged mod name " + mergedModName + ".\n\n" +
+			"There will still be a conflict if you use the Merged Mod name " + mergedModName + ".\n\n" +
 				"The Witcher 3 loads mods in case-insensitive ASCII order, " +
-				"so this merged mod name will load after one of the original mods, " +
+				"so a Merged Mod with this name will load after one of the original mods, " +
 				"and the merged file will be ignored.\n\n" +
 				"Use this name anyway?",
 			"Merged Mod Name Conflict",
@@ -412,7 +412,7 @@ internal partial class FileMerger : IDisposable
 		// Auto Overwrite old merges
 		return Settings.Get<bool>("AutoOverwriteOldMerges")
 			|| DialogResult.Yes == MainFrm.uiThreadManager.ShowMessage(
-			"The output file below already exists! Overwrite?\n\n" + outputPath,
+			"The output file below already exists. Overwrite it?\n\n" + outputPath,
 			"Overwrite?",
 			MessageBoxButtons.YesNo,
 			MessageBoxIcon.Exclamation);
@@ -629,13 +629,13 @@ internal partial class FileMerger : IDisposable
 
 		try
 		{
-			ProgressInfo.CurrentAction = "Deleting empty Merged Bundle Content directories";
+			ProgressInfo.CurrentAction = "Deleting empty Merged Bundle Content folders";
 			DeleteEmptyDirectories(Paths.MergedBundleContent);
 		}
 		catch (Exception ex)
 		{
 			_ = MainFrm.uiThreadManager.ShowMessage(
-				"Non-critical error: Failed to delete empty Merged Bundle Content directories.\n\n" + ex.Message,
+				"Non-critical error: Failed to delete empty Merged Bundle Content folders.\n\n" + ex.Message,
 				"Error",
 				MessageBoxButtons.OK,
 				MessageBoxIcon.Warning);

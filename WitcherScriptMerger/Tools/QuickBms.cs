@@ -61,7 +61,7 @@ internal static class QuickBms
 					"Without this mod's copy, its changes to this file can't be merged. Nothing has been changed.\n\n" +
 					"The mod's bundle may be damaged. Try reinstalling the mod, or ask its author.";
 
-			MainFrm.uiThreadManager.ShowErrorWithDetails("Couldn't unpack a file", text, details, "Couldn't Unpack File");
+			MainFrm.uiThreadManager.ShowErrorWithDetails("Couldn't Unpack a File", text, details, "Couldn't Unpack File");
 			return 1;
 		}
 

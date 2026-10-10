@@ -65,7 +65,7 @@
             btnOpenContentDir.Name = "btnOpenContentDir";
             btnOpenContentDir.Size = new System.Drawing.Size(123, 32);
             btnOpenContentDir.TabIndex = 2;
-            btnOpenContentDir.Text = "Open Directory";
+            btnOpenContentDir.Text = "Open Folder";
             btnOpenContentDir.UseVisualStyleBackColor = false;
             btnOpenContentDir.Click += BtnOpenContentDir_Click;
             // 
@@ -107,7 +107,7 @@
             btnOpenBundleDir.Name = "btnOpenBundleDir";
             btnOpenBundleDir.Size = new System.Drawing.Size(123, 32);
             btnOpenBundleDir.TabIndex = 0;
-            btnOpenBundleDir.Text = "Open Directory";
+            btnOpenBundleDir.Text = "Open Folder";
             btnOpenBundleDir.UseVisualStyleBackColor = false;
             btnOpenBundleDir.Click += BtnOpenBundleDir_Click;
             // 
@@ -120,7 +120,7 @@
             lblPackedBundle.Name = "lblPackedBundle";
             lblPackedBundle.Size = new System.Drawing.Size(216, 28);
             lblPackedBundle.TabIndex = 8;
-            lblPackedBundle.Text = "Packed new bundle file!";
+            lblPackedBundle.Text = "New Bundle File Packed";
             // 
             // btnOK
             // 
