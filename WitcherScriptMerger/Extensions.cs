@@ -50,7 +50,9 @@ internal static partial class Extensions
 
 	internal static void SetFontStyle(this TreeNode node, FontStyle style)
 	{
-		Font currFont = node.NodeFont ?? Control.DefaultFont;
+		// From the list's own font when the node has none, so a struck-through name is the size of the others: WinForms'
+		// default font is smaller.
+		Font currFont = node.NodeFont ?? node.TreeView?.Font ?? Control.DefaultFont;
 		node.NodeFont = new Font(currFont, style);
 	}
 
