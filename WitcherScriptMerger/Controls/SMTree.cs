@@ -74,6 +74,10 @@ internal abstract partial class SMTree : TreeView, IDisposable
 		// closing with a long list expanded, the list gray meanwhile.
 		if (disposing)
 			_checkBoxImages?.Dispose();
+
+		// The node fonts' handles likewise, once no paint can use them.
+		if (disposing)
+			DeleteFontHandles();
 	}
 
 	public new void Dispose()
@@ -162,6 +166,9 @@ internal abstract partial class SMTree : TreeView, IDisposable
 	// screen after the tree, they blinked on every repaint - and each hovered row's color fade repaints.
 	protected override void WndProc(ref Message m)
 	{
+		if (m.Msg == WmReflectNotify && IsHandleCreated && SelectOwnFont(ref m))
+			return;
+
 		if (m.Msg == WmEraseBackground && IsHandleCreated)
 		{
 			m.Result = 1;  // the buffer below is cleared to the background instead
@@ -179,6 +186,96 @@ internal abstract partial class SMTree : TreeView, IDisposable
 
 	private const int WmPaint = 0x000F;
 	private const int WmEraseBackground = 0x0014;
+	private const int WmReflectNotify = 0x2000 + 0x004E;  // WM_NOTIFY, reflected to the control that sent it
+
+	#region Node fonts
+
+	// A node with a font of its own - a category heading, a disabled mod struck through - is drawn in it by handing Windows
+	// that font as the node is drawn. WinForms does that by making a new font handle on every repaint of the node, which only
+	// the garbage collector frees: each heading on screen cost one handle per repaint, and a hovered row's fade repaints
+	// many times a second. This does what WinForms does at that point, with one handle per font for the tree's lifetime.
+	private readonly Dictionary<Font, IntPtr> _fontHandles = [];
+
+	private const int NmCustomDraw = -12;
+	private const int CddsItemPrepaint = 0x00010001;
+	private const int CdrfNewFont = 0x00000002;
+	private const uint CdisSelected = 0x0001, CdisGrayed = 0x0002, CdisDisabled = 0x0004, CdisHot = 0x0040;
+
+	// NMHDR is a structure of its own inside NMTVCUSTOMDRAW, so the fields after it start at its padded size.
+	[StructLayout(LayoutKind.Sequential)]
+	private struct NotifyHeader  // NMHDR
+	{
+		internal IntPtr HwndFrom;
+		internal UIntPtr IdFrom;
+		internal int Code;
+	}
+
+	[StructLayout(LayoutKind.Sequential)]
+	private struct TreeViewCustomDraw  // NMTVCUSTOMDRAW
+	{
+		internal NotifyHeader Header;
+		internal int DrawStage;
+		internal IntPtr Hdc;
+		internal int Left, Top, Right, Bottom;
+		internal UIntPtr ItemSpec;
+		internal uint ItemState;
+		internal IntPtr ItemParam;
+		internal int TextColor;
+		internal int TextBackColor;
+		internal int Level;
+	}
+
+	[LibraryImport("gdi32.dll")]
+	private static partial IntPtr SelectObject(IntPtr hdc, IntPtr gdiObject);
+
+	[LibraryImport("gdi32.dll")]
+	[return: MarshalAs(UnmanagedType.Bool)]
+	private static partial bool DeleteObject(IntPtr gdiObject);
+
+	// As WinForms' TreeView.CustomDraw for an item about to be drawn, for a node with a font of its own: its colors unless
+	// it is drawn selected, grayed, disabled or hot, and its font. False for anything else, which WinForms handles.
+	private unsafe bool SelectOwnFont(ref Message m)
+	{
+		TreeViewCustomDraw* draw = (TreeViewCustomDraw*)m.LParam;
+		if (draw->Header.Code != NmCustomDraw || draw->DrawStage != CddsItemPrepaint)
+			return false;
+
+		TreeNode node = TreeNode.FromHandle(this, (IntPtr)(nint)draw->ItemSpec);
+		if (node?.NodeFont == null)
+			return false;
+
+		if ((draw->ItemState & (CdisSelected | CdisGrayed | CdisDisabled | CdisHot)) == 0)
+		{
+			if (!node.ForeColor.IsEmpty)
+				draw->TextColor = ColorTranslator.ToWin32(node.ForeColor);
+			if (!node.BackColor.IsEmpty)
+				draw->TextBackColor = ColorTranslator.ToWin32(node.BackColor);
+		}
+
+		// Fonts are equal by what they are, not by instance: each refresh makes its headings' fonts anew.
+		if (!_fontHandles.TryGetValue(node.NodeFont, out IntPtr font))
+		{
+			font = node.NodeFont.ToHfont();
+			_fontHandles.Add((Font)node.NodeFont.Clone(), font);
+		}
+
+		_ = SelectObject(draw->Hdc, font);
+		m.Result = CdrfNewFont;
+		return true;
+	}
+
+	private void DeleteFontHandles()
+	{
+		foreach ((Font font, IntPtr handle) in _fontHandles)
+		{
+			_ = DeleteObject(handle);
+			font.Dispose();
+		}
+
+		_fontHandles.Clear();
+	}
+
+	#endregion
 
 	private void PaintBuffered()
 	{
