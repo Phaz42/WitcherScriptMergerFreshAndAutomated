@@ -124,6 +124,8 @@ internal class ProgressManager
 			healthLabel.Visible = false;
 		}
 
+		mainForm.UpdateProblemsBar(health);
+
 		// Update merge status
 		lblStatusLeft3.Text = string.Format(
 			CultureInfo.InvariantCulture,

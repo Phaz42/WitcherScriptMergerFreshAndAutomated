@@ -202,7 +202,7 @@ internal class UIThreadManager
 			mainForm.pbNoConflicts.SizeMode = PictureBoxSizeMode.Zoom;
 			mainForm.pbNoConflicts.Margin = new Padding(0);
 			mainForm.tlpMain.SetColumnSpan(mainForm.pbNoConflicts, 2);
-			mainForm.tlpMain.Controls.Add(mainForm.pbNoConflicts, 1, 1);
+			mainForm.tlpMain.Controls.Add(mainForm.pbNoConflicts, 1, MainForm.ListsRow);
 			mainForm.lblConflicts.Text = "No Conflicts!";
 		}
 		else
@@ -210,7 +210,7 @@ internal class UIThreadManager
 			// Show conflicts tree
 			mainForm.tlpMain.Controls.Remove(mainForm.pbNoConflicts);
 			mainForm.tlpMain.SetColumnSpan(mainForm.treConflicts, 2);
-			mainForm.tlpMain.Controls.Add(mainForm.treConflicts, 1, 1);
+			mainForm.tlpMain.Controls.Add(mainForm.treConflicts, 1, MainForm.ListsRow);
 			mainForm.lblConflicts.Text = "Conflicts";
 		}
 	}

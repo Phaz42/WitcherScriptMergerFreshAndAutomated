@@ -1,14 +1,17 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
 using WitcherScriptMerger.Controls;
 using WitcherScriptMerger.Events;
+using WitcherScriptMerger.FileIndex;
 using WitcherScriptMerger.Inventory;
 using WitcherScriptMerger.Theming;
 using WitcherScriptMerger.UI;
@@ -39,6 +42,11 @@ internal partial class MainForm : BaseForm
 
 	// The status bar's link to the mod check's report (ModHealth); shown when it found problems.
 	internal ToolStripStatusLabel lblStatusHealth;
+
+	// The same, made hard to miss: the bar above the lists (UpdateProblemsBar), in a row of the main layout of its own.
+	internal ProblemsBar problemsBar;
+	internal const int ProblemsBarRow = 1;
+	internal const int ListsRow = 2;
 	internal Label lblConflictsSearchCount, lblMergesSearchCount;
 	private ToolTip _searchToolTip;
 	private System.Windows.Forms.Timer _conflictsSearchDelay, _mergesSearchDelay;
@@ -64,6 +72,7 @@ internal partial class MainForm : BaseForm
 				pbNoConflicts?.Dispose();
 				_searchToolTip?.Dispose();
 				lblStatusHealth?.Dispose();
+				problemsBar?.Dispose();
 				txtConflictsSearch?.Dispose();
 				txtMergesSearch?.Dispose();
 				lblConflictsSearchCount?.Dispose();
@@ -87,6 +96,8 @@ internal partial class MainForm : BaseForm
 
 	private void InitializeCustomComponent()
 	{
+		InitializeProblemsBar();
+
 		// Initialize the ConflictTree control
 		treConflicts = new ConflictTree(ThemeManager.CurrentTheme)
 		{
@@ -106,7 +117,7 @@ internal partial class MainForm : BaseForm
 			TabStop = false
 		};
 		tlpMain.SetColumnSpan(treConflicts, 2);
-		tlpMain.Controls.Add(treConflicts, 1, 1);
+		tlpMain.Controls.Add(treConflicts, 1, ListsRow);
 
 		// Initialize the MergeTree control
 		treMerges = new MergeTree(ThemeManager.CurrentTheme)
@@ -127,7 +138,7 @@ internal partial class MainForm : BaseForm
 			TabStop = false
 		};
 		tlpMain.SetColumnSpan(treMerges, 2);
-		tlpMain.Controls.Add(treMerges, 4, 1);
+		tlpMain.Controls.Add(treMerges, 4, ListsRow);
 
 		// Initialize the NoConflicts PictureBox control
 		pbNoConflicts = new();
@@ -147,6 +158,136 @@ internal partial class MainForm : BaseForm
 		};
 		lblStatusHealth.Click += (sender, e) => ShowModHealthReport();
 		statusStrip.Items.Insert(statusStrip.Items.IndexOf(lblStatusSpring), lblStatusHealth);
+	}
+
+	/// <summary>
+	/// Adds the row for the problems bar between the headers and the lists, moving the rows below it down; while the bar is
+	/// hidden, the row takes no room.
+	/// </summary>
+	private void InitializeProblemsBar()
+	{
+		foreach (Control control in tlpMain.Controls)
+		{
+			int row = tlpMain.GetRow(control);
+			if (row >= ProblemsBarRow)
+				tlpMain.SetRow(control, row + 1);
+		}
+
+		tlpMain.RowCount++;
+		tlpMain.RowStyles.Insert(ProblemsBarRow, new RowStyle(SizeType.AutoSize));
+
+		problemsBar = new ProblemsBar
+		{
+			Anchor = AnchorStyles.Left | AnchorStyles.Right,
+			Margin = new Padding(0, 0, 0, LogicalToDeviceUnits(8)),  // the sides: PlaceProblemsBar
+			Name = "problemsBar",
+			Visible = false
+		};
+		problemsBar.ShowDetailsClicked += (sender, e) => ShowModHealthReport();
+		problemsBar.DismissClicked += (sender, e) => DismissProblemsBar();
+		tlpMain.Controls.Add(problemsBar, 1, ProblemsBarRow);
+		tlpMain.SetColumnSpan(problemsBar, 5);
+	}
+
+	// The problems the bar has been hidden for, saved: "installed:modName" or "older:modName", separated by |, which no
+	// folder name can hold.
+	private const string DismissedProblemsKey = "DismissedModProblems";
+	private HashSet<string> _problemsShown = [];
+
+	// A problem is a mod and its kind: the same mod installed incorrectly later is a new problem.
+	private static HashSet<string> ProblemKeys(ModHealth health) =>
+		health.InstallProblems.Select(problem => "installed:" + problem.ModName)
+			.Concat(health.OutdatedScripts.Select(script => "older:" + script.ModName))
+			.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+	/// <summary>
+	/// After a scan: the bar shows while the mods have a problem it was not hidden for - with all of them, the hidden ones
+	/// included - and stays hidden while every problem is one it was hidden for. With none left, what it was hidden for is
+	/// forgotten, so a problem that comes back shows it again. Null when no scan has run yet: nothing changes.
+	/// </summary>
+	internal void UpdateProblemsBar(ModHealth health)
+	{
+		if (health == null)
+			return;
+
+		if (!health.HasProblems)
+		{
+			problemsBar.Visible = false;
+			_problemsShown = [];
+			if (!string.IsNullOrEmpty(Settings.Get(DismissedProblemsKey)))
+			{
+				Settings.Set(DismissedProblemsKey, string.Empty);
+				Settings.Save();
+			}
+
+			return;
+		}
+
+		HashSet<string> dismissed = (Settings.Get(DismissedProblemsKey) ?? string.Empty)
+			.Split('|', StringSplitOptions.RemoveEmptyEntries)
+			.ToHashSet(StringComparer.OrdinalIgnoreCase);
+		_problemsShown = ProblemKeys(health);
+		if (_problemsShown.IsSubsetOf(dismissed))
+		{
+			problemsBar.Visible = false;
+			return;
+		}
+
+		problemsBar.SetMessage(ProblemsMessage(health));
+		PlaceProblemsBar();
+		problemsBar.Visible = true;
+	}
+
+	// The bar's white space at each side is this share of the search boxes' outer white space there: the room the search
+	// rows keep beside the boxes (their margins, CreateSearchRow) so that a scrollbar on one list only does not leave the
+	// view unbalanced. Chosen by eye, and tuned the same way.
+	private const double ProblemsBarSideShare = 0.66;
+
+	// Measured from where the search boxes are, between the window's edge and each outer one - while neither shows a
+	// search's count, which narrows its box; otherwise the last measurement stands.
+	private void PlaceProblemsBar()
+	{
+		if (lblConflictsSearchCount.Text.Length > 0 || lblMergesSearchCount.Text.Length > 0)
+			return;
+
+		Control left = txtConflictsSearch.Parent, right = txtMergesSearch.Parent;  // the SearchBox frames
+		int leftSpace = tlpMain.PointToClient(left.PointToScreen(Point.Empty)).X;
+		int rightSpace = tlpMain.ClientSize.Width - tlpMain.PointToClient(right.PointToScreen(new Point(right.Width, 0))).X;
+		int[] columns = tlpMain.GetColumnWidths();  // the bar's cell starts after the first column and ends before the last
+
+		Padding margin = new(
+			Math.Max(0, (int)Math.Round(ProblemsBarSideShare * leftSpace) - columns[0]),
+			0,
+			Math.Max(0, (int)Math.Round(ProblemsBarSideShare * rightSpace) - columns[^1]),
+			problemsBar.Margin.Bottom);
+		if (problemsBar.Margin != margin)
+			problemsBar.Margin = margin;
+	}
+
+	// The × hides the bar for the problems it shows now; the next scan that finds another brings it back.
+	private void DismissProblemsBar()
+	{
+		problemsBar.Visible = false;
+		Settings.Set(DismissedProblemsKey, string.Join('|', _problemsShown));
+		Settings.Save();
+	}
+
+	// "2 mods are installed incorrectly, so the game doesn't load them." - or, with both kinds, how many mods have
+	// problems and how many of each kind; a mod can have both.
+	private static string ProblemsMessage(ModHealth health)
+	{
+		int installed = health.InstallProblems.Select(problem => problem.ModName).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+		int older = health.OutdatedScripts.Select(script => script.ModName).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+		string notLoaded = $"installed incorrectly, so the game doesn't load {(installed == 1 ? "it" : "them")}";
+		const string olderVersion = "made for an older game version";
+
+		if (older == 0)
+			return $"{installed} mod{installed.GetPluralS()} {(installed == 1 ? "is" : "are")} {notLoaded}.";
+		if (installed == 0)
+			return $"{older} mod{older.GetPluralS()} {(older == 1 ? "was" : "were")} {olderVersion}.";
+
+		int mods = health.ModCount;
+		return $"{mods} mod{mods.GetPluralS()} {(mods == 1 ? "has" : "have")} problems: {installed} {notLoaded}; {older} {olderVersion}.";
 	}
 
 	private void ShowModHealthReport()
