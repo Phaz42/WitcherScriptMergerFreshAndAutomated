@@ -11,11 +11,11 @@ namespace WitcherScriptMerger.Controls;
 
 /// <summary>
 /// A search box with rounded corners, matching the buttons. A Windows text box cannot be made taller, padded or rounded,
-/// so this draws the box itself - rounded, filled with the list's colour, with a border in the accent colour only while focused -
-/// and holds a borderless text box inside, centred vertically with room left and right. The text box's height follows
+/// so this draws the box itself - rounded, filled with the list's color, with a border in the accent color only while focused -
+/// and holds a borderless text box inside, centered vertically with room left and right. The text box's height follows
 /// its font; the box's height is the layout cell's.
-/// While there is text, a cross at the right end clears it, as in a browser's search field; its room is kept when hidden,
-/// so the text does not reflow as it appears.
+/// While there is text, a cross near the right end clears it, as in a browser's search field; its room is kept when hidden,
+/// so the text does not reflow as it appears. At the right end, a "?" opens the search's help (HelpClicked).
 /// </summary>
 internal sealed class SearchBox : Panel
 {
@@ -31,8 +31,14 @@ internal sealed class SearchBox : Panel
 
 	internal TextBox TextBox { get; }
 
+	/// <summary>The "?" at the right end.</summary>
+	internal HelpButton Help { get; }
+
 	/// <summary>The clear button was clicked; the text is already cleared.</summary>
 	internal event EventHandler Cleared;
+
+	/// <summary>The "?" was clicked.</summary>
+	internal event EventHandler HelpClicked;
 
 	private bool ClearButtonVisible => TextBox.TextLength > 0;
 
@@ -41,7 +47,18 @@ internal sealed class SearchBox : Panel
 		get
 		{
 			int size = LogicalToDeviceUnits(ClearButtonSize);
-			int right = ClientSize.Width - LogicalToDeviceUnits(HorizontalPadding / 2);
+			int right = HelpBounds.Left - LogicalToDeviceUnits(2);
+			return new Rectangle(right - size, (ClientSize.Height - size) / 2, size, size);
+		}
+	}
+
+	// The "?": at the right end, as far in from it as the text is from the left.
+	private Rectangle HelpBounds
+	{
+		get
+		{
+			int size = LogicalToDeviceUnits(HelpButton.LogicalSize);
+			int right = ClientSize.Width - LogicalToDeviceUnits(HorizontalPadding);
 			return new Rectangle(right - size, (ClientSize.Height - size) / 2, size, size);
 		}
 	}
@@ -61,15 +78,24 @@ internal sealed class SearchBox : Panel
 		TextBox.BackColorChanged += (sender, e) => Invalidate();
 		TextBox.TextChanged += (sender, e) => Invalidate(ClearButtonBounds);
 		Controls.Add(TextBox);
+
+		Help = new HelpButton { Backdrop = () => TextBox.BackColor };
+		Help.Click += (sender, e) => HelpClicked?.Invoke(this, EventArgs.Empty);
+		Controls.Add(Help);
 	}
 
 	protected override void OnLayout(LayoutEventArgs levent)
 	{
 		base.OnLayout(levent);
 
+		// Adding each part lays the box out; it is laid out once both are there.
+		if (TextBox == null || Help == null)
+			return;
+
 		int padding = LogicalToDeviceUnits(HorizontalPadding);
 		int width = ClearButtonBounds.Left - padding;
 		TextBox.SetBounds(padding, (ClientSize.Height - TextBox.Height) / 2, Math.Max(0, width), TextBox.Height);
+		Help.Bounds = HelpBounds;
 	}
 
 	private bool OverClearButton(Point location) => ClearButtonVisible && ClearButtonBounds.Contains(location);
@@ -154,7 +180,7 @@ internal sealed class SearchBox : Panel
 		g.DrawPath(pen, path);
 	}
 
-	// A thin diagonal cross in the dimmed text colour; hovered, it takes the text colour on a faint round background.
+	// A thin diagonal cross in the dimmed text color; hovered, it takes the text color on a faint round background.
 	private void PaintClearButton(Graphics g)
 	{
 		Rectangle bounds = ClearButtonBounds;

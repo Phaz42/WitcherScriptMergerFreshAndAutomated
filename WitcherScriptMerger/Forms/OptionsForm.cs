@@ -6,6 +6,7 @@ using System.Windows.Forms;
 
 using Microsoft.Win32;
 
+using WitcherScriptMerger.Controls;
 using WitcherScriptMerger.Theming;
 using WitcherScriptMerger.UI;
 
@@ -24,8 +25,8 @@ internal partial class OptionsForm : BaseForm
 
 	internal bool BundleScanOptionChanged;
 
-	// The theme and accent colour last declined in the restart question, so the same choice is not asked about again.
-	private (int ColorTheme, bool UseWindowsAccent)? declinedRestart;
+	// The theme last declined in the restart question, so the same choice is not asked about again.
+	private int? declinedRestart;
 
 	private List<ColorFader> colorFaders;
 
@@ -37,12 +38,37 @@ internal partial class OptionsForm : BaseForm
 		Settings.Save();
 	}
 
+	// The "?" beside the "no conflicts" image option, which explains how to use your own image.
+#pragma warning disable CA2213 // Disposable fields should be disposed
+	// Disposed with the controls of pnlTheming, which holds it
+	private readonly HelpButton noConflictsImageHelp = new() { Backdrop = () => ThemeManager.CurrentTheme.OptionsPanelBackColor };
+#pragma warning restore CA2213 // Disposable fields should be disposed
+
 	internal OptionsForm()
 	{
 		InitializeComponent();
+		AddNoConflictsImageHelp();
 		SetToolTips();
 		UpdateWindowSizeFromWorkingArea(this);
 		ThemeMngr.ApplyThemeOnForm(this);
+	}
+
+	// The "?" sits just after the option's text, centered on it, and follows the checkbox if its size or place changes.
+	private void AddNoConflictsImageHelp()
+	{
+		void Place()
+		{
+			Control option = chkNoConflictsWitcher;
+			noConflictsImageHelp.Location = new Point(
+				option.Left + option.PreferredSize.Width + LogicalToDeviceUnits(6),
+				option.Top + ((option.Height - noConflictsImageHelp.Height) / 2));
+		}
+
+		noConflictsImageHelp.Click += (sender, e) => HelpPanel.ShowTopic(this, HelpTopics.NoConflictsImage);
+		pnlTheming.Controls.Add(noConflictsImageHelp);
+		chkNoConflictsWitcher.SizeChanged += (sender, e) => Place();
+		chkNoConflictsWitcher.LocationChanged += (sender, e) => Place();
+		Place();
 	}
 
 	// What each option does, and what the less obvious terms mean. The tooltip control lives in the designer's container,
@@ -100,10 +126,9 @@ internal partial class OptionsForm : BaseForm
 			chkAutoExit);
 		Tip("Light, dark, or the same as Windows. A change takes effect after a restart, which SM-FAE offers.",
 			lblColorTheme, cbColorTheme);
-		Tip("Uses your Windows accent color for highlights, such as the winning mod and the main buttons, instead of SM-FAE's blue.",
-			chkAccentColor);
-		Tip("Shows a picture when there are no conflicts. You can use your own; see Images\\Custom in SM-FAE's folder.",
+		Tip("Shows a picture when there are no conflicts. You can use your own: the ? beside it explains how.",
 			chkNoConflictsWitcher);
+		Tip("How to use your own image", noConflictsImageHelp);
 	}
 
 	private static void ColorizeGroupBoxLine(GroupBox groupBox, Color lineColor)
@@ -151,7 +176,6 @@ internal partial class OptionsForm : BaseForm
 		Settings.Set("AutoExit", chkAutoExit.Checked);
 
 		Settings.Set("ColorTheme", cbColorTheme.SelectedIndex);
-		Settings.Set("AccentColor", chkAccentColor.Checked);
 		Settings.Set("NoConflictsWitcher", chkNoConflictsWitcher.Checked);
 
 		Settings.Save();
@@ -176,18 +200,16 @@ internal partial class OptionsForm : BaseForm
 	}
 
 	/// <summary>
-	/// Offers a restart when the saved theme or accent colour differs from the running one: both are applied only at
+	/// Offers a restart when the saved theme differs from the running one: a theme is applied only at
 	/// start. A choice declined once is not asked about again.
 	/// </summary>
 	private void OfferRestartForTheme()
 	{
-		(int ColorTheme, bool UseWindowsAccent) choice = (cbColorTheme.SelectedIndex, chkAccentColor.Checked);
-		bool themeDiffers = ThemeManager.DiffersFromCurrentTheme(choice.ColorTheme);
-		bool accentDiffers = choice.UseWindowsAccent != ThemeManager.UseWindowsAccentAtStart;
-		if ((!themeDiffers && !accentDiffers) || choice == declinedRestart)
+		int choice = cbColorTheme.SelectedIndex;
+		if (!ThemeManager.DiffersFromCurrentTheme(choice) || choice == declinedRestart)
 			return;
 
-		string what = themeDiffers ? "The new theme" : "The new accent color setting";
+		const string what = "The new theme";
 		// Owned by this window, which is topmost: owned by the main window, it could open behind it.
 		if (DialogResult.Yes == MessageBox.Show(this,
 			$"{what} takes effect after a restart. Restart SM-FAE now?",
@@ -260,7 +282,7 @@ internal partial class OptionsForm : BaseForm
 	}
 
 	/// <summary>
-	/// Lets the user pick the game folder and takes it. Cancelling exits only when no game folder exists to keep.
+	/// Lets the user pick the game folder and takes it. Canceling exits only when no game folder exists to keep.
 	/// </summary>
 	internal void SelectGameDirectory()
 	{
@@ -339,7 +361,6 @@ internal partial class OptionsForm : BaseForm
 		chkAutoSkipKDiff3InfoDialogs.Checked = LoadSetting("AutoSkipKDiff3InfoDialogs", useDef, def.AutoSkipKDiff3InfoDialogs);
 		chkAutoExit.Checked = LoadSetting("AutoExit", useDef, def.AutoExit);
 		cbColorTheme.SelectedIndex = LoadSetting("ColorTheme", useDef, def.ColorTheme);
-		chkAccentColor.Checked = LoadSetting("AccentColor", useDef, def.AccentColor);
 		chkNoConflictsWitcher.Checked = LoadSetting("NoConflictsWitcher", useDef, def.NoConflictsWitcher);
 
 		Save();

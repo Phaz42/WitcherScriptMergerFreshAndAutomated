@@ -2,39 +2,11 @@
 using System.Drawing;
 using System.Globalization;
 
-using Microsoft.Win32;
 
 namespace WitcherScriptMerger.Theming;
 
 internal static class Colors
 {
-	/// <summary>
-	/// The Windows accent colour as the user picked it in Settings, or null where Windows doesn't say. Both values hold it
-	/// as 0xAABBGGRR; Explorer's is where Settings writes the choice, DWM's (the title bars') is read where that is missing.
-	/// </summary>
-	internal static Color? GetAccentColorFromRegistry()
-	{
-		foreach ((string key, string name) in new[]
-		{
-			(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Accent", "AccentColorMenu"),
-			(@"Software\Microsoft\Windows\DWM", "AccentColor"),
-		})
-		{
-			try
-			{
-				using RegistryKey accentKey = Registry.CurrentUser.OpenSubKey(key);
-				if (accentKey?.GetValue(name) is int abgr)
-					return Color.FromArgb(abgr & 0xFF, (abgr >> 8) & 0xFF, (abgr >> 16) & 0xFF);
-			}
-			catch (Exception ex) when (ex is System.Security.SecurityException or System.IO.IOException or UnauthorizedAccessException)
-			{
-				// Try the next value; without either, the caller uses SM-FAE's own colour.
-			}
-		}
-
-		return null;
-	}
-
 	internal static Color GetColorByHex(string hex)
 	{
 		if (!hex.StartsWith("#", StringComparison.Ordinal))
@@ -48,7 +20,7 @@ internal static class Colors
 		color.G.ToString("X2", CultureInfo.InvariantCulture) +
 		color.B.ToString("X2", CultureInfo.InvariantCulture);
 
-	// WCAG 2's contrast ratio between two colours, 1 to 21. Normal text needs 4.5 to be read comfortably.
+	// WCAG 2's contrast ratio between two colors, 1 to 21. Normal text needs 4.5 to be read comfortably.
 	internal static double ContrastRatio(Color a, Color b)
 	{
 		double la = RelativeLuminance(a), lb = RelativeLuminance(b);
@@ -67,15 +39,15 @@ internal static class Colors
 	}
 
 	/// <summary>
-	/// The colour as text: mixed towards white (on dark backgrounds) or black (on light ones) just far enough to reach 4.5:1
-	/// on every background given, so its hue is kept. A Windows accent colour is chosen to fill things, and as text it can
+	/// The color as text: mixed towards white (on dark backgrounds) or black (on light ones) just far enough to reach 4.5:1
+	/// on every background given, so its hue is kept. A Windows accent color is chosen to fill things, and as text it can
 	/// be unreadable: Windows' default blue reaches only 3:1 on a dark list, a yellow accent 1.7:1 on white.
 	/// </summary>
 	internal static Color ReadableOn(Color color, bool darkBackgrounds, params Color[] backgrounds) =>
 		ContrastingOn(color, darkBackgrounds, 4.5, backgrounds);
 
 	/// <summary>
-	/// The colour mixed towards white (on dark backgrounds) or black (on light ones) just far enough to reach the given
+	/// The color mixed towards white (on dark backgrounds) or black (on light ones) just far enough to reach the given
 	/// contrast on every background given - unchanged where it already does. 4.5:1 for text; 3:1 for a control's fill,
 	/// the usual minimum for something that isn't text to stand out.
 	/// </summary>
@@ -96,7 +68,7 @@ internal static class Colors
 		return target;
 	}
 
-	// Text on a fill of this colour: white, as Windows writes on its accent, where that reads; otherwise the better of the two.
+	// Text on a fill of this color: white, as Windows writes on its accent, where that reads; otherwise the better of the two.
 	internal static Color TextOn(Color fill) =>
 		ContrastRatio(Color.White, fill) >= 4.5 || ContrastRatio(Color.White, fill) >= ContrastRatio(Color.Black, fill) ? Color.White : Color.Black;
 

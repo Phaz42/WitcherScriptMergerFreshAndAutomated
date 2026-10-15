@@ -179,7 +179,7 @@ internal partial class MainForm : BaseForm
 		problemsBar = new ProblemsBar
 		{
 			Anchor = AnchorStyles.Left | AnchorStyles.Right,
-			Margin = new Padding(0, 0, 0, LogicalToDeviceUnits(8)),  // the sides: PlaceProblemsBar
+			Margin = new Padding(0),  // the sides and below: PlaceProblemsBar
 			Name = "problemsBar",
 			Visible = false
 		};
@@ -243,23 +243,27 @@ internal partial class MainForm : BaseForm
 	// view unbalanced. Chosen by eye, and tuned the same way.
 	private const double ProblemsBarSideShare = 0.66;
 
-	// Measured from where the search boxes are, between the window's edge and each outer one - while neither shows a
-	// search's count, which narrows its box; otherwise the last measurement stands.
+	// Measured from where the search boxes are. Below the bar, the white space there is above it, between the boxes and
+	// the end of the headers: so the lists keep the distance from the boxes they have without the bar. At the sides,
+	// between the window's edge and each outer box - while neither shows a search's count, which narrows its box;
+	// otherwise the last measurement of the sides stands.
 	private void PlaceProblemsBar()
 	{
-		if (lblConflictsSearchCount.Text.Length > 0 || lblMergesSearchCount.Text.Length > 0)
-			return;
-
 		Control left = txtConflictsSearch.Parent, right = txtMergesSearch.Parent;  // the SearchBox frames
-		int leftSpace = tlpMain.PointToClient(left.PointToScreen(Point.Empty)).X;
-		int rightSpace = tlpMain.ClientSize.Width - tlpMain.PointToClient(right.PointToScreen(new Point(right.Width, 0))).X;
-		int[] columns = tlpMain.GetColumnWidths();  // the bar's cell starts after the first column and ends before the last
+		int boxesBottom = tlpMain.PointToClient(left.PointToScreen(new Point(0, left.Height))).Y;
+		int below = Math.Max(0, tlpConflictsHeader.Bottom + tlpConflictsHeader.Margin.Bottom - boxesBottom);
+		int sideLeft = problemsBar.Margin.Left, sideRight = problemsBar.Margin.Right;
 
-		Padding margin = new(
-			Math.Max(0, (int)Math.Round(ProblemsBarSideShare * leftSpace) - columns[0]),
-			0,
-			Math.Max(0, (int)Math.Round(ProblemsBarSideShare * rightSpace) - columns[^1]),
-			problemsBar.Margin.Bottom);
+		if (lblConflictsSearchCount.Text.Length == 0 && lblMergesSearchCount.Text.Length == 0)
+		{
+			int leftSpace = tlpMain.PointToClient(left.PointToScreen(Point.Empty)).X;
+			int rightSpace = tlpMain.ClientSize.Width - tlpMain.PointToClient(right.PointToScreen(new Point(right.Width, 0))).X;
+			int[] columns = tlpMain.GetColumnWidths();  // the bar's cell starts after the first column and ends before the last
+			sideLeft = Math.Max(0, (int)Math.Round(ProblemsBarSideShare * leftSpace) - columns[0]);
+			sideRight = Math.Max(0, (int)Math.Round(ProblemsBarSideShare * rightSpace) - columns[^1]);
+		}
+
+		Padding margin = new(sideLeft, 0, sideRight, below);
 		if (problemsBar.Margin != margin)
 			problemsBar.Margin = margin;
 	}
@@ -300,16 +304,6 @@ internal partial class MainForm : BaseForm
 		_ = form.ShowDialog(this);
 	}
 
-	private const string SearchHelp =
-		"Searches mod names and file paths. Upper/lower case doesn't matter.\n\n" +
-		"lights  -  mods or files with \"lights\" in the name\n" +
-		"mod:lights  -  mod names only\n" +
-		"file:input  -  file paths only\n" +
-		"file:*Input.ws  -  * is any text, ? is one character\n" +
-		"mod:\"modLights\"  -  exactly this name\n\n" +
-		"Ctrl+F: search    Esc: clear\n" +
-		"Merging and deleting always include selected items the search hides.";
-
 	/// <summary>
 	/// Adds a search box above each tree, as a second row in its header: the header row of the main layout grows by that
 	/// row's height. Row heights here are at 125% scaling, like the designer's; the theme scales them (ApplyThemeToControls).
@@ -342,9 +336,10 @@ internal partial class MainForm : BaseForm
 			Tag = "SearchBox",
 			TabStop = false
 		};
-		_searchToolTip.SetToolTip(box, SearchHelp);
+		// How the search works is the "?"'s help topic, in full; the box itself has no tooltip.
 		SearchBox frame = new(box) { Dock = DockStyle.Fill, Margin = new Padding(0) };
-		_searchToolTip.SetToolTip(frame, SearchHelp);
+		_searchToolTip.SetToolTip(frame.Help, "How searching works");
+		frame.HelpClicked += (sender, e) => HelpPanel.ShowTopic(this, HelpTopics.Search);
 		// The cross does what Esc twice does: clears the search, at once rather than after the typing delay, and returns to the list.
 		frame.Cleared += (sender, e) =>
 		{

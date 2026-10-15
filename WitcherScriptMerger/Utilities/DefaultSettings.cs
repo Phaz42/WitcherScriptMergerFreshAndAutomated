@@ -23,7 +23,6 @@ internal class DefaultSettings
 	internal const bool AutoSkipKDiff3InfoDialogs = true;
 	internal const bool AutoExit = false;
 	internal const int ColorTheme = 0;
-	internal const bool AccentColor = true;
 	internal const bool NoConflictsWitcher = true;
 	internal const bool RanThroughVortex = false;
 	internal const string MergedModName = "mod0000_MergedFiles";

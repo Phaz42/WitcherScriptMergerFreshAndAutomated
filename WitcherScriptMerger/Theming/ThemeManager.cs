@@ -26,19 +26,17 @@ internal class ThemeManager
 	internal Theme LightTheme;
 	internal Theme DarkTheme;
 	internal static Theme CurrentTheme;
-	// SM-FAE's own blue, the accent when "Use Windows accent color" is off, and always the links' colour. On light
-	// backgrounds Windows' own shade of its default blue (AccentDark1). On dark ones the same hue, 209 degrees, at full
-	// saturation, made just light enough to read as text (4.5:1 on 383838): Windows' dark shade (AccentLight2, 60CDFF)
-	// drifts towards cyan, far from the light theme's blue.
+	// SM-FAE's own blue, fixed since 1.1.0: no Windows accent. As text, on light backgrounds Windows' own shade of its default
+	// blue (AccentDark1); on dark ones the same hue, 209 degrees, at full saturation, made just light enough to read as text
+	// (4.5:1 on 383838). As a fill, on dark backgrounds that blue darkened 26%, so that white text on it reads (4.5:1; on
+	// 44A5FF itself white reaches 2.6:1); on light ones the text blue, which white text already reads on. The subtle blue
+	// is each theme's text blue faintly over the lists' color (25% on dark, 15% on light).
 	private static readonly Color SmfaeAccentOnDark = GetColorByHex("44A5FF");
 	private static readonly Color SmfaeAccentOnLight = GetColorByHex("005FB8");
+	private static readonly Color SmfaeFillOnDark = GetColorByHex("327ABD");
+	private static readonly Color SmfaeSubtleOnDark = GetColorByHex("334B62");
+	private static readonly Color SmfaeSubtleOnLight = GetColorByHex("D9E7F4");
 	private static readonly Color DangerRed = GetColorByHex("C42B1C");
-
-	/// <summary>
-	/// Whether the running theme's accent is the Windows accent: the "Use Windows accent color" setting (key AccentColor)
-	/// it was built with. Like the theme, it changes only at the next start.
-	/// </summary>
-	internal static bool UseWindowsAccentAtStart { get; private set; }
 
 	/// <summary>
 	/// The ColorTheme setting the running theme was built from.
@@ -117,8 +115,6 @@ internal class ThemeManager
 
 		ColorThemeAtStart = Settings.Get("ColorTheme", DefaultSettings.ColorTheme);
 		CurrentTheme = IsDarkTheme(ColorThemeAtStart) ? DarkTheme : LightTheme;
-		// Read with the default the Options window shows, so a settings file without the key agrees with it.
-		UseWindowsAccentAtStart = Settings.Get("AccentColor", DefaultSettings.AccentColor);
 		UpdateAccentColors();
 		DarkenToolTips();
 	}
@@ -152,25 +148,16 @@ internal class ThemeManager
 		}
 	}
 
-	// The accent, as text and as a fill - the accent buttons too, whichever colour it is: the option chooses the colour, not
-	// whether there is one.
-	// Off: SM-FAE's own blue, one colour for both.
-	// On: the accent as the user picked it. As a fill it is kept as it is, unless it doesn't stand out from the window
-	// (3:1); as text it is mixed until it reads (4.5:1) on every background it is written on - two shades of the user's
-	// colour. Windows' own controls use a safer shade of it (AccentLight2 on dark, AccentDark1 on light), often far paler
-	// than the colour picked; the user's choice should show.
+	// The accent as text, as a fill and faintly: SM-FAE's blue in each theme (above). The text blue is still made readable on
+	// every background it is written on, as a check: it already is.
 	private static void UpdateAccentColors()
 	{
 		Theme theme = CurrentTheme;
 		Color[] textBackgrounds = [theme.TreeViewBackColor, theme.BackColor, theme.OptionsPanelBackColor,
 			theme.BackgroundPanelBackColor, theme.MenuBackColor, theme.MenuSelectedBackColor];
-		Color smfaeAccent = theme.IsDark ? SmfaeAccentOnDark : SmfaeAccentOnLight;
-		Color? picked = UseWindowsAccentAtStart ? GetAccentColorFromRegistry() : null;
-
-		// Tried and rejected (2026-10-10): the accent unchanged everywhere - a dark accent such as 6E1420 read at 1.2:1 as
-		// text on the dark lists.
-		theme.AccentColor = ReadableOn(picked ?? smfaeAccent, theme.IsDark, textBackgrounds);
-		theme.AccentFillColor = picked is Color own ? ContrastingOn(own, theme.IsDark, 3.0, theme.BackColor) : theme.AccentColor;
+		theme.AccentColor = ReadableOn(theme.IsDark ? SmfaeAccentOnDark : SmfaeAccentOnLight, theme.IsDark, textBackgrounds);
+		theme.AccentFillColor = theme.IsDark ? SmfaeFillOnDark : SmfaeAccentOnLight;
+		theme.AccentSubtleColor = theme.IsDark ? SmfaeSubtleOnDark : SmfaeSubtleOnLight;
 
 		Color fill = theme.AccentFillColor;
 		theme.AccentButtonBackColor = fill;
@@ -185,7 +172,7 @@ internal class ThemeManager
 		theme.DangerButtonDownColor = ControlPaint.Light(danger, 0.5f);
 		theme.DangerButtonForeColor = TextOn(danger);
 
-		// A link stays SM-FAE's blue, whatever the accent: a link should look like one.
+		// A link is SM-FAE's blue.
 		theme.LinkColor = theme.IsDark ? SmfaeAccentOnDark : SmfaeAccentOnLight;
 	}
 
@@ -244,7 +231,7 @@ internal class ThemeManager
 	internal void PanelPaint(object sender, PaintEventArgs e) => DrawRoundedBorder2((Panel)sender, 2, 15, CurrentTheme.BorderColor, CurrentTheme.OptionsPanelBackColor);
 
 	// The status bar's separators: a thin line in the theme, half the bar's height, at a section's left edge. Windows Forms
-	// draws a status label's border in 3D - a white highlight beside a dark shadow - whatever the colours around it.
+	// draws a status label's border in 3D - a white highlight beside a dark shadow - whatever the colors around it.
 	private static void PaintStatusSeparator(object sender, PaintEventArgs e)
 	{
 		ToolStripItem label = (ToolStripItem)sender;
@@ -254,7 +241,7 @@ internal class ThemeManager
 		e.Graphics.DrawLine(pen, 0, top, 0, top + height);
 	}
 
-	// A control's background: an Options group's colour inside one (Tag "OptionsPanel"), otherwise the window's.
+	// A control's background: an Options group's color inside one (Tag "OptionsPanel"), otherwise the window's.
 	private static Color BackColorFor(Control control) =>
 		control.Parent?.Tag?.ToString() == "OptionsPanel" ? CurrentTheme.OptionsPanelBackColor : CurrentTheme.BackColor;
 
@@ -397,7 +384,7 @@ internal class ThemeManager
 			}
 			else if (control is TextBox searchBox && searchBox.Tag?.ToString() == "SearchBox")
 			{
-				// The search boxes sit directly above the lists, so they take the lists' colours.
+				// The search boxes sit directly above the lists, so they take the lists' colors.
 				searchBox.BackColor = CurrentTheme.TreeViewBackColor;
 				searchBox.ForeColor = CurrentTheme.ForeColor;
 			}

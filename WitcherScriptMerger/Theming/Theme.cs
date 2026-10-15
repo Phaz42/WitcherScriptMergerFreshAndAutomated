@@ -14,13 +14,13 @@ internal class Theme
 	// Fainter than dimmed, still readable: a load order number mods.settings doesn't hold (ConflictTree).
 	internal Color ForeFaintColor;
 
-	// The accent, SM-FAE's blue or with "Use Windows accent color" the user's own (ThemeManager.UpdateAccentColors).
-	// AccentColor is the accent as text - winners, section titles, headings, the selected menu item - readable on every
-	// background. AccentFillColor is the accent as a fill - accent buttons (AccentButton*), checked checkboxes, the progress
-	// bar, the search box's border. They are the same colour unless the user's accent needs lightening or darkening to read
-	// as text.
+	// The accent, SM-FAE's own blue (ThemeManager.UpdateAccentColors). AccentColor is the accent as text - winners,
+	// section titles, headings, the selected menu item - readable on every background. AccentFillColor is the accent as a
+	// fill - accent buttons (AccentButton*), checked checkboxes, the progress bar, the search box's border - deep enough
+	// for white text on it. AccentSubtleColor is a faint blue on the lists' color: under the help's "?" and around its panel.
 	internal Color AccentColor;
 	internal Color AccentFillColor;
+	internal Color AccentSubtleColor;
 
 	// The Options window's groups, lighter than the window behind them.
 	internal Color OptionsPanelBackColor;

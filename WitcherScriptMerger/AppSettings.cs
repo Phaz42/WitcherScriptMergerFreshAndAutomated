@@ -111,7 +111,6 @@ internal class AppSettings
 					new XElement("add", new XAttribute("key", "AutoSkipKDiff3InfoDialogs"), new XAttribute("value", DefaultSettings.AutoSkipKDiff3InfoDialogs.ToString().ToUpperInvariant())),
 					new XElement("add", new XAttribute("key", "AutoExit"), new XAttribute("value", DefaultSettings.AutoExit.ToString().ToUpperInvariant())),
 					new XElement("add", new XAttribute("key", "ColorTheme"), new XAttribute("value", DefaultSettings.ColorTheme)),
-					new XElement("add", new XAttribute("key", "AccentColor"), new XAttribute("value", DefaultSettings.AccentColor.ToString().ToUpperInvariant())),
 					new XElement("add", new XAttribute("key", "NoConflictsWitcher"), new XAttribute("value", DefaultSettings.NoConflictsWitcher.ToString().ToUpperInvariant())),
 					new XElement("add", new XAttribute("key", "RanThroughVortex"), new XAttribute("value", DefaultSettings.RanThroughVortex.ToString().ToUpperInvariant())),
 					new XElement("add", new XAttribute("key", "MergedModName"), new XAttribute("value", DefaultSettings.MergedModName)),

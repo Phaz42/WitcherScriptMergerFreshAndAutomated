@@ -85,7 +85,6 @@ namespace WitcherScriptMerger.Forms
 			lblColorTheme = new Label();
 			cbColorTheme = new ComboBox();
 			lblTheming = new Label();
-			chkAccentColor = new ThemedCheckBox();
 			pnlOptionsMain = new Panel();
 			pnlConflicts.SuspendLayout();
 			pnlCollapse.SuspendLayout();
@@ -558,7 +557,7 @@ namespace WitcherScriptMerger.Forms
 			pnlButtonBar.Controls.Add(btnCancel);
 			pnlButtonBar.Controls.Add(btnOK);
 			pnlButtonBar.Controls.Add(btnDefaultOptions);
-			pnlButtonBar.Location = new System.Drawing.Point(0, 1451);
+			pnlButtonBar.Location = new System.Drawing.Point(0, 1382);
 			pnlButtonBar.Margin = new Padding(5, 5, 5, 5);
 			pnlButtonBar.Name = "pnlButtonBar";
 			pnlButtonBar.Size = new System.Drawing.Size(1628, 133);
@@ -571,12 +570,11 @@ namespace WitcherScriptMerger.Forms
 			pnlTheming.Controls.Add(lblColorTheme);
 			pnlTheming.Controls.Add(cbColorTheme);
 			pnlTheming.Controls.Add(lblTheming);
-			pnlTheming.Controls.Add(chkAccentColor);
 			pnlTheming.Location = new System.Drawing.Point(31, 1154);
 			pnlTheming.Margin = new Padding(16, 32, 32, 32);
 			pnlTheming.Name = "pnlTheming";
 			pnlTheming.Padding = new Padding(24, 24, 24, 24);
-			pnlTheming.Size = new System.Drawing.Size(1566, 264);
+			pnlTheming.Size = new System.Drawing.Size(1566, 195);
 			pnlTheming.TabIndex = 25;
 			pnlTheming.Paint += PanelPaintForwarder;
 			pnlTheming.Tag = "OptionsPanel";
@@ -585,7 +583,7 @@ namespace WitcherScriptMerger.Forms
 			// 
 			chkNoConflictsWitcher.AutoSize = true;
 			chkNoConflictsWitcher.Font = new System.Drawing.Font("Segoe UI", 11F);
-			chkNoConflictsWitcher.Location = new System.Drawing.Point(839, 157);
+			chkNoConflictsWitcher.Location = new System.Drawing.Point(839, 88);
 			chkNoConflictsWitcher.Margin = new Padding(11, 11, 11, 11);
 			chkNoConflictsWitcher.Name = "chkNoConflictsWitcher";
 			chkNoConflictsWitcher.Size = new System.Drawing.Size(601, 45);
@@ -630,17 +628,6 @@ namespace WitcherScriptMerger.Forms
 			lblTheming.TabIndex = 24;
 			lblTheming.Text = "User Interface";
 			// 
-			// chkAccentColor
-			// 
-			chkAccentColor.AutoSize = true;
-			chkAccentColor.Font = new System.Drawing.Font("Segoe UI", 11F);
-			chkAccentColor.Location = new System.Drawing.Point(839, 88);
-			chkAccentColor.Margin = new Padding(11, 11, 11, 11);
-			chkAccentColor.Name = "chkAccentColor";
-			chkAccentColor.Size = new System.Drawing.Size(409, 45);
-			chkAccentColor.TabIndex = 3;
-			chkAccentColor.Text = "Use Windows accent color";
-			chkAccentColor.UseVisualStyleBackColor = true;
 			// 
 			// pnlOptionsMain
 			// 
@@ -655,7 +642,7 @@ namespace WitcherScriptMerger.Forms
 			pnlOptionsMain.Location = new System.Drawing.Point(0, 0);
 			pnlOptionsMain.Margin = new Padding(0);
 			pnlOptionsMain.Name = "pnlOptionsMain";
-			pnlOptionsMain.Size = new System.Drawing.Size(1628, 1582);
+			pnlOptionsMain.Size = new System.Drawing.Size(1628, 1513);
 			pnlOptionsMain.TabIndex = 29;
 			// 
 			// OptionsForm
@@ -666,7 +653,7 @@ namespace WitcherScriptMerger.Forms
 			AutoScroll = true;
 			BackColor = System.Drawing.SystemColors.Control;
 			CancelButton = btnCancel;
-			ClientSize = new System.Drawing.Size(1628, 1582);
+			ClientSize = new System.Drawing.Size(1628, 1513);
 			Controls.Add(pnlOptionsMain);
 			DoubleBuffered = true;
 			FormBorderStyle = FormBorderStyle.FixedSingle;
@@ -731,7 +718,6 @@ namespace WitcherScriptMerger.Forms
 		private Panel pnlButtonBar;
 		private Panel pnlTheming;
 		private Label lblTheming;
-		private CheckBox chkAccentColor;
 		private Label lblColorTheme;
 		private ComboBox cbColorTheme;
 		private CheckBox chkCollapseIdenticalConflicts;
