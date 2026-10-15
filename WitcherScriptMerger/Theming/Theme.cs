@@ -39,6 +39,12 @@ internal class Theme
 	internal Color AccentButtonHoverColor;
 	internal Color AccentButtonDownColor;
 
+	// Delete All Merges, the one button that removes every merge: red, as a fill readable in each theme.
+	internal Color DangerButtonBackColor;
+	internal Color DangerButtonForeColor;
+	internal Color DangerButtonHoverColor;
+	internal Color DangerButtonDownColor;
+
 	internal Color MenuBackColor;
 	internal Color MenuForeColor;
 	internal Color MenuDisabledForeColor;

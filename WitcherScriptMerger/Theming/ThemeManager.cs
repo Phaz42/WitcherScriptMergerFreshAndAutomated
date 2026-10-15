@@ -32,6 +32,7 @@ internal class ThemeManager
 	// drifts towards cyan, far from the light theme's blue.
 	private static readonly Color SmfaeAccentOnDark = GetColorByHex("44A5FF");
 	private static readonly Color SmfaeAccentOnLight = GetColorByHex("005FB8");
+	private static readonly Color DangerRed = GetColorByHex("C42B1C");
 
 	/// <summary>
 	/// Whether the running theme's accent is the Windows accent: the "Use Windows accent color" setting (key AccentColor)
@@ -176,6 +177,13 @@ internal class ThemeManager
 		theme.AccentButtonHoverColor = ControlPaint.Light(fill, 0.25f);
 		theme.AccentButtonDownColor = ControlPaint.Light(fill, 0.5f);
 		theme.AccentButtonForeColor = TextOn(fill);
+
+		// Delete All Merges in red, kept at 3:1 on the window like the accent's fill.
+		Color danger = ContrastingOn(DangerRed, theme.IsDark, 3.0, theme.BackColor);
+		theme.DangerButtonBackColor = danger;
+		theme.DangerButtonHoverColor = ControlPaint.Light(danger, 0.25f);
+		theme.DangerButtonDownColor = ControlPaint.Light(danger, 0.5f);
+		theme.DangerButtonForeColor = TextOn(danger);
 
 		// A link stays SM-FAE's blue, whatever the accent: a link should look like one.
 		theme.LinkColor = theme.IsDark ? SmfaeAccentOnDark : SmfaeAccentOnLight;
@@ -332,6 +340,13 @@ internal class ThemeManager
 				bool accent = button == form.AcceptButton
 					|| (form is MainForm main && (button == main.btnMainMenu || button == main.btnCreateAllScriptMerges || button == main.btnExitNow));
 				ModernizeButton(button, form, !accent);
+				if (form is MainForm mainWindow && button == mainWindow.btnDeleteAllMerges)
+				{
+					button.BackColor = CurrentTheme.DangerButtonBackColor;
+					button.ForeColor = CurrentTheme.DangerButtonForeColor;
+					button.FlatAppearance.MouseOverBackColor = CurrentTheme.DangerButtonHoverColor;
+					button.FlatAppearance.MouseDownBackColor = CurrentTheme.DangerButtonDownColor;
+				}
 			}
 			else if (control is Label && (string)control.Tag == "AccentLabel")
 			{
