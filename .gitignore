@@ -200,7 +200,6 @@ FakesAssemblies/
 
 
 # SM-FAE Local Development Exclusions
-WitcherScriptMerger/BuildEvents/
 .vscode/
 WitcherScriptMerger/.vscode/
 .editorconfig

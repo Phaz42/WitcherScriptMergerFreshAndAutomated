@@ -758,7 +758,7 @@ internal class TreeManager
 		ModHealth health = ModIndex?.Health;
 		foreach (TreeNode fileNode in MergesTree.AllFileNodes)
 		{
-			// An old merge has no outdated mod in it to colour, so its file stands out instead.
+			// An old merge has no outdated mod in it to color, so its file stands out instead.
 			if (health != null && health.IsOldMerge(fileNode.Text, out _, out GameVersionCheck.Result oldMerge))
 			{
 				fileNode.ForeColor = ThemeManager.CurrentTheme.WarningColor;
@@ -792,7 +792,7 @@ internal class TreeManager
 			: _colorFaders.GetValue(node, mod => new TreeNodeColorFader(mod, "ForeColor"));
 
 	/// <summary>
-	/// A category node, as both trees show it: large, bold, in the accent colour.
+	/// A category node, as both trees show it: large, bold, in the accent color.
 	/// </summary>
 	internal static TreeNode CreateCategoryNode(ModFileCategory category, bool forMerges = false)
 	{
@@ -821,15 +821,37 @@ internal class TreeManager
 		TreeNodeColorFader currentHoveredColorFader = colorFader(hoveredNode);
 
 		if (hoveredNode != previousNode)
-		{
-			Color targetForeColor = ThemeManager.CurrentTheme.ForeDimmedColor;
-			if (previousNode?.Tag is NodeMetadata tag && tag.ForeColor != Color.Empty)
-				targetForeColor = tag.RestColor;
-			previousHoveredColorFader?.StartFadeOut(targetForeColor);
-		}
+			FadeOut(previousNode, previousHoveredColorFader);
 
 		currentHoveredColorFader?.StartFadeIn(ThemeManager.CurrentTheme.ForeBrightColor);
 		return hoveredNode;
+	}
+
+	// A row the mouse has left fades back to the color it rests in - green while a search found it.
+	private static void FadeOut(TreeNode node, TreeNodeColorFader colorFader)
+	{
+		Color targetForeColor = ThemeManager.CurrentTheme.ForeDimmedColor;
+		if (node?.Tag is NodeMetadata tag && tag.ForeColor != Color.Empty)
+			targetForeColor = tag.RestColor;
+		colorFader?.StartFadeOut(targetForeColor);
+	}
+
+	/// <summary>
+	/// The mouse left a list: the row it was over fades back, as when it moves on to another row. Without this, a row
+	/// left straight out of the list - onto the window, a button, another program - stayed bright.
+	/// </summary>
+	internal void OnTreeViewMouseLeave(object sender, EventArgs e)
+	{
+		if (sender == ConflictsTree)
+		{
+			FadeOut(_treConflictsPrevNode, GetColorFader(_treConflictsPrevNode));
+			_treConflictsPrevNode = null;
+		}
+		else if (sender == MergesTree)
+		{
+			FadeOut(_treMergesPrevNode, GetColorFader(_treMergesPrevNode));
+			_treMergesPrevNode = null;
+		}
 	}
 
 	#region Confirmations

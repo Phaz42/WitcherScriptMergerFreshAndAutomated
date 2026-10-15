@@ -159,7 +159,7 @@ internal static class KDiff3
 		}
 
 		// On every version, a merged XML file whose declaration names an encoding it is not in is never kept: the
-		// normalising above prevents it on 5.x, and this catches whatever else produces one - a user's edit in the
+		// normalizing above prevents it on 5.x, and this catches whatever else produces one - a user's edit in the
 		// KDiff3 window, a mod on 4.x saved in another encoding.
 		if (exitCode == 0 && isXml && File.Exists(outputPath))
 		{
@@ -172,6 +172,17 @@ internal static class KDiff3
 					"Merged File Refused");
 				return 2;
 			}
+		}
+
+		// KDiff3 keeps the file it writes over as <file>.orig: the merged file as it was before this mod was merged into
+		// it. In the merged mod that is only clutter, so it goes once the merge has succeeded and its result is kept -
+		// never otherwise, when it may be the only copy left.
+		if (exitCode == 0 && File.Exists(outputPath))
+		{
+			try
+			{ File.Delete(outputPath + ".orig"); }
+			catch (IOException) { }  // one left behind does no harm
+			catch (UnauthorizedAccessException) { }
 		}
 
 		return exitCode;

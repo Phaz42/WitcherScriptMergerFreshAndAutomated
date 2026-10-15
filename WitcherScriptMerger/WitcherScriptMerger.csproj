@@ -90,9 +90,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="BuildEvents\" />
-  </ItemGroup>
-  <ItemGroup>
     <!-- The QuickBMS script, with its 5.x bundle branch, ships in Tools\QuickBMS beside the released tools. -->
     <None Update="Tools\QuickBMS\witcher3.bms" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
@@ -120,8 +117,4 @@
     <NoWarn />
     <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec
-      Command="powershell.exe -ExecutionPolicy Bypass -File $(ProjectDir)BuildEvents\PostBuild.ps1 -ProjectDir '$(ProjectDir)' -ProjectPath '$(ProjectPath)' -ProjectName '$(ProjectName)' -TargetDir '$(TargetDir)' -TargetPath '$(TargetPath)' -SolutionDir '$(SolutionDir)' -SolutionPath '$(SolutionPath)' -SolutionName '$(SolutionName)' -Configuration '$(Configuration)' -Platform '$(Platform)' -OutDir '$(OutDir)' -DevEnvDir &quot;'$(DevEnvDir)'&quot;" />
-  </Target>
 </Project>

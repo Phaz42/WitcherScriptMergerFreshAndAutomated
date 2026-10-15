@@ -429,6 +429,8 @@ internal partial class MainForm : BaseForm
 		// Attach tree mouse move event handlers
 		treConflicts.MouseMove += treeManager.OnTreeViewMouseMove;
 		treMerges.MouseMove += treeManager.OnTreeViewMouseMove;
+		treConflicts.MouseLeave += treeManager.OnTreeViewMouseLeave;
+		treMerges.MouseLeave += treeManager.OnTreeViewMouseLeave;
 	}
 
 	private void OnTreeManagerInvokeRequired(object sender, InvokeRequiredEventArgs e) => BeginInvoke(e.Action);
