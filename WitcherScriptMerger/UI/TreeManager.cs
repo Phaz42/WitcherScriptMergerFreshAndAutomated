@@ -48,7 +48,6 @@ internal class TreeManager
 	private bool _applyingSearch;
 	private int _searchSuspensions;
 	private readonly HashSet<SMTree> _searchApplied = [];
-	private Font _foundModFont, _foundDisabledModFont;
 
 	internal Action<bool> CreateAllScriptMergesDelegate { get; set; }
 	internal Func<Task<bool>> RefreshMergeInventoryDelegate { get; set; }
@@ -536,6 +535,10 @@ internal class TreeManager
 		}
 
 		ApplySearch(tree);
+
+		// A new search, or none, starts at the top of the list; the tree is left wherever rebuilding it scrolled it.
+		if (tree.Nodes.Count > 0)
+			tree.TopNode = tree.Nodes[0];
 	}
 
 	/// <summary>Shows only the conflicts or merges with this mod: "Show Only This Mod's ..." in the context menu.</summary>
@@ -562,6 +565,7 @@ internal class TreeManager
 				continue;
 
 			tree.BeginUpdate();
+			tree.Search = null;
 			tree.RestyleAfterSearch(false);
 			tree.EndUpdate();
 		}
@@ -616,6 +620,7 @@ internal class TreeManager
 			// A search that hid nothing still made the found mods bold and expanded the tree, so clearing it restyles too.
 			HideToolTips();
 			tree.BeginUpdate();
+			tree.Search = search;
 			bool wasSearched = _searchApplied.Remove(tree);
 			bool changed = tree.ShowAllNodes() | wasSearched;
 			if (search != null)
@@ -641,22 +646,20 @@ internal class TreeManager
 		}
 	}
 
-	// The mods a search found are bold among the other mods of their conflict or merge. A struck-through (disabled) mod
-	// stays struck through. The text is set again because Windows' control otherwise keeps the width it measured with
-	// the regular font, and cuts off the bold text.
-	private void MarkFoundMods(SMTree tree, TreeSearch search)
+	// The mods a search found are green among the other mods of their conflict or merge, as is what it found in a file's
+	// path (SMTree.PaintSearchFinds); RestyleAfterSearch gives them their own color back. Not bold, as they were: WinForms
+	// makes a new font handle on every repaint of a row with a font of its own and frees it only when the garbage
+	// collector runs, so scrolling a long search ran out of handles and closed SM-FAE. A struck-through (disabled)
+	// mod keeps that font.
+	private static void MarkFoundMods(SMTree tree, TreeSearch search)
 	{
-		_foundModFont ??= new Font(tree.Font, FontStyle.Bold);
-		_foundDisabledModFont ??= new Font(tree.Font, FontStyle.Bold | FontStyle.Strikeout);
-
 		foreach (TreeNode modNode in tree.ModNodes)
 		{
-			if (!search.MatchesModName(modNode.Text))
-				continue;
-
-			bool disabled = modNode.NodeFont != null && modNode.NodeFont.Strikeout;
-			modNode.NodeFont = disabled ? _foundDisabledModFont : _foundModFont;
-			modNode.Text = modNode.Text;
+			if (modNode.Tag is NodeMetadata metadata && search.MatchesModName(modNode.Text))
+			{
+				metadata.IsFound = true;
+				modNode.ForeColor = metadata.RestColor;
+			}
 		}
 	}
 
@@ -781,9 +784,12 @@ internal class TreeManager
 		}
 	}
 
-	// Mod nodes fade - nodes with no nodes below them, as before; categories and files do not.
+	// Mod nodes fade - nodes with no nodes below them, as before; categories and files do not. A category a search takes
+	// out of the tree has none below it either, and faded to a mod's gray when the mouse left it (the metadata check).
 	private TreeNodeColorFader GetColorFader(TreeNode node) =>
-		node == null || node.Nodes.Count > 0 ? null : _colorFaders.GetValue(node, mod => new TreeNodeColorFader(mod, "ForeColor"));
+		node == null || node.Nodes.Count > 0 || node.Tag is not NodeMetadata
+			? null
+			: _colorFaders.GetValue(node, mod => new TreeNodeColorFader(mod, "ForeColor"));
 
 	/// <summary>
 	/// A category node, as both trees show it: large, bold, in the accent colour.
@@ -818,7 +824,7 @@ internal class TreeManager
 		{
 			Color targetForeColor = ThemeManager.CurrentTheme.ForeDimmedColor;
 			if (previousNode?.Tag is NodeMetadata tag && tag.ForeColor != Color.Empty)
-				targetForeColor = tag.ForeColor;
+				targetForeColor = tag.RestColor;
 			previousHoveredColorFader?.StartFadeOut(targetForeColor);
 		}
 

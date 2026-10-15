@@ -116,6 +116,12 @@ internal partial class MergeTree : SMTree
 		foreach (TreeNode modNode in ModNodes)
 		{
 			modNode.NodeFont = null;
+			if (modNode.Tag is NodeMetadata metadata)
+			{
+				metadata.IsFound = false;  // a search's mark (TreeManager.MarkFoundMods)
+				modNode.ForeColor = metadata.ForeColor;
+			}
+
 			modNode.SetIsCheckBoxVisible(false);
 		}
 

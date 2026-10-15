@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using WitcherScriptMerger.FileIndex;
 using WitcherScriptMerger.Inventory;
 using WitcherScriptMerger.Theming;
+using WitcherScriptMerger.UI;
 
 using static WitcherScriptMerger.Program;
 
@@ -26,7 +27,6 @@ internal abstract partial class SMTree : TreeView, IDisposable
 			if (disposing)
 			{
 				// dispose managed state (managed objects)
-				_checkBoxImages?.Dispose();
 				_contextMenu.Dispose();
 				_contextOpenModFile.Dispose();
 				_contextOpenModFileDir.Dispose();
@@ -68,6 +68,12 @@ internal abstract partial class SMTree : TreeView, IDisposable
 		}
 
 		base.Dispose(disposing);
+
+		// The checkbox images only once the tree has let go of them: disposed while it still shows them, the tree rebuilt
+		// its window and every node in it, expanded ones included, only to destroy it again - a pause of seconds on
+		// closing with a long list expanded, the list gray meanwhile.
+		if (disposing)
+			_checkBoxImages?.Dispose();
 	}
 
 	public new void Dispose()
@@ -92,6 +98,11 @@ internal abstract partial class SMTree : TreeView, IDisposable
 		internal Color ForeColor = ThemeManager.CurrentTheme.ForeDimmedColor;
 		internal string ModName = string.Empty;
 		internal bool IsOutdated;  // this mod's copy was made for an older game version (ModHealth)
+
+		// A search found this mod (TreeManager.MarkFoundMods): its name rests in green instead of ForeColor, which keeps
+		// the color the load order gives it for when the search is cleared.
+		internal bool IsFound;
+		internal Color RestColor => IsFound ? ThemeManager.CurrentTheme.SuccessColor : ForeColor;
 
 		// Non-mergeable conflicts only (ConflictTree): the mod's number in the load order, shown before its name - its
 		// priority in mods.settings, or, when it has none, the number it effectively has (IsEffectiveLoadOrderNumber).
@@ -135,6 +146,129 @@ internal abstract partial class SMTree : TreeView, IDisposable
 
 	/// <summary>Gives the control the Windows look of the current theme: dark scrollbars in the dark theme.</summary>
 	internal void ApplyWindowTheme() => ThemeUtils.ApplyWindowTheme(this);
+
+	#endregion
+
+	#region Painting
+
+	/// <summary>The search applied to this tree (TreeManager.ApplySearch), whose finds in file paths are painted green.</summary>
+	internal TreeSearch Search;
+
+	// Additions to the tree - the found parts of file paths, the conflicts' load order numbers - are painted after Windows
+	// paints the tree, not by owner drawing: with owner-drawn text, WinForms draws each node's text itself, clipped to the
+	// width Windows measured with the tree's font - cutting off the larger category names - and fills a background that
+	// overlaps the checkboxes. Painted afterwards, the tree looks exactly as before.
+	// Windows paints the tree into a buffer, the additions are drawn there, and only then is it shown: painted onto the
+	// screen after the tree, they blinked on every repaint - and each hovered row's color fade repaints.
+	protected override void WndProc(ref Message m)
+	{
+		if (m.Msg == WmEraseBackground && IsHandleCreated)
+		{
+			m.Result = 1;  // the buffer below is cleared to the background instead
+			return;
+		}
+
+		if (m.Msg == WmPaint && m.WParam == IntPtr.Zero && IsHandleCreated)
+		{
+			PaintBuffered();
+			return;
+		}
+
+		base.WndProc(ref m);
+	}
+
+	private const int WmPaint = 0x000F;
+	private const int WmEraseBackground = 0x0014;
+
+	private void PaintBuffered()
+	{
+		IntPtr screen = BeginPaint(Handle, out PaintStruct paint);
+		try
+		{
+			using BufferedGraphics buffer = BufferedGraphicsManager.Current.Allocate(screen, ClientRectangle);
+			Graphics g = buffer.Graphics;
+			g.Clear(BackColor);
+
+			// The tree paints into the device context a paint message carries, when it carries one.
+			IntPtr hdc = g.GetHdc();
+			try
+			{
+				Message treePaint = Message.Create(Handle, WmPaint, hdc, IntPtr.Zero);
+				base.WndProc(ref treePaint);
+			}
+			finally
+			{
+				g.ReleaseHdc(hdc);
+			}
+
+			PaintOverlay(g);
+			buffer.Render();
+		}
+		finally
+		{
+			_ = EndPaint(Handle, ref paint);
+		}
+	}
+
+	[StructLayout(LayoutKind.Sequential)]
+	private unsafe struct PaintStruct
+	{
+		internal IntPtr Hdc;
+		internal int Erase;
+		internal int Left, Top, Right, Bottom;
+		internal int Restore;
+		internal int IncUpdate;
+		internal fixed byte Reserved[32];
+	}
+
+	[LibraryImport("user32.dll")]
+	private static partial IntPtr BeginPaint(IntPtr hWnd, out PaintStruct paint);
+
+	[LibraryImport("user32.dll")]
+	[return: MarshalAs(UnmanagedType.Bool)]
+	private static partial bool EndPaint(IntPtr hWnd, ref PaintStruct paint);
+
+	/// <summary>Draws this tree's additions over what Windows painted, in the buffer.</summary>
+	protected virtual void PaintOverlay(Graphics g) => PaintSearchFinds(g);
+
+	private const TextFormatFlags NodeTextFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
+		TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding | TextFormatFlags.PreserveGraphicsClipping;
+
+	// What a search found in a file's path is green, as the mods it finds are (TreeManager.MarkFoundMods): the path is
+	// drawn again in green over itself, clipped to the found part. Windows centers a row's text in its bounds, so drawn
+	// centered there it lands on the same pixels; measured, drawn in its own color, it changed none.
+	private void PaintSearchFinds(Graphics g)
+	{
+		if (Search == null)
+			return;
+
+		Color found = ThemeManager.CurrentTheme.SuccessColor;
+		using SolidBrush background = new(BackColor);
+		for (TreeNode node = TopNode; node != null && node.Bounds.Top < ClientSize.Height; node = node.NextVisibleNode)
+		{
+			if (!IsFileNode(node))
+				continue;
+
+			Rectangle bounds = node.Bounds;
+			Font font = node.NodeFont ?? Font;
+			int textLeft = bounds.Left + ((bounds.Width - TextWidth(g, node.Text, font)) / 2);
+			foreach ((int start, int length) in Search.FoundInFilePath(node.Text))
+			{
+				Rectangle part = Rectangle.FromLTRB(
+					textLeft + TextWidth(g, node.Text[..start], font), bounds.Top,
+					textLeft + TextWidth(g, node.Text[..(start + length)], font), bounds.Bottom);
+				g.SetClip(part);
+				g.FillRectangle(background, part);
+				TextRenderer.DrawText(g, node.Text, font, bounds, found, NodeTextFlags);
+			}
+
+			g.ResetClip();
+		}
+	}
+
+	private static int TextWidth(Graphics g, string text, Font font) =>
+		text.Length == 0 ? 0 : TextRenderer.MeasureText(g, text, font, Size.Empty,
+			TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding).Width;
 
 	#endregion
 

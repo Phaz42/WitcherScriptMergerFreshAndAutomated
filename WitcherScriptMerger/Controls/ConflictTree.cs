@@ -4,7 +4,6 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 using WitcherScriptMerger.FileIndex;
@@ -373,79 +372,13 @@ internal partial class ConflictTree : SMTree
 		return new Rectangle(text.Left - gap - size.Width, top, size.Width, size.Height);
 	}
 
-	// The numbers are painted after Windows paints the tree, not by owner drawing: with owner-drawn text, WinForms draws
-	// each node's text itself, clipped to the width Windows measured with the tree's font - cutting off the larger
-	// category names - and fills a background that overlaps the checkboxes. Painted afterwards, the tree looks exactly as
-	// before. Each number's box is filled with the background first, so painting it twice changes nothing.
-	// Windows paints the tree into a buffer, the numbers are added there, and only then is it shown: painted onto the
-	// screen after the tree, the numbers blinked on every repaint - and each hovered row's colour fade repaints.
-	protected override void WndProc(ref Message m)
+	// The numbers are painted after Windows paints the tree, into the same buffer (SMTree.PaintBuffered). Each number's box
+	// is filled with the background first, so painting it twice changes nothing.
+	protected override void PaintOverlay(Graphics g)
 	{
-		if (m.Msg == WmEraseBackground && IsHandleCreated)
-		{
-			m.Result = 1;  // the buffer below is cleared to the background instead
-			return;
-		}
-
-		if (m.Msg == WmPaint && m.WParam == IntPtr.Zero && IsHandleCreated)
-		{
-			PaintBuffered();
-			return;
-		}
-
-		base.WndProc(ref m);
+		base.PaintOverlay(g);
+		PaintLoadOrderNumbers(g);
 	}
-
-	private const int WmPaint = 0x000F;
-	private const int WmEraseBackground = 0x0014;
-
-	private void PaintBuffered()
-	{
-		IntPtr screen = BeginPaint(Handle, out PaintStruct paint);
-		try
-		{
-			using BufferedGraphics buffer = BufferedGraphicsManager.Current.Allocate(screen, ClientRectangle);
-			Graphics g = buffer.Graphics;
-			g.Clear(BackColor);
-
-			// The tree paints into the device context a paint message carries, when it carries one.
-			IntPtr hdc = g.GetHdc();
-			try
-			{
-				Message treePaint = Message.Create(Handle, WmPaint, hdc, IntPtr.Zero);
-				base.WndProc(ref treePaint);
-			}
-			finally
-			{
-				g.ReleaseHdc(hdc);
-			}
-
-			PaintLoadOrderNumbers(g);
-			buffer.Render();
-		}
-		finally
-		{
-			_ = EndPaint(Handle, ref paint);
-		}
-	}
-
-	[StructLayout(LayoutKind.Sequential)]
-	private unsafe struct PaintStruct
-	{
-		internal IntPtr Hdc;
-		internal int Erase;
-		internal int Left, Top, Right, Bottom;
-		internal int Restore;
-		internal int IncUpdate;
-		internal fixed byte Reserved[32];
-	}
-
-	[LibraryImport("user32.dll")]
-	private static partial IntPtr BeginPaint(IntPtr hWnd, out PaintStruct paint);
-
-	[LibraryImport("user32.dll")]
-	[return: MarshalAs(UnmanagedType.Bool)]
-	private static partial bool EndPaint(IntPtr hWnd, ref PaintStruct paint);
 
 	private void PaintLoadOrderNumbers(Graphics g)
 	{
@@ -506,6 +439,17 @@ internal partial class ConflictTree : SMTree
 
 	internal override void RestyleAfterSearch(bool searching)
 	{
+		// A search's marks go (TreeManager.MarkFoundMods sets them again while searching); SetStylesForCustomLoadOrder
+		// below gives each mod its color.
+		foreach (TreeNode modNode in ModNodes)
+		{
+			if (modNode.Tag is NodeMetadata metadata)
+			{
+				metadata.IsFound = false;
+				modNode.ForeColor = metadata.ForeColor;
+			}
+		}
+
 		// Non-mergeable categories show no checkboxes; disabled mods are struck through and unchecked (load order styles).
 		foreach (TreeNode catNode in CategoryNodes)
 		{

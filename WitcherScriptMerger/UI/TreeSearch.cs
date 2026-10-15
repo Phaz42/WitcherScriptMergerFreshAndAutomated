@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -23,11 +24,13 @@ internal sealed class TreeSearch
 
 	private readonly Field _field;
 	private readonly Func<string, bool> _matchesText;
+	private readonly string _term;  // a plain term, found anywhere in a name; null for a pattern or a whole name
 
-	private TreeSearch(Field field, Func<string, bool> matchesText)
+	private TreeSearch(Field field, Func<string, bool> matchesText, string term = null)
 	{
 		_field = field;
 		_matchesText = matchesText;
+		_term = term;
 	}
 
 	/// <summary>The search typed, or null when it searches for nothing - then everything is shown.</summary>
@@ -60,7 +63,7 @@ internal sealed class TreeSearch
 			return null;
 
 		if (term.IndexOfAny(['*', '?']) == -1)
-			return new TreeSearch(field, name => name.Contains(term, StringComparison.OrdinalIgnoreCase));
+			return new TreeSearch(field, name => name.Contains(term, StringComparison.OrdinalIgnoreCase), term);
 
 		Regex pattern = new(
 			"^" + Regex.Escape(term).Replace(@"\*", ".*", StringComparison.Ordinal).Replace(@"\?", ".", StringComparison.Ordinal) + "$",
@@ -75,6 +78,35 @@ internal sealed class TreeSearch
 			return true;
 
 		return _field != Field.File && fileNode.Nodes.Cast<TreeNode>().Any(modNode => _matchesText(modNode.Text));
+	}
+
+	/// <summary>
+	/// Where the search found something in a file's path, to mark it (SMTree): each place a plain term appears, or the whole
+	/// path or file name a pattern or a name in quotes matched. Nothing for a search of mod names only.
+	/// </summary>
+	internal IEnumerable<(int Start, int Length)> FoundInFilePath(string relativePath)
+	{
+		if (_field == Field.Mod)
+			yield break;
+
+		if (_term != null)
+		{
+			for (int at = relativePath.IndexOf(_term, StringComparison.OrdinalIgnoreCase); at >= 0;
+				at = relativePath.IndexOf(_term, at + _term.Length, StringComparison.OrdinalIgnoreCase))
+			{
+				yield return (at, _term.Length);
+			}
+		}
+		else if (_matchesText(relativePath))
+		{
+			yield return (0, relativePath.Length);
+		}
+		else
+		{
+			string fileName = Path.GetFileName(relativePath);
+			if (_matchesText(fileName))
+				yield return (relativePath.Length - fileName.Length, fileName.Length);
+		}
 	}
 
 	/// <summary>Whether a mod node is one the search found, so it can be marked among the other mods of its file.</summary>
