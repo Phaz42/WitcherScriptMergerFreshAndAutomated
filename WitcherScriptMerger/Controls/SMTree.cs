@@ -106,7 +106,14 @@ internal abstract partial class SMTree : TreeView, IDisposable
 		// A search found this mod (TreeManager.MarkFoundMods): its name rests in green instead of ForeColor, which keeps
 		// the color the load order gives it for when the search is cleared.
 		internal bool IsFound;
-		internal Color RestColor => IsFound ? ThemeManager.CurrentTheme.SuccessColor : ForeColor;
+
+		// The conflict list's filter hides this mod (TreeManager), and it is shown only because its conflict has two or
+		// more other mods: it rests in its own color, halfway to the list's, so a winner or a warning still shows as one.
+		internal bool IsFiltered;
+
+		internal Color RestColor => IsFound ? ThemeManager.CurrentTheme.SuccessColor
+			: IsFiltered ? Colors.Mix(ForeColor, ThemeManager.CurrentTheme.TreeViewBackColor, 0.5)
+			: ForeColor;
 
 		// Non-mergeable conflicts only (ConflictTree): the mod's number in the load order, shown before its name - its
 		// priority in mods.settings, or, when it has none, the number it effectively has (IsEffectiveLoadOrderNumber).
@@ -372,7 +379,7 @@ internal abstract partial class SMTree : TreeView, IDisposable
 	#region Checkboxes
 
 	// Windows draws a list's checkboxes as images, in a fixed blue whatever the theme or accent. They are SM-FAE's images
-	// instead, the checkbox every window here shows (ThemeUtils.DrawCheckBox), in the accent colour.
+	// instead, the checkbox every window here shows (ThemeUtils.DrawCheckBox), in the accent color.
 	private ImageList _checkBoxImages;
 
 	private const int TVM_GETIMAGELIST = 0x1100 + 8;

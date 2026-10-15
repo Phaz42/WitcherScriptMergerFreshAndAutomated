@@ -68,6 +68,12 @@ internal static class Colors
 		return target;
 	}
 
+	/// <summary>The color laid over another at the given strength, from 0 (none of it) to 1: a hover's tint, a dimmed row.</summary>
+	internal static Color Mix(Color color, Color under, double amount) => Color.FromArgb(
+		(int)Math.Round(under.R + ((color.R - under.R) * amount)),
+		(int)Math.Round(under.G + ((color.G - under.G) * amount)),
+		(int)Math.Round(under.B + ((color.B - under.B) * amount)));
+
 	// Text on a fill of this color: white, as Windows writes on its accent, where that reads; otherwise the better of the two.
 	internal static Color TextOn(Color fill) =>
 		ContrastRatio(Color.White, fill) >= 4.5 || ContrastRatio(Color.White, fill) >= ContrastRatio(Color.Black, fill) ? Color.White : Color.Black;

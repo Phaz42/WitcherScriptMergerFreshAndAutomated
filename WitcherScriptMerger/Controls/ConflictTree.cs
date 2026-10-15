@@ -255,7 +255,7 @@ internal partial class ConflictTree : SMTree
 					numbered.IsEffectiveLoadOrderNumber = loadOrder.Effective;
 				}
 
-				// The load order shows in the numbers and the winner's colour; only what the colour means is said in words.
+				// The load order shows in the numbers and the winner's color; only what the color means is said in words.
 				modNode.ToolTipText = "";
 				int priority = Program.LoadOrder.GetPriorityByName(modNode.Text);
 
@@ -306,6 +306,14 @@ internal partial class ConflictTree : SMTree
 					metadata.IsOutdated = true;
 					modNode.ForeColor = metadata.ForeColor = ThemeManager.CurrentTheme.WarningColor;
 					modNode.ToolTipText = WithLine($"An old merge, made against an older game version (missing {outdated.Describe()}): delete it and merge again.", modNode.ToolTipText);
+				}
+
+				// A mod the filter hides, in a conflict it keeps for its two or more other mods: dimmed, and said why.
+				metadata.IsFiltered = MainFrm.treeManager?.IsFiltered(modNode.Text) == true;
+				if (metadata.IsFiltered)
+				{
+					modNode.ForeColor = metadata.RestColor;
+					modNode.ToolTipText = WithLine("Filtered, but shown: this conflict has two or more other mods, and its merge includes this one.", modNode.ToolTipText);
 				}
 			}
 
@@ -358,7 +366,7 @@ internal partial class ConflictTree : SMTree
 	private readonly Font _effectiveNumberFont = new("Segoe UI", 10F, FontStyle.Bold | FontStyle.Italic);
 
 	// The number sits in the empty indent before a mod's name, right-aligned against it, on the name's baseline: Windows
-	// centres the name in its row, and the number's own font is a different size.
+	// centers the name in its row, and the number's own font is a different size.
 	private Rectangle NumberBounds(TreeNode modNode, NodeMetadata metadata)
 	{
 		Font font = metadata.IsEffectiveLoadOrderNumber ? _effectiveNumberFont : _numberFont;
@@ -485,7 +493,7 @@ internal partial class ConflictTree : SMTree
 				catNode.Collapse();
 		}
 
-		// Only the conflicts the load order resolves - the ones with a winner coloured - as the option's label says.
+		// Only the conflicts the load order resolves - the ones with a winner colored - as the option's label says.
 		if (Settings.Get<bool>("CollapseCustomLoadOrder") && Program.LoadOrder != null)
 		{
 			foreach (TreeNode fileNode in FileNodes)

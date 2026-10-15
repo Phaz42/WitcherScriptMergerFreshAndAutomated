@@ -48,6 +48,9 @@ internal partial class MainForm : BaseForm
 	internal const int ProblemsBarRow = 1;
 	internal const int ListsRow = 2;
 	internal Label lblConflictsSearchCount, lblMergesSearchCount;
+
+	// The conflict list's filter (FilterPanel), left of its search box: green while it hides any mod.
+	internal FilterButton btnConflictsFilter;
 	private ToolTip _searchToolTip;
 	private System.Windows.Forms.Timer _conflictsSearchDelay, _mergesSearchDelay;
 
@@ -73,6 +76,7 @@ internal partial class MainForm : BaseForm
 				_searchToolTip?.Dispose();
 				lblStatusHealth?.Dispose();
 				problemsBar?.Dispose();
+				btnConflictsFilter?.Dispose();
 				txtConflictsSearch?.Dispose();
 				txtMergesSearch?.Dispose();
 				lblConflictsSearchCount?.Dispose();
@@ -249,7 +253,7 @@ internal partial class MainForm : BaseForm
 	// otherwise the last measurement of the sides stands.
 	private void PlaceProblemsBar()
 	{
-		Control left = txtConflictsSearch.Parent, right = txtMergesSearch.Parent;  // the SearchBox frames
+		Control left = btnConflictsFilter, right = txtMergesSearch.Parent;  // the search rows' outer ends: the filter, a SearchBox frame
 		int boxesBottom = tlpMain.PointToClient(left.PointToScreen(new Point(0, left.Height))).Y;
 		int below = Math.Max(0, tlpConflictsHeader.Bottom + tlpConflictsHeader.Margin.Bottom - boxesBottom);
 		int sideLeft = problemsBar.Margin.Left, sideRight = problemsBar.Margin.Right;
@@ -315,13 +319,15 @@ internal partial class MainForm : BaseForm
 
 		_searchToolTip = new ToolTip { AutoPopDelay = 30000, InitialDelay = 600, ReshowDelay = 200 };
 
-		txtConflictsSearch = CreateSearchRow(tlpConflictsHeader, searchRowHeight, () => treConflicts, out lblConflictsSearchCount);
+		btnConflictsFilter = new FilterButton();
+		_searchToolTip.SetToolTip(btnConflictsFilter, FilterToolTip(0, 0));
+		txtConflictsSearch = CreateSearchRow(tlpConflictsHeader, searchRowHeight, () => treConflicts, out lblConflictsSearchCount, btnConflictsFilter);
 		txtMergesSearch = CreateSearchRow(tlpMergesHeader, searchRowHeight, () => treMerges, out lblMergesSearchCount);
 		_conflictsSearchDelay = CreateSearchDelay(txtConflictsSearch, () => treConflicts);
 		_mergesSearchDelay = CreateSearchDelay(txtMergesSearch, () => treMerges);
 	}
 
-	private TextBox CreateSearchRow(TableLayoutPanel header, float height, Func<SMTree> tree, out Label count)
+	private TextBox CreateSearchRow(TableLayoutPanel header, float height, Func<SMTree> tree, out Label count, FilterButton filter = null)
 	{
 		header.RowCount = 2;
 		header.RowStyles[0] = new RowStyle(SizeType.Percent, 100F);
@@ -358,22 +364,43 @@ internal partial class MainForm : BaseForm
 
 		TableLayoutPanel row = new()
 		{
-			ColumnCount = 2,
+			ColumnCount = filter == null ? 2 : 3,
 			Dock = DockStyle.Fill,
 			// Wider than the Menu button's 25, so the box stays clear of a scrollbar on either side.
 			Margin = new Padding(63, 0, 63, 6),
 			RowCount = 1
 		};
+		// The filter takes the box's left end: the row keeps its width.
+		if (filter != null)
+		{
+			filter.Anchor = AnchorStyles.None;
+			filter.Margin = new Padding(0, 0, LogicalToDeviceUnits(6), 0);
+			_ = row.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+			row.Controls.Add(filter, 0, 0);
+		}
+
 		_ = row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
 		_ = row.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
 		_ = row.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-		row.Controls.Add(frame, 0, 0);
-		row.Controls.Add(count, 1, 0);
+		row.Controls.Add(frame, row.ColumnCount - 2, 0);
+		row.Controls.Add(count, row.ColumnCount - 1, 0);
 
 		header.Controls.Add(row, 0, 1);
 		header.SetColumnSpan(row, header.ColumnCount);
 		return box;
 	}
+
+	// Green while the filter hides any mod in the conflict list, and its tooltip says how much.
+	private void UpdateFilterButton()
+	{
+		(int mods, int conflicts) = treeManager.FilterHides();
+		btnConflictsFilter.IsActive = mods > 0;
+		_searchToolTip.SetToolTip(btnConflictsFilter, FilterToolTip(mods, conflicts));
+	}
+
+	private static string FilterToolTip(int mods, int conflicts) => mods == 0
+		? "Filter the conflict list: hide mods you don't want to see there, without changing your load order or your merges"
+		: $"Filtering: {mods} {(mods == 1 ? "mod" : "mods")} hidden, {conflicts} {(conflicts == 1 ? "conflict" : "conflicts")} not shown. Click to change.";
 
 	// Searching on every keystroke would rebuild the tree for each letter of a word.
 	private System.Windows.Forms.Timer CreateSearchDelay(TextBox box, Func<SMTree> tree)
@@ -414,6 +441,8 @@ internal partial class MainForm : BaseForm
 		treeManager = new TreeManager(treConflicts, treMerges, uiThreadManager, progressManager, treConflictsToolTip);
 		treeManager.InvokeRequired += OnTreeManagerInvokeRequired;
 		treeManager.SetSearchControls(txtConflictsSearch, lblConflictsSearchCount, txtMergesSearch, lblMergesSearchCount);
+		btnConflictsFilter.Click += (sender, e) => FilterPanel.ShowFilter(this, treeManager);
+		treeManager.FilterApplied += (sender, e) => UpdateFilterButton();
 		inventoryMergeManager = new InventoryMergeManager(uiThreadManager, progressManager, treeManager);
 
 		// Assign delegates for tree manager actions

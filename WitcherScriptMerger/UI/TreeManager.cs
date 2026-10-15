@@ -49,6 +49,17 @@ internal class TreeManager
 	private int _searchSuspensions;
 	private readonly HashSet<SMTree> _searchApplied = [];
 
+	// The conflict list's filter (FilterPanel): the mods it hides, saved by name, separated by |, which no folder name
+	// can hold. A conflict is hidden when a filtered mod is in it and fewer than two other mods are; in the others, the
+	// filtered mod is dimmed (ConflictTree), as their merges include it. Applied with the search, by the same hiding.
+	private const string FilteredModsKey = "FilteredMods";
+	private HashSet<string> _filteredMods = new(
+		(Settings.Get(FilteredModsKey) ?? string.Empty).Split('|', StringSplitOptions.RemoveEmptyEntries),
+		StringComparer.OrdinalIgnoreCase);
+
+	/// <summary>After the conflict list's search and filter were applied: what the filter hides may have changed.</summary>
+	internal event EventHandler FilterApplied;
+
 	internal Action<bool> CreateAllScriptMergesDelegate { get; set; }
 	internal Func<Task<bool>> RefreshMergeInventoryDelegate { get; set; }
 	internal Func<List<Merge>, bool> DeleteMergesDelegate { get; set; }
@@ -484,9 +495,9 @@ internal class TreeManager
 		ConflictsTree.ApplyDefaultExpansion();
 		MarkOutdatedMergeMods();  // the merges tree was built before this scan found which copies are outdated
 		ConflictsTree.EndUpdate();
-		ConflictsTree.ScrollToTop();
 		ProgressManager.UpdateStatusText(ModIndex);
 		ProgressManager.HideProgressScreen();
+		ConflictsTree.ScrollToTop();  // after hiding the progress screen applies the search and the filter, which rebuild the list
 		UIThreadManager.SetMergeButtonTextIfValidSelection();
 
 		// Auto Create Merges
@@ -505,6 +516,55 @@ internal class TreeManager
 	}
 
 	#region Search
+
+	/// <summary>Whether the conflict list's filter hides this mod.</summary>
+	internal bool IsFiltered(string modName) => _filteredMods.Contains(modName);
+
+	/// <summary>Every mod in the conflict list, shown or hidden, by name, with the number of conflicts it is in.</summary>
+	internal IEnumerable<(string Mod, int Conflicts)> ConflictModCounts() =>
+		ConflictsTree.AllFileNodes
+			.SelectMany(fileNode => fileNode.GetTreeNodes().Select(modNode => modNode.Text).Distinct(StringComparer.OrdinalIgnoreCase))
+			.GroupBy(modName => modName, StringComparer.OrdinalIgnoreCase)
+			.OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
+			.Select(group => (group.Key, group.Count()));
+
+	/// <summary>The mods the filter hides from now on, saved, and applied to the conflict list at once.</summary>
+	internal void SetFilteredMods(IEnumerable<string> modNames)
+	{
+		_filteredMods = new HashSet<string>(modNames, StringComparer.OrdinalIgnoreCase);
+		Settings.Set(FilteredModsKey, string.Join('|', _filteredMods));
+		Settings.Save();
+		ApplySearch(ConflictsTree);
+
+		// As a new search does, it starts at the top of the list.
+		if (ConflictsTree.Nodes.Count > 0)
+			ConflictsTree.TopNode = ConflictsTree.Nodes[0];
+	}
+
+	/// <summary>How many mods in the conflict list the filter hides, and how many conflicts it hides for them.</summary>
+	internal (int Mods, int Conflicts) FilterHides()
+	{
+		List<TreeNode> fileNodes = ConflictsTree.AllFileNodes;
+		return (ConflictModCounts().Count(mod => IsFiltered(mod.Mod)), fileNodes.Count(fileNode => !ShownByFilter(fileNode)));
+	}
+
+	// Whether the filter hides any mod in the conflict list now; a filtered mod no longer there changes nothing.
+	private bool IsFilterApplied() =>
+		_filteredMods.Count > 0 && ConflictsTree.AllFileNodes.Any(fileNode => fileNode.GetTreeNodes().Any(modNode => IsFiltered(modNode.Text)));
+
+	// A conflict none of whose mods the filter hides, or one with two or more other mods: its merge includes the others.
+	private bool ShownByFilter(TreeNode fileNode)
+	{
+		int mods = 0, filtered = 0;
+		foreach (TreeNode modNode in fileNode.GetTreeNodes())
+		{
+			mods++;
+			if (IsFiltered(modNode.Text))
+				filtered++;
+		}
+
+		return filtered == 0 || mods - filtered >= 2;
+	}
 
 	/// <summary>The search boxes and their counts, from the main form.</summary>
 	internal void SetSearchControls(TextBox conflictsBox, Label conflictsCount, TextBox mergesBox, Label mergesCount)
@@ -616,16 +676,19 @@ internal class TreeManager
 		try
 		{
 			TreeSearch search = tree == ConflictsTree ? _conflictsSearch : _mergesSearch;
+			bool filtering = tree == ConflictsTree && IsFilterApplied();
 
-			// A search that hid nothing still made the found mods bold and expanded the tree, so clearing it restyles too.
+			// A search that hid nothing still marked the found mods and expanded the tree, and a filter dims the mods it
+			// hides, so clearing either restyles too.
 			HideToolTips();
 			tree.BeginUpdate();
 			tree.Search = search;
 			bool wasSearched = _searchApplied.Remove(tree);
 			bool changed = tree.ShowAllNodes() | wasSearched;
-			if (search != null)
+			if (search != null || filtering)
 			{
-				tree.HideFileNodes(search.MatchesFileNode);
+				tree.HideFileNodes(fileNode =>
+					(search == null || search.MatchesFileNode(fileNode)) && (!filtering || ShownByFilter(fileNode)));
 				_ = _searchApplied.Add(tree);
 				changed = true;
 			}
@@ -638,12 +701,15 @@ internal class TreeManager
 			}
 
 			tree.EndUpdate();
-			ShowSearchCount(tree, search);
+			ShowSearchCount(tree, search, filtering);
 		}
 		finally
 		{
 			_applyingSearch = false;
 		}
+
+		if (tree == ConflictsTree)
+			FilterApplied?.Invoke(this, EventArgs.Empty);
 	}
 
 	// The mods a search found are green among the other mods of their conflict or merge, as is what it found in a file's
@@ -663,14 +729,15 @@ internal class TreeManager
 		}
 	}
 
-	// "12 of 340", and how many selected ones the search hides: they are still merged or deleted with the selection.
-	private void ShowSearchCount(SMTree tree, TreeSearch search)
+	// "12 of 340", and how many selected ones the search or the filter hides: they are still merged or deleted with the
+	// selection.
+	private void ShowSearchCount(SMTree tree, TreeSearch search, bool filtering)
 	{
 		Label count = tree == ConflictsTree ? _conflictsSearchCount : _mergesSearchCount;
 		if (count == null)
 			return;
 
-		if (search == null)
+		if (search == null && !filtering)
 		{
 			count.Text = string.Empty;
 			return;
