@@ -254,7 +254,8 @@ internal partial class MainForm : BaseForm
 	private void PlaceProblemsBar()
 	{
 		Control left = btnConflictsFilter, right = txtMergesSearch.Parent;  // the search rows' outer ends: the filter, a SearchBox frame
-		int boxesBottom = tlpMain.PointToClient(left.PointToScreen(new Point(0, left.Height))).Y;
+		Control box = txtConflictsSearch.Parent;  // a SearchBox frame: the filter beside it is shorter
+		int boxesBottom = tlpMain.PointToClient(box.PointToScreen(new Point(0, box.Height))).Y;
 		int below = Math.Max(0, tlpConflictsHeader.Bottom + tlpConflictsHeader.Margin.Bottom - boxesBottom);
 		int sideLeft = problemsBar.Margin.Left, sideRight = problemsBar.Margin.Right;
 

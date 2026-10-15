@@ -520,6 +520,9 @@ internal class TreeManager
 	/// <summary>Whether the conflict list's filter hides this mod.</summary>
 	internal bool IsFiltered(string modName) => _filteredMods.Contains(modName);
 
+	/// <summary>The mods the filter hides, as saved: also those with no conflict now, which it hides again when they have one.</summary>
+	internal IReadOnlyCollection<string> FilteredMods => _filteredMods;
+
 	/// <summary>Every mod in the conflict list, shown or hidden, by name, with the number of conflicts it is in.</summary>
 	internal IEnumerable<(string Mod, int Conflicts)> ConflictModCounts() =>
 		ConflictsTree.AllFileNodes

@@ -311,10 +311,11 @@ internal partial class ConflictTree : SMTree
 				// A mod the filter hides, in a conflict it keeps for its two or more other mods: dimmed, and said why.
 				metadata.IsFiltered = MainFrm.treeManager?.IsFiltered(modNode.Text) == true;
 				if (metadata.IsFiltered)
-				{
-					modNode.ForeColor = metadata.RestColor;
 					modNode.ToolTipText = WithLine("Filtered, but shown: this conflict has two or more other mods, and its merge includes this one.", modNode.ToolTipText);
-				}
+
+				// Drawn in the color it rests in: green while a search found it, dimmed while filtered. This also runs
+				// outside a search's restyle (a load-order change, the watcher), which must not take the green off.
+				modNode.ForeColor = metadata.RestColor;
 			}
 
 			if (!isMergeable)

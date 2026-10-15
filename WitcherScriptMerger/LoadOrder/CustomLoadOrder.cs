@@ -131,6 +131,13 @@ internal partial class CustomLoadOrder : IDisposable
 			}
 			else
 			{
+				// A setting needs the section it belongs to: one above the first is a malformed file, not a crash.
+				if (currentMod == null)
+				{
+					ShowWarningForMalformedFile($"A setting comes before the first [mod] section, on line:\n\n{line}");
+					return false;
+				}
+
 				// This is a key=value line, split at its first '=': a value may hold one, as a folder name in VK can
 				string[] parts = trimmedLine.Split('=', 2);
 				if (parts.Length != 2)
@@ -211,7 +218,8 @@ internal partial class CustomLoadOrder : IDisposable
 				.Append("Enabled=").AppendLine(Convert.ToInt32(modSetting.IsEnabled, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture))
 				.Append("Priority=").AppendLine(modSetting.Priority?.ToString(CultureInfo.InvariantCulture));
 
-			if (!string.IsNullOrEmpty(modSetting.VK))
+			// Written back as it was read, an empty value included: null only for an entry that had none.
+			if (modSetting.VK != null)
 			{
 				_ = builder.Append("VK=").AppendLine(modSetting.VK);
 			}
@@ -349,7 +357,10 @@ internal partial class CustomLoadOrder : IDisposable
 
 	internal void ToggleModByName(string modName)
 	{
+		// A file that could not be read is never written: SM-FAE's older copy would replace what is in it now.
 		Refresh();
+		if (!IsValid)
+			return;
 		ModLoadSetting mod = GetModLoadSettingByName(modName);
 
 		if (mod != null)
@@ -378,6 +389,8 @@ internal partial class CustomLoadOrder : IDisposable
 	internal void SetPriorityByName(string modName, int priority)
 	{
 		Refresh();
+		if (!IsValid)
+			return;
 		ModLoadSetting mod = GetModLoadSettingByName(modName);
 
 		if (mod != null)
@@ -418,6 +431,8 @@ internal partial class CustomLoadOrder : IDisposable
 	internal void RemoveMod(string modName)
 	{
 		Refresh();
+		if (!IsValid)
+			return;
 
 		ModLoadSetting modToRemove = Mods.FirstOrDefault(setting => setting.ModName.EqualsIgnoreCase(modName));
 		if (modToRemove != null)

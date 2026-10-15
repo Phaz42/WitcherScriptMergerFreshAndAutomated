@@ -91,6 +91,9 @@ internal static class LoadOrderValidator
 		else
 		{
 			loadOrder.Refresh();
+			if (!loadOrder.IsValid)
+				return;
+
 			loadOrder.AddMod(new ModLoadSetting
 			{
 				ModName = Paths.RetrieveMergedModName(),

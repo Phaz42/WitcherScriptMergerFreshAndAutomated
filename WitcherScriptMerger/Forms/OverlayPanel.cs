@@ -20,6 +20,7 @@ internal abstract class OverlayPanel : Form
 	private readonly Form _owner;
 	private readonly string _key;
 	private readonly Font _titleFont = new("Segoe UI", 14F, FontStyle.Bold);
+	private readonly Font _closeFont = new("Segoe UI", 12F);
 
 	/// <summary>Where each kind puts its content, below the title.</summary>
 	protected Panel Body { get; }
@@ -83,7 +84,7 @@ internal abstract class OverlayPanel : Form
 			TextAlign = ContentAlignment.MiddleLeft,
 			UseMnemonic = false
 		};
-		CloseButton close = new(back) { Dock = DockStyle.Right, Width = owner.LogicalToDeviceUnits(44) };
+		CloseButton close = new(back) { Dock = DockStyle.Right, Font = _closeFont, Width = owner.LogicalToDeviceUnits(44) };
 		close.Click += (sender, e) => Close();
 
 		Panel header = new() { BackColor = back, Dock = DockStyle.Top, Height = owner.LogicalToDeviceUnits(52), Padding = new Padding(pad, 0, owner.LogicalToDeviceUnits(4), 0) };
@@ -148,12 +149,15 @@ internal abstract class OverlayPanel : Form
 		}
 	}
 
+	// The fonts after the controls that use them.
 	protected override void Dispose(bool disposing)
 	{
-		if (disposing)
-			_titleFont.Dispose();
-
 		base.Dispose(disposing);
+		if (disposing)
+		{
+			_titleFont.Dispose();
+			_closeFont.Dispose();
+		}
 	}
 
 	// The × at the top right: the dimmed text color, brighter on a faint square while hovered, darker while pressed.
@@ -168,7 +172,6 @@ internal abstract class OverlayPanel : Form
 			SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint
 				| ControlStyles.ResizeRedraw, true);
 			Cursor = Cursors.Hand;
-			Font = new Font("Segoe UI", 12F);
 			TabStop = false;
 			AccessibleName = "Close";
 			AccessibleRole = AccessibleRole.PushButton;

@@ -88,12 +88,7 @@ internal sealed class ProblemsBar : Control
 	// The theme's warning color, faintly, over the window's background - over white in the light theme, whose gray
 	// window would leave the warning color too dark to read on it.
 	private static Color FillColor(Theme theme) =>
-		Mix(theme.WarningColor, theme.IsDark ? theme.BackColor : Color.White, theme.IsDark ? 0.14 : 0.08);
-
-	private static Color Mix(Color color, Color under, double amount) => Color.FromArgb(
-		(int)Math.Round(under.R + ((color.R - under.R) * amount)),
-		(int)Math.Round(under.G + ((color.G - under.G) * amount)),
-		(int)Math.Round(under.B + ((color.B - under.B) * amount)));
+		Colors.Mix(theme.WarningColor, theme.IsDark ? theme.BackColor : Color.White, theme.IsDark ? 0.14 : 0.08);
 
 	protected override void OnPaint(PaintEventArgs e)
 	{
@@ -118,7 +113,7 @@ internal sealed class ProblemsBar : Control
 
 		if (_overClose)
 		{
-			using SolidBrush hover = new(Mix(theme.WarningColor, fill, 0.2));
+			using SolidBrush hover = new(Colors.Mix(theme.WarningColor, fill, 0.2));
 			g.FillRectangle(hover, _close);
 		}
 

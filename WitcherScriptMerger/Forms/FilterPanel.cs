@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -138,31 +139,39 @@ internal sealed class FilterPanel : OverlayPanel
 		base.OnLayout(levent);
 	}
 
+	// Every mod shown again: also one filtered that has no conflict now, which the list does not show.
 	private void ShowAll()
 	{
 		_settingAll = true;
 		foreach (ThemedCheckBox box in _boxes)
 			box.Checked = true;
 		_settingAll = false;
-		Apply();
+		_trees.SetFilteredMods([]);
 	}
 
-	// The mods unchecked now: those the filter hides from here on. One no longer in the list is no longer kept.
+	// The mods unchecked now, and those filtered earlier that the list does not show, having no conflict now: the
+	// filter hides them again when they have one.
 	private void Apply()
 	{
-		if (!_settingAll)
-			_trees.SetFilteredMods(_boxes.Where(box => !box.Checked).Select(box => box.Text));
+		if (_settingAll)
+			return;
+
+		HashSet<string> listed = new(_boxes.Select(box => box.Text), StringComparer.OrdinalIgnoreCase);
+		_trees.SetFilteredMods(_boxes.Where(box => !box.Checked).Select(box => box.Text)
+			.Concat(_trees.FilteredMods.Where(modName => !listed.Contains(modName))));
 	}
 
+	// The fonts after the controls that use them.
 	protected override void Dispose(bool disposing)
 	{
 		if (disposing)
-		{
 			_hint.Dispose();
+
+		base.Dispose(disposing);
+		if (disposing)
+		{
 			_hintFont.Dispose();
 			_listFont.Dispose();
 		}
-
-		base.Dispose(disposing);
 	}
 }
