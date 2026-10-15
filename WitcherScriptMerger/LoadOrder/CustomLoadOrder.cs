@@ -84,7 +84,7 @@ internal partial class CustomLoadOrder : IDisposable
 		LoadOrderTimer.Start();
 	}
 
-	internal void Refresh(bool keepVortexKey = false)
+	internal void Refresh()
 	{
 		IsValid = false;
 
@@ -94,11 +94,11 @@ internal partial class CustomLoadOrder : IDisposable
 			return;
 		}
 
-		if (ParseFileToMods(FilePath, keepVortexKey))
+		if (ParseFileToMods(FilePath))
 			IsValid = true;
 	}
 
-	internal bool ParseFileToMods(string filePath, bool keepVortexKey)
+	internal bool ParseFileToMods(string filePath)
 	{
 		List<ModLoadSetting> mods = [];
 		ModLoadSetting currentMod = null;
@@ -131,8 +131,8 @@ internal partial class CustomLoadOrder : IDisposable
 			}
 			else
 			{
-				// This is a key=value line
-				string[] parts = trimmedLine.Split('=');
+				// This is a key=value line, split at its first '=': a value may hold one, as a folder name in VK can
+				string[] parts = trimmedLine.Split('=', 2);
 				if (parts.Length != 2)
 				{
 					ShowWarningForMalformedFile($"Unrecognized setting or value for mod {currentMod.ModName}, on line:\n\n{line}");
@@ -164,8 +164,8 @@ internal partial class CustomLoadOrder : IDisposable
 				}
 				else if (key.Equals("VK", StringComparison.OrdinalIgnoreCase))
 				{
-					if (keepVortexKey)
-						currentMod.VK = value;
+					// Vortex's link to the mod it manages: not SM-FAE's, so kept as it is and written back with its mod
+					currentMod.VK = value;
 				}
 				else
 				{
@@ -408,15 +408,11 @@ internal partial class CustomLoadOrder : IDisposable
 		AddMergedModIfMissingAndSave();
 	}
 
-	internal void AddMod(ModLoadSetting modLoadSetting, bool keepVortexKey = false)
+	internal void AddMod(ModLoadSetting modLoadSetting)
 	{
-		if (keepVortexKey)
-			Refresh(true);
 		IncrementLeadingContiguousPriorities(modLoadSetting);
 		Mods = Mods.Concat(new[] { modLoadSetting }).ToList();
 		AddMergedModIfMissingAndSave();
-		if (keepVortexKey)
-			Refresh(false);
 	}
 
 	internal void RemoveMod(string modName)

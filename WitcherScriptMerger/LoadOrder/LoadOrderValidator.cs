@@ -83,18 +83,21 @@ internal static class LoadOrderValidator
 
 		if (mergedModSetting != null)
 		{
-			mergedModSetting.IsEnabled = true;
-			mergedModSetting.Priority = priority;
+			// Through the load order's own actions, which reread the file, move a mod already at that number down, and save
+			loadOrder.SetPriorityByName(mergedModSetting.ModName, priority);
+			if (loadOrder.IsModDisabledByName(mergedModSetting.ModName))
+				loadOrder.ToggleModByName(mergedModSetting.ModName);
 		}
 		else
 		{
+			loadOrder.Refresh();
 			loadOrder.AddMod(new ModLoadSetting
 			{
 				ModName = Paths.RetrieveMergedModName(),
 				IsEnabled = true,
 				Priority = priority,
 				VK = Paths.RetrieveMergedModName()
-			}, true);
+			});
 		}
 	}
 }
