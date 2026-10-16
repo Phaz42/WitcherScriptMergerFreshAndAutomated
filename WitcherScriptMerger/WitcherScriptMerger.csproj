@@ -95,7 +95,7 @@
   </ItemGroup>
   <PropertyGroup>
     <AssemblyVersion>$(PackageVersion)</AssemblyVersion>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <PackageProjectUrl>https://www.nexusmods.com/witcher3/mods/8405</PackageProjectUrl>
     <Title>Script Merger - Fresh and Automated Edition (SM-FAE)</Title>
     <Description>Script Merger - Fresh and Automated Edition (SM-FAE)</Description>
