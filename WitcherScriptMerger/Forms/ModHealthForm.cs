@@ -13,15 +13,19 @@ namespace WitcherScriptMerger.Forms;
 
 /// <summary>
 /// The problem check's report (ModHealth), opened from the status bar: headings and mod names in bold, details indented,
-/// to scroll through and copy - as plain text - into a forum post or bug report.
+/// to scroll through and copy - as plain text - into a forum post or bug report. It looks like the help and filter panels
+/// (OverlayPanel): their background, the headings in the accent color, the window's edge in their frame's color; its
+/// opening line larger, in the warning bar's amber.
 /// </summary>
 internal sealed class ModHealthForm : BaseForm
 {
 	private readonly ModHealth _health;
 	private readonly RichTextBox _text;
+	private readonly TableLayoutPanel _buttonRow;
 	private readonly Font _textFont = new("Segoe UI", 10.5F);
 	private readonly Font _boldFont = new("Segoe UI", 10.5F, FontStyle.Bold);
 	private readonly Font _headingFont = new("Segoe UI", 12F, FontStyle.Bold);
+	private readonly Font _titleFont = new("Segoe UI", 13F, FontStyle.Bold);
 
 	internal ModHealthForm(ModHealth health)
 	{
@@ -71,8 +75,8 @@ internal sealed class ModHealthForm : BaseForm
 		AcceptButton = close;
 		CancelButton = close;
 
-		// The theme colours a TableLayoutPanel and its children, and scales the button row's height (designed at 125%).
-		TableLayoutPanel buttons = new() { ColumnCount = 3, Dock = DockStyle.Fill, Margin = new Padding(0), RowCount = 1 };
+		// The theme colors a TableLayoutPanel and its children, and scales the button row's height (designed at 125%).
+		TableLayoutPanel buttons = _buttonRow = new() { ColumnCount = 3, Dock = DockStyle.Fill, Margin = new Padding(0), RowCount = 1 };
 		_ = buttons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
 		_ = buttons.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
 		_ = buttons.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
@@ -90,12 +94,17 @@ internal sealed class ModHealthForm : BaseForm
 		Controls.Add(layout);
 	}
 
-	// Filled once the theme is applied: each line's colour is set as it is written, from the theme in force.
+	// Filled once the theme is applied: each line's color is set as it is written, from the theme in force. The panels'
+	// background replaces the theme's window color on the report; the button row keeps it, since a button's face is the
+	// panels' color.
 	protected override void OnLoad(EventArgs e)
 	{
 		base.OnLoad(e);
 
-		Color textColor = ThemeManager.CurrentTheme.ForeColor;
+		Theme theme = ThemeManager.CurrentTheme;
+		SetBackColor(this, theme.TreeViewBackColor);
+		Color textColor = theme.ForeColor;
+		Color titleColor = Colors.ReadableOn(theme.WarningColor, theme.IsDark, theme.TreeViewBackColor);  // the warning bar's amber
 		int indent = LogicalToDeviceUnits(24);
 		bool first = true;
 		foreach ((string line, ModHealth.LineStyle style) in _health.ReportLines())
@@ -108,13 +117,45 @@ internal sealed class ModHealthForm : BaseForm
 			_text.SelectionLength = 0;
 			_text.SelectionFont = style switch
 			{
+				ModHealth.LineStyle.Title => _titleFont,
 				ModHealth.LineStyle.Heading => _headingFont,
 				ModHealth.LineStyle.Bold => _boldFont,
 				_ => _textFont
 			};
-			_text.SelectionColor = textColor;
+			_text.SelectionColor = style switch
+			{
+				ModHealth.LineStyle.Title => titleColor,
+				ModHealth.LineStyle.Heading => theme.AccentColor,
+				_ => textColor
+			};
 			_text.SelectionIndent = style == ModHealth.LineStyle.Detail ? indent : 0;
 			_text.AppendText(line);
+		}
+	}
+
+	private void SetBackColor(Control control, Color color)
+	{
+		if (control is Button || control == _buttonRow)
+			return;
+
+		control.BackColor = color;
+		foreach (Control child in control.Controls)
+			SetBackColor(child, color);
+	}
+
+	// The window's 1-pixel edge in the panels' frame color, where Windows draws it in a color of the program's (Windows 11).
+	protected override void OnHandleCreated(EventArgs e)
+	{
+		base.OnHandleCreated(e);
+		Color frame = ThemeManager.CurrentTheme.AccentSubtleColor;
+		int frameColor = frame.R | (frame.G << 8) | (frame.B << 16);  // COLORREF
+		try
+		{
+			DwmSetWindowAttribute(Handle, DWMWINDOWATTRIBUTE.DWMWA_BORDER_COLOR, ref frameColor, sizeof(int));
+		}
+		catch (Exception ex) when (ex is COMException or ArgumentException)
+		{
+			// Not supported by this Windows: its own edge.
 		}
 	}
 
@@ -132,9 +173,11 @@ internal sealed class ModHealthForm : BaseForm
 		if (disposing)
 		{
 			_text.Dispose();
+			_buttonRow.Dispose();
 			_textFont.Dispose();
 			_boldFont.Dispose();
 			_headingFont.Dispose();
+			_titleFont.Dispose();
 		}
 
 		base.Dispose(disposing);

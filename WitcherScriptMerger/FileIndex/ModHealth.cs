@@ -46,7 +46,7 @@ internal sealed class ModHealth
 
 	/// <summary>
 	/// Whether the merged file of this path is an old merge - made against an older game version, with no outdated mod's
-	/// copy in it to blame - and which merged mod holds it. The trees colour it as they colour an outdated copy.
+	/// copy in it to blame - and which merged mod holds it. The trees color it as they color an outdated copy.
 	/// </summary>
 	internal bool IsOldMerge(string relativePath, out string mergedModName, out GameVersionCheck.Result result)
 	{
@@ -167,8 +167,9 @@ internal sealed class ModHealth
 		}
 	}
 
-	/// <summary>How a line of the report is shown: the report window sets headings, the opening line and mod names in bold, details indented.</summary>
-	internal enum LineStyle { Text, Heading, Bold, Detail }
+	/// <summary>How a line of the report is shown: the report window sets the opening line apart, headings and mod names in
+	/// bold, details indented.</summary>
+	internal enum LineStyle { Text, Title, Heading, Bold, Detail }
 
 	/// <summary>The report the status bar opens: what was found, what it means, and what to do.</summary>
 	internal List<(string Text, LineStyle Style)> ReportLines()
@@ -177,7 +178,7 @@ internal sealed class ModHealth
 		void Add(string text, LineStyle style = LineStyle.Text) => lines.Add((text, style));
 
 		int mods = ModCount;
-		Add($"SM-FAE found problems with {mods} mod{(mods == 1 ? string.Empty : "s")}", LineStyle.Bold);
+		Add($"SM-FAE found problems with {mods} mod{(mods == 1 ? string.Empty : "s")}", LineStyle.Title);
 		Add("The Conflicts and Merges lists only show mods that share a file with another mod; this problem check covers all installed mods.");
 		Add(string.Empty);
 

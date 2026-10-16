@@ -25,6 +25,7 @@ internal sealed class FilterPanel : OverlayPanel
 	private readonly Label _hint;
 	private readonly Font _hintFont = new("Segoe UI", 10F);
 	private readonly Font _listFont = new("Segoe UI", 10.5F);
+	private readonly ToolTip _fullNames = new() { AutoPopDelay = 30000, InitialDelay = 600, ReshowDelay = 200 };
 	private bool _settingAll;
 
 	/// <summary>Opens the filter over the owner, closing any other panel first.</summary>
@@ -66,9 +67,11 @@ internal sealed class FilterPanel : OverlayPanel
 		list.SuspendLayout();
 		foreach ((string mod, int conflicts) in mods)
 		{
+			// As wide as its column, so a long name ends in an ellipsis instead of running under the count; the full name
+			// is its tooltip then.
 			ThemedCheckBox box = new()
 			{
-				AutoSize = true,
+				Anchor = AnchorStyles.Left | AnchorStyles.Right,
 				BackColor = back,
 				Checked = !trees.IsFiltered(mod),
 				Font = _listFont,
@@ -77,7 +80,9 @@ internal sealed class FilterPanel : OverlayPanel
 				Text = mod,
 				UseMnemonic = false
 			};
+			box.Height = box.GetPreferredSize(Size.Empty).Height;
 			box.CheckedChanged += (sender, e) => Apply();
+			box.SizeChanged += (sender, e) => _fullNames.SetToolTip(box, box.IsTextCut ? box.Text : null);
 			Label count = new()
 			{
 				Anchor = AnchorStyles.Right,
@@ -165,7 +170,10 @@ internal sealed class FilterPanel : OverlayPanel
 	protected override void Dispose(bool disposing)
 	{
 		if (disposing)
+		{
 			_hint.Dispose();
+			_fullNames.Dispose();
+		}
 
 		base.Dispose(disposing);
 		if (disposing)

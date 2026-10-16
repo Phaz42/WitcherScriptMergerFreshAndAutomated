@@ -251,7 +251,13 @@ internal abstract partial class SMTree : TreeView, IDisposable
 		if (node?.NodeFont == null)
 			return false;
 
-		if ((draw->ItemState & (CdisSelected | CdisGrayed | CdisDisabled | CdisHot)) == 0)
+		// A category heading's text is drawn by PaintCategoryHeadings instead: Windows' is in the background's color.
+		if (IsCategoryNode(node))
+		{
+			draw->TextColor = ColorTranslator.ToWin32(BackColor);
+			draw->TextBackColor = ColorTranslator.ToWin32(BackColor);
+		}
+		else if ((draw->ItemState & (CdisSelected | CdisGrayed | CdisDisabled | CdisHot)) == 0)
 		{
 			if (!node.ForeColor.IsEmpty)
 				draw->TextColor = ColorTranslator.ToWin32(node.ForeColor);
@@ -333,7 +339,11 @@ internal abstract partial class SMTree : TreeView, IDisposable
 	private static partial bool EndPaint(IntPtr hWnd, ref PaintStruct paint);
 
 	/// <summary>Draws this tree's additions over what Windows painted, in the buffer.</summary>
-	protected virtual void PaintOverlay(Graphics g) => PaintSearchFinds(g);
+	protected virtual void PaintOverlay(Graphics g)
+	{
+		PaintCategoryHeadings(g);
+		PaintSearchFinds(g);
+	}
 
 	private const TextFormatFlags NodeTextFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
 		TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding | TextFormatFlags.PreserveGraphicsClipping;
@@ -367,6 +377,22 @@ internal abstract partial class SMTree : TreeView, IDisposable
 			}
 
 			g.ResetClip();
+		}
+	}
+
+	private const TextFormatFlags HeadingTextFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
+		TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding | TextFormatFlags.NoClipping;
+
+	// A category heading's font is taller than a row, and Windows cut its text off at the row's bottom: the descenders,
+	// the "g" of "Mergeable". Drawn here instead, centered in its row and not cut off; Windows still lays it out in that
+	// font (SelectOwnFont), so its place and width are as before.
+	private void PaintCategoryHeadings(Graphics g)
+	{
+		for (TreeNode node = TopNode; node != null && node.Bounds.Top < ClientSize.Height; node = node.NextVisibleNode)
+		{
+			if (IsCategoryNode(node) && node.NodeFont != null)
+				TextRenderer.DrawText(g, node.Text, node.NodeFont, node.Bounds, node.ForeColor.IsEmpty ? ForeColor : node.ForeColor,
+					HeadingTextFlags);
 		}
 	}
 
