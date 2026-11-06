@@ -1,0 +1,28 @@
+Script Merger - Fresh and Automated Edition (SM-FAE)
+
+Copyright (C) 2015-2016 AnotherSymbiote (the original Witcher Script Merger)
+Copyright (C) 2020-2022 IDCs (the IDCs edition)
+Copyright (C) 2023-2026 Phaz42 (SM-FAE)
+
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
+Public License, version 2, as published by the Free Software Foundation (the file LICENSE).
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+more details.
+
+The source code: https://github.com/Phaz42/WitcherScriptMergerFreshAndAutomated
+
+Modified work. SM-FAE is a modified version of IDCs' edition of AnotherSymbiote's Witcher Script Merger
+(https://github.com/IDCs/WitcherScriptMerger, https://github.com/AnotherSymbiote/WitcherScriptMerger), changed
+throughout from its first release on. The repository holds the full history of the changes.
+
+Code from Stack Overflow, licensed under CC BY-SA and credited where it is used, with a link to its source:
+Controls/SMTree.cs, Extensions.cs and UI/TaskbarProgress.cs.
+
+CD PROJEKT RED's content. The program's icon (the wolf medallion) and its "no conflicts" images of Geralt are
+based on CD PROJEKT RED's characters and designs. They are not covered by the GNU General Public License; they
+are used under CD PROJEKT RED's Fan Content Guidelines (https://www.cdprojektred.com/en/fan-content).
+The Witcher is a trademark of CD PROJEKT S.A.
+
+This is an unofficial fan work and is not approved/endorsed by CD PROJEKT RED.
