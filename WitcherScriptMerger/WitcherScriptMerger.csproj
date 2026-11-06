@@ -88,6 +88,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <!-- The files earlier releases shipped that this one does not: removed at start (Utilities\Leftovers.cs). -->
+    <EmbeddedResource Include="Leftovers.tsv" LogicalName="WitcherScriptMerger.Leftovers.tsv" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- The QuickBMS script, with its 5.x bundle branch, ships in Tools\QuickBMS beside the released tools. -->
     <None Update="Tools\QuickBMS\witcher3.bms" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

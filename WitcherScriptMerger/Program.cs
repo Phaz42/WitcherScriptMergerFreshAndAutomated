@@ -11,6 +11,7 @@ using WitcherScriptMerger.Forms;
 using WitcherScriptMerger.Inventory;
 using WitcherScriptMerger.LoadOrder;
 using WitcherScriptMerger.Theming;
+using WitcherScriptMerger.Utilities;
 
 [assembly: DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
 namespace WitcherScriptMerger;
@@ -236,6 +237,17 @@ internal static partial class Program
 				WaitForPreviousInstance(args, restartIndex);
 			if (AcquireMutex(restarted ? RestartMutexTimeout : TimeSpan.Zero))
 			{
+				// Files an earlier version left behind in this folder, removed now that this is the only instance.
+				try
+				{
+					db($"Leftovers removed: {Leftovers.Remove()}");
+				}
+				catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+				{
+					// Never a reason not to start.
+					db(ex.ToString());
+				}
+
 				// If acquired, start the named pipe listener thread.
 				Thread listenThread = new(ListenForSignal) { IsBackground = true };
 				listenThread.Start();
