@@ -72,6 +72,10 @@ internal static partial class Program
 	/// </summary>
 	internal static bool Restart()
 	{
+		// The new instance starts only after this one's windows are gone, when this process may no longer be the
+		// foreground one, and Windows then keeps the new window behind the others. Allowed now, while the user's answer
+		// to the restart question makes this process the foreground one; the permission lapses at the next input.
+		_ = AllowSetForegroundWindow(AsfwAny);
 		System.ComponentModel.CancelEventArgs closing = new();
 		Application.Exit(closing);
 		restartRequested = !closing.Cancel;
@@ -81,6 +85,12 @@ internal static partial class Program
 	[LibraryImport("user32.dll")]
 	[return: MarshalAs(UnmanagedType.Bool)]
 	private static partial bool SetForegroundWindow(IntPtr hWnd);
+
+	private const int AsfwAny = -1;
+
+	[LibraryImport("user32.dll")]
+	[return: MarshalAs(UnmanagedType.Bool)]
+	private static partial bool AllowSetForegroundWindow(int dwProcessId);
 
 	/// <summary>
 	/// Listens for a signal on a named pipe and brings the application window to the foreground.
@@ -145,7 +155,7 @@ internal static partial class Program
 		{
 			// The existing instance did not respond, continue starting the app 
 			db(ex.ToString());
-			RunApplication();
+			RunApplication(false);
 		}
 	}
 
@@ -230,7 +240,7 @@ internal static partial class Program
 				Thread listenThread = new(ListenForSignal) { IsBackground = true };
 				listenThread.Start();
 
-				RunApplication();
+				RunApplication(restarted);
 				mutex.ReleaseMutex();
 
 				// Started only now, so that the settings this instance saved while closing are the ones it reads.
@@ -253,13 +263,16 @@ internal static partial class Program
 	/// <summary>
 	/// Initializes and runs the main application form.
 	/// </summary>
-	private static void RunApplication()
+	private static void RunApplication(bool restarted)
 	{
 		ThemeMngr = new();
 		MainFrm = new();
 		OptionsFrm = new();
 		MessageFrm = new();
 
+		// After a restart the window is brought to the front, with the permission the previous instance gave.
+		if (restarted)
+			MainFrm.Shown += (_, _) => MainFrm.Activate();
 		Application.Run(MainFrm);
 	}
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
@@ -13,6 +14,7 @@ namespace WitcherScriptMerger.Controls;
 internal class RoundButton : Button
 {
 	/// <summary>The corner radius the theme gave it, in pixels.</summary>
+	[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
 	internal int CornerRadius { get; set; } = 12;
 
 	// Windows' frame is replaced by the ring below.

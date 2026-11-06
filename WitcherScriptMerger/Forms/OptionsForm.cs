@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -21,6 +22,7 @@ namespace WitcherScriptMerger.Forms;
 internal partial class OptionsForm : BaseForm
 {
 	private string gameDirectory = string.Empty;
+	[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
 	internal string GameDirectory { get => gameDirectory; set => SetGameDirectory(value); }
 
 	internal bool BundleScanOptionChanged;

@@ -1,9 +1,11 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Windows.Forms;
 
 namespace WitcherScriptMerger.Forms;
 internal partial class MessageForm : Form
 {
+	[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
 	internal string Message
 	{
 		get => tbMessage.Text;

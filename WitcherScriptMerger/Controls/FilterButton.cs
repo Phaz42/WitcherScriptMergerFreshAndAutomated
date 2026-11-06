@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System.ComponentModel;
+using System.Drawing;
 
 using WitcherScriptMerger.Theming;
 
@@ -16,6 +17,7 @@ internal sealed class FilterButton : CircleButton
 	internal FilterButton() => AccessibleName = "Filter";
 
 	/// <summary>Whether the filter hides any mod now.</summary>
+	[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
 	internal bool IsActive
 	{
 		get => _isActive;

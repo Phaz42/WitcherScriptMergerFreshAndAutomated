@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
@@ -21,6 +22,7 @@ internal abstract class CircleButton : Control
 	private bool _hovered, _pressed;
 
 	/// <summary>The color around the circle: when not set, the nearest container's own color; a search box gives its fill.</summary>
+	[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
 	internal Func<Color> Backdrop { get; set; }
 
 	protected CircleButton()
