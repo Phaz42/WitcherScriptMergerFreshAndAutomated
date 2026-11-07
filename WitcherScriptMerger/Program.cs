@@ -69,7 +69,7 @@ internal static partial class Program
 
 	/// <summary>
 	/// Closes SM-FAE and starts it again, for settings applied only at start, such as the theme. False when closing was
-	/// cancelled - while a scan or merge runs - and nothing happens.
+	/// canceled - while a scan or merge runs - and nothing happens.
 	/// </summary>
 	internal static bool Restart()
 	{
@@ -237,21 +237,11 @@ internal static partial class Program
 				WaitForPreviousInstance(args, restartIndex);
 			if (AcquireMutex(restarted ? RestartMutexTimeout : TimeSpan.Zero))
 			{
-				// Files an earlier version left behind in this folder, removed now that this is the only instance.
-				try
-				{
-					db($"Leftovers removed: {Leftovers.Remove()}");
-				}
-				catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
-				{
-					// Never a reason not to start.
-					db(ex.ToString());
-				}
-
-				// If acquired, start the named pipe listener thread.
+				// If acquired, start the named pipe listener thread, first: a second instance waits for it.
 				Thread listenThread = new(ListenForSignal) { IsBackground = true };
 				listenThread.Start();
 
+				RemoveLeftovers();
 				RunApplication(restarted);
 				mutex.ReleaseMutex();
 
@@ -273,6 +263,29 @@ internal static partial class Program
 	}
 
 	/// <summary>
+	/// Removes the files an earlier version left behind in this folder (Leftovers), once per version: at the first start
+	/// of a version, and again only when the setting CleanupDone no longer names it (cleared by hand, to run it again).
+	/// Runs while this is the only instance. Never a reason not to start: whatever it throws is only logged, and the
+	/// setting is written only once the removal has completed, so a failed one runs again at the next start.
+	/// </summary>
+	private static void RemoveLeftovers()
+	{
+		string version = Application.ProductVersion;
+		if (Settings.CleanupDone == version)
+			return;
+		try
+		{
+			int removed = Leftovers.Remove();
+			db($"Leftovers removed: {removed}");
+			Settings.SetCleanupDone(version);
+		}
+		catch (Exception ex)
+		{
+			db(ex.ToString());
+		}
+	}
+
+	/// <summary>
 	/// Initializes and runs the main application form.
 	/// </summary>
 	private static void RunApplication(bool restarted)
@@ -283,8 +296,7 @@ internal static partial class Program
 		MessageFrm = new();
 
 		// After a restart the window is brought to the front, with the permission the previous instance gave.
-		if (restarted)
-			MainFrm.Shown += (_, _) => MainFrm.Activate();
+		MainFrm.ActivateWhenShown = restarted;
 		Application.Run(MainFrm);
 	}
 

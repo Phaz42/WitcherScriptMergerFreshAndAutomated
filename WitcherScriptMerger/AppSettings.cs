@@ -57,6 +57,29 @@ internal class AppSettings
 	internal bool ScanBundlesOnEveryScan => ScanBundles && Get("CheckBundles", DefaultSettings.CheckBundles) == 0;
 
 	/// <summary>
+	/// The version whose removal of an earlier version's files (Leftovers) has completed; empty before the first.
+	/// Cleared by hand, the removal runs again at the next start.
+	/// </summary>
+	internal string CleanupDone => Get("CleanupDone");
+
+	/// <summary>
+	/// Records that this version's removal of leftovers has completed, saved at once. A save that fails is not reported
+	/// (the main window does not exist yet): the removal then runs again at the next start, which finds nothing to do.
+	/// </summary>
+	internal void SetCleanupDone(string version)
+	{
+		Set("CleanupDone", version);
+		try
+		{
+			CachedConfig.Save(ConfigurationSaveMode.Minimal);
+		}
+		catch (ConfigurationErrorsException)
+		{
+			// Not saved: the removal runs again at the next start.
+		}
+	}
+
+	/// <summary>
 	/// Before 1.0, not checking bundles was a third choice of CheckBundles, 2 ("Never"). It is now ScanBundles, off,
 	/// with CheckBundles left at "Only on Manual Refresh" for when it is turned back on. Translated once and saved.
 	/// </summary>
@@ -122,7 +145,8 @@ internal class AppSettings
 					new XElement("add", new XAttribute("key", "StartWidth"), new XAttribute("value", DefaultSettings.StartWidth)),
 					new XElement("add", new XAttribute("key", "StartHeight"), new XAttribute("value", DefaultSettings.StartHeight)),
 					new XElement("add", new XAttribute("key", "StartPosTop"), new XAttribute("value", DefaultSettings.StartPosTop)),
-					new XElement("add", new XAttribute("key", "StartPosLeft"), new XAttribute("value", DefaultSettings.StartPosLeft))
+					new XElement("add", new XAttribute("key", "StartPosLeft"), new XAttribute("value", DefaultSettings.StartPosLeft)),
+					new XElement("add", new XAttribute("key", "CleanupDone"), new XAttribute("value", ""))
 				)
 			)
 		);

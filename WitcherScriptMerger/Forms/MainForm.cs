@@ -27,6 +27,8 @@ internal partial class MainForm : BaseForm
 {
 	#region Members
 
+	/// <summary>Set after a restart: the window is activated as the first thing once shown, before any dialog.</summary>
+	internal bool ActivateWhenShown;
 	internal Timer _autoExitTimer;
 	internal ContextMenuStrip MainMenu;
 	internal TreeManager treeManager;
@@ -465,6 +467,9 @@ internal partial class MainForm : BaseForm
 	/// </summary>
 	private async void MainForm_Shown(object sender, EventArgs e)
 	{
+		// First, while the permission the previous instance gave still holds: a dialog below would take it.
+		if (ActivateWhenShown)
+			Activate();
 		Update();
 		OptionsFrm.CheckSetGameDir();
 

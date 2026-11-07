@@ -29,4 +29,5 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "<Pending>", Scope = "member", Target = "~M:WitcherScriptMerger.Forms.BaseForm.OnShown(System.EventArgs)")]
 [assembly: SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "<Pending>", Scope = "member", Target = "~M:WitcherScriptMerger.Forms.OptionsForm.CheckSetGameDir")]
 [assembly: SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "<Pending>", Scope = "member", Target = "~M:WitcherScriptMerger.Program.SendSignal")]
+[assembly: SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Best effort at start: whatever the cleanup of an earlier version's files throws is never a reason not to start.", Scope = "member", Target = "~M:WitcherScriptMerger.Program.RemoveLeftovers")]
 [assembly: SuppressMessage("Style", "IDE0011:Add braces", Justification = "<Pending>", Scope = "member", Target = "~M:WitcherScriptMerger.Forms.MainForm.GenerateConflictsCsv(System.Windows.Forms.TreeView)")]
