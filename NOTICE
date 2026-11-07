@@ -18,7 +18,8 @@ Modified work. SM-FAE is a modified version of IDCs' edition of AnotherSymbiote'
 throughout from its first release on. The repository holds the full history of the changes.
 
 Code from Stack Overflow, licensed under CC BY-SA and credited where it is used, with a link to its source:
-Controls/SMTree.cs, Extensions.cs and UI/TaskbarProgress.cs.
+Controls/SMTree.cs, Extensions.cs and UI/TaskbarProgress.cs; and the title bar's dark theme in Program.cs and
+Forms/BaseForm.cs, which link to the Stack Overflow question their code follows.
 
 CD PROJEKT RED's content. The program's icon (the wolf medallion) and its "no conflicts" images of Geralt are
 based on CD PROJEKT RED's characters and designs. They are not covered by the GNU General Public License; they
