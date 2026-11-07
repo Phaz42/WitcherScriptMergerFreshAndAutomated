@@ -11,8 +11,8 @@
 <br>
 
 > [!NOTE]
-> ### ✅ Version 1.1 — maintained
-> SM-FAE **1.1** is out, and SM-FAE is **fully supported until at least 6 months after the first stable release of the new app** I'm working on, possibly longer, depending on adoption.
+> ### ✅ Version 1.2 — maintained
+> SM-FAE **1.2** is out, and SM-FAE is **fully supported until at least 6 months after the first stable release of the new app** I'm working on, possibly longer, depending on adoption.
 > 
 > The new app is a completely rebuilt, from-scratch script merger. More about it in the sticky posts on the [Nexus Mods page](https://www.nexusmods.com/witcher3/mods/8405?tab=posts).
 
@@ -24,16 +24,14 @@ This repository contains the source code for **Script Merger - Fresh and Automat
 For downloads, the full feature list, user documentation, and comments and contact info, visit the Nexus Mods page:  
 👉 **[SM-FAE on Nexus Mods](https://www.nexusmods.com/witcher3/mods/8405)**
 
-## ✨ What's new in 1.1
+## ✨ What's new in 1.2
 The highlights:
-* A **filter** for the conflict list: hide the conflicts that are only there because of a mod you choose, without changing your load order or your merges.
-* A **warning bar** above the lists when mods have problems.
-* **Help where you need it**: a **?** in the search boxes and in Options.
-* Search finds shown **in green**, and SM-FAE's own blue in both themes.
-* Vortex's `VK=` keys **kept** in `mods.settings`.
-* **Fixed**: SM-FAE closing without a message after searching and scrolling a long list.
+* SM-FAE runs on **.NET 10**: install the **.NET 10 Desktop Runtime** (x64) once. It looks and merges exactly as 1.1 does.
+* A **much smaller download**: only what 64-bit Windows needs.
+* **Upgrades clean up after themselves**: extracted over an earlier version, SM-FAE removes, once, the files that version shipped and this one no longer needs, and never your own.
+* **License files in every download**: a NOTICE, a README with this version's source, and the third-party notices for the bundled tools.
 
-The full list is in the "What's new in SM-FAE 1.1" post on the [Nexus Mods page](https://www.nexusmods.com/witcher3/mods/8405?tab=posts).
+The full list is in the "What's new in SM-FAE 1.2" post on the [Nexus Mods page](https://www.nexusmods.com/witcher3/mods/8405?tab=posts).
 
 ## 📂 Repository State & Commit History
 
@@ -41,7 +39,7 @@ If you are browsing the source, you may notice a lack of incremental commit hist
 
 All earlier development of SM-FAE was done locally, without intermediary commits. The first commit is a single "snapshot" of the development stage at the time: the **`v0.9.8-rc.3`** release candidate, which was never published as binaries.
 
-Everything since is committed incrementally on top of that snapshot: **`v0.9.8-rc.4`** (support for The Witcher 3 Remastered: its changed script encoding and bundle format), **`v0.9.8-rc.5`** (a fix for choosing the game folder on most GOG installations), **`v1.0.0`** and **`v1.1.0`**. The binaries published on Nexus Mods are built from each release's tag.
+Everything since is committed incrementally on top of that snapshot: **`v0.9.8-rc.4`** (support for The Witcher 3 Remastered: its changed script encoding and bundle format), **`v0.9.8-rc.5`** (a fix for choosing the game folder on most GOG installations), **`v1.0.0`**, **`v1.1.0`** and **`v1.2.0`**. The binaries published on Nexus Mods are built from each release's tag.
 
 ## 📜 License & Lineage
 
